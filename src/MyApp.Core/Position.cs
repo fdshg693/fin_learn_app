@@ -3,26 +3,44 @@ namespace MyApp.Core;
 /// <summary>
 /// 銘柄の保有（銘柄IDと数量）
 /// </summary>
-public class Position
+public class Position : IEquatable<Position>
 {
-    public Position(int instrumentId, int quantity)
+    public Position(Instrument instrument, int quantity)
     {
-        InstrumentId = instrumentId;
+        Instrument = instrument;
         Quantity = quantity;
     }
 
-    public int InstrumentId { get; }
     public int Quantity { get; }
+    public Instrument Instrument { get; }
+    public int Amount => Instrument.Price * Quantity;
 
     /// <summary>
     /// 同じIDの銘柄を足し算する。異なるIDの場合は未対応。
     /// </summary>
     public Position Add(Position other)
     {
-        if (InstrumentId != other.InstrumentId)
+        if (Instrument.Id != other.Instrument.Id)
         {
             throw new InvalidOperationException("同じIDの銘柄を足し算することはできません。");
         }
-        return new Position(InstrumentId, Quantity + other.Quantity);
+        return new Position(Instrument, Quantity + other.Quantity);
+    }
+
+    public bool Equals(Position? other)
+    {
+        if (other is null)
+        {
+            return false;
+        }
+        return Instrument.Id == other.Instrument.Id
+            && Quantity == other.Quantity;
+    }
+    public override int GetHashCode()
+    {
+        var hash = new HashCode();
+        hash.Add(Instrument.Id);
+        hash.Add(Quantity);
+        return hash.ToHashCode();
     }
 }
