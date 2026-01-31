@@ -7,8 +7,8 @@ public class PositionSetTests
     [Fact]
     public void ポジション順序が違ってもポジション集合は一致する()
     {
-        var instrumentA = new Instrument(id: 1, price: 10);
-        var instrumentB = new Instrument(id: 2, price: 20);
+        var instrumentA = new Instrument(id: 1);
+        var instrumentB = new Instrument(id: 2);
 
         var positionA = new Position(instrumentA, quantity: 100);
         var positionB = new Position(instrumentB, quantity: 50);
@@ -22,8 +22,8 @@ public class PositionSetTests
     [Fact]
     public void 同じIDの銘柄を足し合わせた上でポジション集合の一致を確かめられる()
     {
-        var instrumentA = new Instrument(id: 1, price: 10);
-        var instrumentB = new Instrument(id: 2, price: 20);
+        var instrumentA = new Instrument(id: 1);
+        var instrumentB = new Instrument(id: 2);
 
         var positionA = new Position(instrumentA, quantity: 50);
         var positionB = new Position(instrumentA, quantity: 100);
@@ -38,8 +38,8 @@ public class PositionSetTests
     [Fact]
     public void ポジションの足し算はPositionSetを返す()
     {
-        var instrumentA = new Instrument(id: 1, price: 10);
-        var instrumentB = new Instrument(id: 2, price: 20);
+        var instrumentA = new Instrument(id: 1);
+        var instrumentB = new Instrument(id: 2);
 
         var positionA = new Position(instrumentA, quantity: 100);
         var positionB = new Position(instrumentB, quantity: 50);

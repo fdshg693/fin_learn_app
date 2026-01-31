@@ -1,16 +1,14 @@
 namespace MyApp.Core;
 
 /// <summary>
-/// 銘柄（IDと価格）
+/// 銘柄（ID）
 /// </summary>
 public class Instrument
 {
-    public Instrument(int id, int price)
+    public Instrument(int id)
     {
         Id = id;
-        Price = price;
     }
 
     public int Id { get; }
-    public int Price { get; }
 }
