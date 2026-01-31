@@ -24,6 +24,16 @@ public sealed class PositionSet : IEquatable<PositionSet>
         return new PositionSet(_positions.Concat(other._positions));
     }
 
+    public static PositionSet operator +(PositionSet left, Position right)
+    {
+        return left.Add(right);
+    }
+
+    public static PositionSet operator +(Position left, PositionSet right)
+    {
+        return right.Add(left);
+    }
+
     private static IReadOnlyList<Position> Normalize(IEnumerable<Position> positions)
     {
         return positions
@@ -46,11 +56,6 @@ public sealed class PositionSet : IEquatable<PositionSet>
             return false;
         }
         return _positions.SequenceEqual(other._positions);
-    }
-
-    public override bool Equals(object? obj)
-    {
-        return Equals(obj as PositionSet);
     }
 
     public override int GetHashCode()

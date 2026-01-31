@@ -15,16 +15,9 @@ public class Position : IEquatable<Position>
     public Instrument Instrument { get; }
     public int Amount => Instrument.Price * Quantity;
 
-    /// <summary>
-    /// 同じIDの銘柄を足し算する。異なるIDの場合は未対応。
-    /// </summary>
-    public Position Add(Position other)
+    public static PositionSet operator +(Position left, Position right)
     {
-        if (Instrument.Id != other.Instrument.Id)
-        {
-            throw new InvalidOperationException("同じIDの銘柄を足し算することはできません。");
-        }
-        return new Position(Instrument, Quantity + other.Quantity);
+        return new PositionSet(new[] { left, right });
     }
 
     public bool Equals(Position? other)
