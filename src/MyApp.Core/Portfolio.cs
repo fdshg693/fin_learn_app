@@ -7,14 +7,22 @@ public sealed class Portfolio : IEquatable<Portfolio>
 {
     private readonly IReadOnlyList<Position> _positions;
     private readonly PositionSet _positionSet;
+    private readonly int _cash;
 
-    public Portfolio(IEnumerable<Position> positions)
+    public Portfolio(int cash, IEnumerable<Position> positions)
     {
+        _cash = cash;
         _positions = positions.ToList().AsReadOnly();
         _positionSet = new PositionSet(_positions);
     }
 
+    public int Cash => _cash;
     public IReadOnlyList<Position> Positions => _positions;
+
+    public int TotalAmount()
+    {
+        return _cash + _positions.Sum(position => position.Amount);
+    }
 
     public bool Equals(Portfolio? other)
     {
