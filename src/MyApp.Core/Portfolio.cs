@@ -21,29 +21,32 @@ public class Portfolio : IEquatable<Portfolio>
             return false;
         }
 
-        var thisSorted = _positions
-            .OrderBy(x => x.InstrumentId, Comparer<int>.Default)
-            .ThenBy(x => x.Quantity)
-            .ToList();
-        var otherSorted = other._positions
-            .OrderBy(x => x.InstrumentId, Comparer<int>.Default)
-            .ThenBy(x => x.Quantity)
-            .ToList();
+        var thisAggregated = AggregateByInstrument(_positions);
+        var otherAggregated = AggregateByInstrument(other._positions);
 
-        return thisSorted.SequenceEqual(otherSorted, PositionComparer.Instance);
+        return thisAggregated.SequenceEqual(otherAggregated, PositionComparer.Instance);
     }
 
     public override int GetHashCode()
     {
         var hash = new HashCode();
-        foreach (var position in _positions
-            .OrderBy(x => x.InstrumentId, Comparer<int>.Default)
-            .ThenBy(x => x.Quantity))
+        foreach (var position in AggregateByInstrument(_positions))
         {
             hash.Add(position.InstrumentId);
             hash.Add(position.Quantity);
         }
         return hash.ToHashCode();
+    }
+
+    private static IReadOnlyList<Position> AggregateByInstrument(IEnumerable<Position> positions)
+    {
+        return positions
+            .GroupBy(position => position.InstrumentId)
+            .Select(group => new Position(
+                instrumentId: group.Key,
+                quantity: group.Sum(position => position.Quantity)))
+            .OrderBy(position => position.InstrumentId, Comparer<int>.Default)
+            .ToList();
     }
 
     private sealed class PositionComparer : IEqualityComparer<Position>
