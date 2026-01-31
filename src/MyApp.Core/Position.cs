@@ -5,13 +5,13 @@ namespace MyApp.Core;
 /// </summary>
 public class Position
 {
-    public Position(string instrumentId, int quantity)
+    public Position(int instrumentId, int quantity)
     {
         InstrumentId = instrumentId;
         Quantity = quantity;
     }
 
-    public string InstrumentId { get; }
+    public int InstrumentId { get; }
     public int Quantity { get; }
 
     /// <summary>
