@@ -6,10 +6,12 @@ namespace MyApp.Core;
 public sealed class Portfolio : IEquatable<Portfolio>
 {
     private readonly IReadOnlyList<Position> _positions;
+    private readonly PositionSet _positionSet;
 
     public Portfolio(IEnumerable<Position> positions)
     {
         _positions = positions.ToList().AsReadOnly();
+        _positionSet = new PositionSet(_positions);
     }
 
     public IReadOnlyList<Position> Positions => _positions;
@@ -20,14 +22,7 @@ public sealed class Portfolio : IEquatable<Portfolio>
         {
             return false;
         }
-
-        return _positions
-            .OrderBy(position => position.Instrument.Id)
-            .ThenBy(position => position.Quantity)
-            .SequenceEqual(
-                other._positions
-                    .OrderBy(position => position.Instrument.Id)
-                    .ThenBy(position => position.Quantity));
+        return _positionSet.Equals(other._positionSet);
     }
 
     public override bool Equals(object? obj)
@@ -37,13 +32,6 @@ public sealed class Portfolio : IEquatable<Portfolio>
 
     public override int GetHashCode()
     {
-        var hash = new HashCode();
-        foreach (var position in _positions
-            .OrderBy(position => position.Instrument.Id)
-            .ThenBy(position => position.Quantity))
-        {
-            hash.Add(position);
-        }
-        return hash.ToHashCode();
+        return _positionSet.GetHashCode();
     }
 }
