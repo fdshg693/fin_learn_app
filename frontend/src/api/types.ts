@@ -34,11 +34,14 @@ export type PortfolioDto = {
   holdings: HoldingDto[]
 }
 
-export type ActionRequestDto = {
+export type ActionTradeRequestDto = {
   investorId: string
   tickerId: string
-  action: 'BuyNow' | 'SellNow' | 'Wait'
   quantity: number
+}
+
+export type ActionWaitRequestDto = {
+  investorId: string
 }
 
 export type ActionResultDto = {

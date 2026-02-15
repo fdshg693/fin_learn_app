@@ -30,11 +30,18 @@ public sealed class InMemoryStore
         _tickersById = tickers.ToDictionary(t => t.Id, t => t);
     }
 
-    public Company GetCompany(CompanyId id) => _companiesById[id];
+    public Company GetCompany(CompanyId id)
+    {
+        return _companiesById[id];
+    }
 
     public Ticker? FindTicker(TickerId id)
-        => _tickersById.TryGetValue(id, out var ticker) ? ticker : null;
+    {
+        return _tickersById.TryGetValue(id, out var ticker) ? ticker : null;
+    }
 
     public Portfolio? FindPortfolioByInvestor(InvestorId investorId)
-        => Portfolios.FirstOrDefault(p => p.InvestorId == investorId);
+    {
+        return Portfolios.FirstOrDefault(p => p.InvestorId == investorId);
+    }
 }

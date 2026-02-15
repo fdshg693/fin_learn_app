@@ -1,10 +1,17 @@
 using FinLearnApp.Api.Data;
+using FinLearnApp.Api.Mappers;
+using FinLearnApp.Api.Services;
+using FinLearnApp.Application.Actions;
+using MediatR;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddSingleton(_ => SeedData.Create());
+builder.Services.AddSingleton<PortfolioMapper>();
+builder.Services.AddSingleton<IActionExecutionStore, InMemoryActionExecutionStore>();
+builder.Services.AddMediatR(config => config.RegisterServicesFromAssembly(typeof(BuyNowCommand).Assembly));
 
 var app = builder.Build();
 

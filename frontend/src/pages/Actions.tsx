@@ -1,15 +1,18 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState } from 'react'
+import { buyNow, sellNow, waitAction } from '../api/actions'
 import { fetchJson } from '../api/client'
-import type { ActionRequestDto, ActionResultDto, PortfolioDto, TickerSummaryDto } from '../api/types'
+import type {
+  ActionTradeRequestDto,
+  ActionWaitRequestDto,
+  PortfolioDto,
+  TickerSummaryDto,
+} from '../api/types'
 
 const demoInvestorId = '7b3e6c8d-6a8d-4e9f-9b7c-7c8d6c0e7f07'
-
-type ActionType = 'BuyNow' | 'SellNow' | 'Wait'
 
 export default function Actions() {
   const [tickers, setTickers] = useState<TickerSummaryDto[]>([])
   const [portfolio, setPortfolio] = useState<PortfolioDto | null>(null)
-  const [action, setAction] = useState<ActionType>('BuyNow')
   const [tickerId, setTickerId] = useState('')
   const [quantity, setQuantity] = useState(1)
   const [resultMessage, setResultMessage] = useState<string | null>(null)
@@ -33,8 +36,7 @@ export default function Actions() {
       .finally(() => setIsLoading(false))
   }, [])
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
+  const executeTradeAction = async (actionType: 'buy' | 'sell') => {
     setError(null)
     setResultMessage(null)
 
@@ -43,27 +45,43 @@ export default function Actions() {
       return
     }
 
-    if (action !== 'Wait' && quantity <= 0) {
+    if (quantity <= 0) {
       setError('数量は1以上を指定してください。')
       return
     }
 
-    const payload: ActionRequestDto = {
+    const payload: ActionTradeRequestDto = {
       investorId: demoInvestorId,
       tickerId,
-      action,
-      quantity: action === 'Wait' ? 1 : quantity,
+      quantity,
     }
 
     setIsSubmitting(true)
     try {
-      const result = await fetchJson<ActionResultDto>('/api/actions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      })
+      const result =
+        actionType === 'buy' ? await buyNow(payload) : await sellNow(payload)
+
+      setResultMessage(result.message)
+      setPortfolio(result.portfolio)
+    } catch (err) {
+      setError((err as Error).message)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const executeWaitAction = async () => {
+    setError(null)
+    setResultMessage(null)
+
+    const payload: ActionWaitRequestDto = {
+      investorId: demoInvestorId,
+    }
+
+    setIsSubmitting(true)
+    try {
+      const result = await waitAction(payload)
+
       setResultMessage(result.message)
       setPortfolio(result.portfolio)
     } catch (err) {
@@ -93,17 +111,7 @@ export default function Actions() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>
-            アクション
-            <select value={action} onChange={(event) => setAction(event.target.value as ActionType)}>
-              <option value="BuyNow">BuyNow</option>
-              <option value="SellNow">SellNow</option>
-              <option value="Wait">Wait</option>
-            </select>
-          </label>
-        </div>
+      <form>
         <div>
           <label>
             銘柄
@@ -124,13 +132,28 @@ export default function Actions() {
               min={1}
               value={quantity}
               onChange={(event) => setQuantity(Number(event.target.value))}
-              disabled={action === 'Wait'}
             />
           </label>
         </div>
-        <button type="submit" disabled={isSubmitting || isLoading}>
-          {isSubmitting ? '送信中...' : '実行'}
-        </button>
+        <div className="actions">
+          <button
+            type="button"
+            disabled={isSubmitting || isLoading}
+            onClick={() => executeTradeAction('buy')}
+          >
+            {isSubmitting ? '送信中...' : 'BuyNow'}
+          </button>
+          <button
+            type="button"
+            disabled={isSubmitting || isLoading}
+            onClick={() => executeTradeAction('sell')}
+          >
+            {isSubmitting ? '送信中...' : 'SellNow'}
+          </button>
+          <button type="button" disabled={isSubmitting || isLoading} onClick={executeWaitAction}>
+            {isSubmitting ? '送信中...' : 'Wait'}
+          </button>
+        </div>
       </form>
 
       {resultMessage && <p>{resultMessage}</p>}

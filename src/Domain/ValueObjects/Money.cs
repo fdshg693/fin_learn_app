@@ -3,9 +3,21 @@ using FinLearnApp.Domain.Enums;
 
 namespace FinLearnApp.Domain.ValueObjects;
 
-public readonly record struct Money(decimal Amount, Currency Currency)
+public readonly record struct Money
 {
-    public static Money Jpy(decimal amount) => new(amount, Currency.JPY);
+    public decimal Amount { get; }
+    public Currency Currency { get; }
+
+    public Money(decimal amount, Currency currency)
+    {
+        Amount = amount;
+        Currency = currency;
+    }
+
+    public static Money Jpy(decimal amount)
+    {
+        return new Money(amount, Currency.JPY);
+    }
 
     public Money Add(Money other)
     {
@@ -19,7 +31,10 @@ public readonly record struct Money(decimal Amount, Currency Currency)
         return new Money(Amount - other.Amount, Currency);
     }
 
-    public Money Multiply(decimal multiplier) => new(Amount * multiplier, Currency);
+    public Money Multiply(decimal multiplier)
+    {
+        return new Money(Amount * multiplier, Currency);
+    }
 
     private void EnsureSameCurrency(Money other)
     {

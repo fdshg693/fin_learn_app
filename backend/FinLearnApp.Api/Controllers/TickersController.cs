@@ -53,5 +53,7 @@ public sealed class TickersController : ControllerBase
     }
 
     private static MoneyDto ToMoneyDto(Money money)
-        => new(money.Amount, money.Currency.ToString());
+    {
+        return new MoneyDto(money.Amount, money.Currency.ToString());
+    }
 }

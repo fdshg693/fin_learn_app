@@ -19,7 +19,10 @@ public sealed class Holding
         Quantity = quantity;
     }
 
-    public Money MarketValue(Money price) => price.Multiply(Quantity);
+    public Money MarketValue(Money price)
+    {
+        return price.Multiply(Quantity);
+    }
 
     public void Increase(int quantity)
     {
