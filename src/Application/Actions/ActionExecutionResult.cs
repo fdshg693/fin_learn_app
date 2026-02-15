@@ -9,7 +9,10 @@ public enum ActionExecutionStatus
     NotFound,
 }
 
-public sealed record ActionExecutionResult
+/// <summary>
+/// アクション実行の結果を表すアプリケーション層の戻り値。
+/// </summary>
+public sealed class ActionExecutionResult
 {
     public ActionExecutionStatus Status { get; }
     public bool Success { get; }

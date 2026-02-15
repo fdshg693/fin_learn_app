@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using FinLearnApp.Api.Data;
 using FinLearnApp.Api.Models.Api;
+using FinLearnApp.Api.Responses;
 using FinLearnApp.Domain.ValueObjects;
 using Microsoft.AspNetCore.Mvc;
 
@@ -39,7 +40,10 @@ public sealed class TickersController : ControllerBase
         var ticker = _store.FindTicker(new TickerId(tickerId));
         if (ticker is null)
         {
-            return NotFound();
+            return ApiProblemFactory.NotFound(
+                this,
+                "Ticker was not found.",
+                "tickers.not_found");
         }
 
         var dto = new TickerDetailDto(

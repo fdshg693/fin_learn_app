@@ -2,6 +2,7 @@ using System;
 using FinLearnApp.Api.Data;
 using FinLearnApp.Api.Mappers;
 using FinLearnApp.Api.Models.Api;
+using FinLearnApp.Api.Responses;
 using FinLearnApp.Domain.ValueObjects;
 using Microsoft.AspNetCore.Mvc;
 
@@ -26,7 +27,10 @@ public sealed class PortfoliosController : ControllerBase
         var portfolio = _store.FindPortfolioByInvestor(new InvestorId(investorId));
         if (portfolio is null)
         {
-            return NotFound();
+            return ApiProblemFactory.NotFound(
+                this,
+                "Portfolio was not found for the specified investor.",
+                "portfolios.not_found");
         }
 
         return Ok(_portfolioMapper.ToDto(portfolio));
