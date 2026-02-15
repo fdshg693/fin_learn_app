@@ -7,8 +7,8 @@ using MyApp.Core;
 /// </summary>
 internal static class TestData
 {
-    public static Instrument Instrument1 => new(id: 1);
-    public static Instrument Instrument2 => new(id: 2);
+    public static Instrument Instrument1 => new(Id: 1);
+    public static Instrument Instrument2 => new(Id: 2);
 
     public static TestExchange CreateExchange(params (int id, int price)[] prices)
     {

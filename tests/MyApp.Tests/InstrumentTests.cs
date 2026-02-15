@@ -7,8 +7,8 @@ public class InstrumentTests
     [Fact]
     public void 同じIDのInstrumentは等しい()
     {
-        var a = new Instrument(id: 1);
-        var b = new Instrument(id: 1);
+        var a = new Instrument(Id: 1);
+        var b = new Instrument(Id: 1);
 
         Assert.Equal(a, b);
         Assert.True(a.Equals(b));
@@ -17,8 +17,8 @@ public class InstrumentTests
     [Fact]
     public void 異なるIDのInstrumentは等しくない()
     {
-        var a = new Instrument(id: 1);
-        var b = new Instrument(id: 2);
+        var a = new Instrument(Id: 1);
+        var b = new Instrument(Id: 2);
 
         Assert.NotEqual(a, b);
         Assert.False(a.Equals(b));
@@ -27,8 +27,8 @@ public class InstrumentTests
     [Fact]
     public void 同じIDのInstrumentは同じHashCodeを返す()
     {
-        var a = new Instrument(id: 1);
-        var b = new Instrument(id: 1);
+        var a = new Instrument(Id: 1);
+        var b = new Instrument(Id: 1);
 
         Assert.Equal(a.GetHashCode(), b.GetHashCode());
     }
@@ -36,7 +36,7 @@ public class InstrumentTests
     [Fact]
     public void nullとは等しくない()
     {
-        var a = new Instrument(id: 1);
+        var a = new Instrument(Id: 1);
 
         Assert.False(a.Equals(null));
     }

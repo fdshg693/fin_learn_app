@@ -3,7 +3,7 @@ namespace MyApp.Core;
 /// <summary>
 /// 銘柄の保有（銘柄IDと数量）
 /// </summary>
-public sealed class Position : IEquatable<Position>
+public sealed record Position
 {
     public Position(Instrument instrument, int quantity)
     {
@@ -17,6 +17,7 @@ public sealed class Position : IEquatable<Position>
 
     public int Quantity { get; }
     public Instrument Instrument { get; }
+
     public int Amount(IExchange exchange)
     {
         if (!exchange.TryGetPrice(Instrument.Id, out var price, out _))
@@ -29,27 +30,5 @@ public sealed class Position : IEquatable<Position>
     public static PositionSet operator +(Position left, Position right)
     {
         return new PositionSet(new[] { left, right });
-    }
-
-    public bool Equals(Position? other)
-    {
-        if (other is null)
-        {
-            return false;
-        }
-        return Instrument.Equals(other.Instrument)
-            && Quantity == other.Quantity;
-    }
-
-    public override bool Equals(object? obj)
-    {
-        return Equals(obj as Position);
-    }
-    public override int GetHashCode()
-    {
-        var hash = new HashCode();
-        hash.Add(Instrument);
-        hash.Add(Quantity);
-        return hash.ToHashCode();
     }
 }
