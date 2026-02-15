@@ -9,7 +9,7 @@ public sealed class Position : IEquatable<Position>
     {
         if (quantity <= 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(quantity), "数量は0より大きい必要があります");
+            throw new ArgumentOutOfRangeException(nameof(quantity), Messages.QuantityMustBePositive);
         }
         Instrument = instrument;
         Quantity = quantity;

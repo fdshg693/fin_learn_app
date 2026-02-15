@@ -36,10 +36,10 @@ public sealed class PositionSet : IEquatable<PositionSet>
             ?? new Instrument(instrumentId);
     }
 
-    public PositionSet SetQuantity(int instrumentId, Instrument instrument, int quantity)
+    public PositionSet SetQuantity(Instrument instrument, int quantity)
     {
         var newPositions = _positions
-            .Where(position => position.Instrument.Id != instrumentId)
+            .Where(position => position.Instrument.Id != instrument.Id)
             .ToList();
 
         if (quantity > 0)

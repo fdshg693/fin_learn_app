@@ -50,7 +50,7 @@ public class PortfolioTests
 
         var (resultPortfolio, warning) = portfolio.Sell(exchange, instrumentId: 1, quantity: 10);
 
-        Assert.Equal("保有数量を超えて売却できません", warning);
+        Assert.Equal(Messages.InsufficientQuantityToSell, warning);
         Assert.Equal(1000, resultPortfolio.Cash);
         Assert.Equal(5, resultPortfolio.QuantityOf(instrumentId: 1));
     }
@@ -92,7 +92,7 @@ public class PortfolioTests
 
         var (resultPortfolio, warning) = portfolio.Buy(exchange, instrumentId: 1, quantity: 3);
 
-        Assert.Equal("現金が不足して購入できません", warning);
+        Assert.Equal(Messages.InsufficientCashToBuy, warning);
         Assert.Equal(20, resultPortfolio.Cash);
         Assert.Equal(5, resultPortfolio.QuantityOf(instrumentId: 1));
     }
@@ -120,7 +120,7 @@ public class PortfolioTests
 
         var (resultPortfolio, warning) = portfolio.Sell(exchange, instrumentId: 1, quantity: 0);
 
-        Assert.Equal("数量は0より大きい必要があります", warning);
+        Assert.Equal(Messages.QuantityMustBePositive, warning);
         Assert.Equal(1000, resultPortfolio.Cash);
         Assert.Equal(5, resultPortfolio.QuantityOf(instrumentId: 1));
     }
@@ -134,7 +134,7 @@ public class PortfolioTests
 
         var (resultPortfolio, warning) = portfolio.Buy(exchange, instrumentId: 1, quantity: -1);
 
-        Assert.Equal("数量は0より大きい必要があります", warning);
+        Assert.Equal(Messages.QuantityMustBePositive, warning);
         Assert.Equal(1000, resultPortfolio.Cash);
         Assert.Equal(5, resultPortfolio.QuantityOf(instrumentId: 1));
     }

@@ -44,7 +44,7 @@ public sealed class Portfolio
     {
         if (quantity <= 0)
         {
-            return (this, "数量は0より大きい必要があります");
+            return (this, Messages.QuantityMustBePositive);
         }
 
         if (!exchange.TryGetPrice(instrumentId, out var price, out var priceWarning))
@@ -55,20 +55,20 @@ public sealed class Portfolio
         var totalQuantity = QuantityOf(instrumentId);
         if (!isBuy && totalQuantity < quantity)
         {
-            return (this, "保有数量を超えて売却できません");
+            return (this, Messages.InsufficientQuantityToSell);
         }
 
         var cost = price * quantity;
         if (isBuy && _cash < cost)
         {
-            return (this, "現金が不足して購入できません");
+            return (this, Messages.InsufficientCashToBuy);
         }
 
         var instrument = isBuy
             ? _positionSet.GetOrCreateInstrument(instrumentId)
             : _positionSet.GetExistingInstrument(instrumentId);
         var newQuantity = isBuy ? totalQuantity + quantity : totalQuantity - quantity;
-        var newPositions = _positionSet.SetQuantity(instrumentId, instrument, newQuantity);
+        var newPositions = _positionSet.SetQuantity(instrument, newQuantity);
         var newCash = _cash + (isBuy ? -cost : cost);
 
         return (new Portfolio(newCash, newPositions.Positions), null);
