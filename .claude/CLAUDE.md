@@ -21,5 +21,9 @@ dotnet test
 cd tests/MyApp.Tests && dotnet watch test
 ```
 
+## Documentation
+Whenever you find notable fact or big picture which helps understand the project and is not yet documented, please write it down.
+if that information is folder specific, write it in `folder/CLAUDE.md`. if that information is project wide, write it in `ai/docs`.
+
 ## Skill
 always use `write-docs` SKILL whenever you write documents.
