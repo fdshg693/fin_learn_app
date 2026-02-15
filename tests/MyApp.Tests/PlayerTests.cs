@@ -28,7 +28,7 @@ public class PlayerTests
         Assert.Null(warning);
         Assert.Equal(9970, result.Portfolio.Cash);
         Assert.Equal(3, result.Portfolio.QuantityOf(instrumentId: 1));
-        Assert.Equal(9970, player.Portfolio.Cash);
-        Assert.Equal(3, player.Portfolio.QuantityOf(instrumentId: 1));
+        Assert.Equal(10000, player.Portfolio.Cash);
+        Assert.Equal(0, player.Portfolio.QuantityOf(instrumentId: 1));
     }
 }

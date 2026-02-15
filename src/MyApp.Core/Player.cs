@@ -3,19 +3,24 @@ namespace MyApp.Core;
 public sealed class Player
 {
     public Player()
+        : this(new Portfolio(cash: 10000, positions: Array.Empty<Position>()))
     {
-        Portfolio = new Portfolio(cash: 10000, positions: Array.Empty<Position>());
     }
 
-    public Portfolio Portfolio { get; private set; }
+    private Player(Portfolio portfolio)
+    {
+        Portfolio = portfolio;
+    }
+
+    public Portfolio Portfolio { get; }
 
     public (Player Result, string? Warning) Buy(IExchange exchange, int instrumentId, int quantity)
     {
         var (resultPortfolio, warning) = Portfolio.Buy(exchange, instrumentId, quantity);
-        if (warning is null)
+        if (warning is not null)
         {
-            Portfolio = resultPortfolio;
+            return (this, warning);
         }
-        return (this, warning);
+        return (new Player(resultPortfolio), null);
     }
 }
