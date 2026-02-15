@@ -1,6 +1,5 @@
 namespace MyApp.Tests;
 
-using System.Collections.Generic;
 using MyApp.Core;
 
 public class ExchangeExtensionsTests
@@ -8,10 +7,7 @@ public class ExchangeExtensionsTests
     [Fact]
     public void 登録済み銘柄の価格を取得できる()
     {
-        var exchange = new TestExchange(new Dictionary<int, int>
-        {
-            { 1, 100 },
-        });
+        var exchange = TestData.CreateExchange((1, 100));
 
         var result = exchange.TryGetPrice(instrumentId: 1, out var price, out var warning);
 
@@ -23,7 +19,7 @@ public class ExchangeExtensionsTests
     [Fact]
     public void 未登録銘柄は失敗して警告を返す()
     {
-        var exchange = new TestExchange(new Dictionary<int, int>());
+        var exchange = TestData.CreateExchange();
 
         var result = exchange.TryGetPrice(instrumentId: 999, out var price, out var warning);
 
@@ -35,10 +31,7 @@ public class ExchangeExtensionsTests
     [Fact]
     public void 価格が0以下の場合は失敗して警告を返す()
     {
-        var exchange = new TestExchange(new Dictionary<int, int>
-        {
-            { 1, 0 },
-        });
+        var exchange = TestData.CreateExchange((1, 0));
 
         var result = exchange.TryGetPrice(instrumentId: 1, out var price, out var warning);
 

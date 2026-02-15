@@ -3,7 +3,7 @@ namespace MyApp.Core;
 /// <summary>
 /// 銘柄の保有（銘柄IDと数量）
 /// </summary>
-public class Position : IEquatable<Position>
+public sealed class Position : IEquatable<Position>
 {
     public Position(Instrument instrument, int quantity)
     {

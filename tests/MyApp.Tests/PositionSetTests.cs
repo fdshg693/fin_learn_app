@@ -7,11 +7,8 @@ public class PositionSetTests
     [Fact]
     public void ポジション順序が違ってもポジション集合は一致する()
     {
-        var instrumentA = new Instrument(id: 1);
-        var instrumentB = new Instrument(id: 2);
-
-        var positionA = new Position(instrumentA, quantity: 100);
-        var positionB = new Position(instrumentB, quantity: 50);
+        var positionA = new Position(TestData.Instrument1, quantity: 100);
+        var positionB = new Position(TestData.Instrument2, quantity: 50);
 
         var positionSet1 = new PositionSet(new[] { positionA, positionB });
         var positionSet2 = new PositionSet(new[] { positionB, positionA });
@@ -22,12 +19,9 @@ public class PositionSetTests
     [Fact]
     public void 同じIDの銘柄を足し合わせた上でポジション集合の一致を確かめられる()
     {
-        var instrumentA = new Instrument(id: 1);
-        var instrumentB = new Instrument(id: 2);
-
-        var positionA = new Position(instrumentA, quantity: 50);
-        var positionB = new Position(instrumentA, quantity: 100);
-        var positionC = new Position(instrumentB, quantity: 100);
+        var positionA = new Position(TestData.Instrument1, quantity: 50);
+        var positionB = new Position(TestData.Instrument1, quantity: 100);
+        var positionC = new Position(TestData.Instrument2, quantity: 100);
 
         var positionSet1 = new PositionSet(new[] { positionA, positionA, positionC });
         var positionSet2 = new PositionSet(new[] { positionB, positionC });
@@ -38,11 +32,8 @@ public class PositionSetTests
     [Fact]
     public void ポジションの足し算はPositionSetを返す()
     {
-        var instrumentA = new Instrument(id: 1);
-        var instrumentB = new Instrument(id: 2);
-
-        var positionA = new Position(instrumentA, quantity: 100);
-        var positionB = new Position(instrumentB, quantity: 50);
+        var positionA = new Position(TestData.Instrument1, quantity: 100);
+        var positionB = new Position(TestData.Instrument2, quantity: 50);
 
         var expected = new PositionSet(new[] { positionA, positionB });
 
@@ -61,19 +52,12 @@ public class PositionSetTests
     [Fact]
     public void ポジション集合の評価額を取得できる()
     {
-        var instrumentA = new Instrument(id: 1);
-        var instrumentB = new Instrument(id: 2);
-
-        var positionA = new Position(instrumentA, quantity: 100);
-        var positionB = new Position(instrumentB, quantity: 50);
+        var positionA = new Position(TestData.Instrument1, quantity: 100);
+        var positionB = new Position(TestData.Instrument2, quantity: 50);
 
         var positionSet = new PositionSet(new[] { positionA, positionB });
 
-        var exchange = new TestExchange(new Dictionary<int, int>
-        {
-            { 1, 1000 },  // 銘柄1の価格: 1000
-            { 2, 2000 }   // 銘柄2の価格: 2000
-        });
+        var exchange = TestData.CreateExchange((1, 1000), (2, 2000));
 
         var amount = positionSet.Amount(exchange);
 

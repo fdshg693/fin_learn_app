@@ -1,18 +1,6 @@
 
 ---
 
-4. Position を sealed にする（低）
-
-他のドメインクラス（PositionSet, Portfolio, Player）は sealed
-ですが、src/MyApp.Core/Position.cs だけ sealed 
-がありません。不変オブジェクトの設計意図に合わせて統一すべきです。
-
-5. テストのセットアップ重複を整理する（低〜中）
-
-各テストファイルで new Instrument(id: 1), new TestExchange(...), new
-Portfolio(...) が繰り返されています。共通のヘルパーメソッドやフィクスチャを導
-入すれば、テストの可読性が向上します。
-
 6. PositionSet.SetQuantity のシグネチャを簡素化する（低）
 
 src/MyApp.Core/PositionSet.cs の SetQuantity(int instrumentId, Instrument

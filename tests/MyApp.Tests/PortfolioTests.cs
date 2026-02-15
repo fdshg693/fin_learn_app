@@ -1,6 +1,5 @@
 namespace MyApp.Tests;
 
-using System.Collections.Generic;
 using MyApp.Core;
 
 public class PortfolioTests
@@ -16,16 +15,10 @@ public class PortfolioTests
     [Fact]
     public void 現金とポジションの合計を計算できる()
     {
-        var instrumentA = new Instrument(id: 1);
-        var instrumentB = new Instrument(id: 2);
-        var exchange = new TestExchange(new Dictionary<int, int>
-        {
-            { 1, 10 },
-            { 2, 20 },
-        });
+        var exchange = TestData.CreateExchange((1, 10), (2, 20));
 
-        var positionA = new Position(instrumentA, quantity: 10);
-        var positionB = new Position(instrumentB, quantity: 5);
+        var positionA = new Position(TestData.Instrument1, quantity: 10);
+        var positionB = new Position(TestData.Instrument2, quantity: 5);
 
         var portfolio = new Portfolio(cash: 1000, positions: new[] { positionA, positionB });
 
@@ -37,12 +30,9 @@ public class PortfolioTests
     [Fact]
     public void 銘柄IDを指定して保有数量を取得できる()
     {
-        var instrumentA = new Instrument(id: 1);
-        var instrumentB = new Instrument(id: 2);
-
-        var positionA1 = new Position(instrumentA, quantity: 10);
-        var positionA2 = new Position(instrumentA, quantity: 5);
-        var positionB = new Position(instrumentB, quantity: 3);
+        var positionA1 = new Position(TestData.Instrument1, quantity: 10);
+        var positionA2 = new Position(TestData.Instrument1, quantity: 5);
+        var positionB = new Position(TestData.Instrument2, quantity: 3);
 
         var portfolio = new Portfolio(cash: 0, positions: new[] { positionA1, positionA2, positionB });
 
@@ -54,12 +44,8 @@ public class PortfolioTests
     [Fact]
     public void 保有数量を超える売却は警告して何もしない()
     {
-        var instrument = new Instrument(id: 1);
-        var exchange = new TestExchange(new Dictionary<int, int>
-        {
-            { 1, 10 },
-        });
-        var position = new Position(instrument, quantity: 5);
+        var exchange = TestData.CreateExchange((1, 10));
+        var position = new Position(TestData.Instrument1, quantity: 5);
         var portfolio = new Portfolio(cash: 1000, positions: new[] { position });
 
         var (resultPortfolio, warning) = portfolio.Sell(exchange, instrumentId: 1, quantity: 10);
@@ -72,12 +58,8 @@ public class PortfolioTests
     [Fact]
     public void 保有数量以内の売却は現金と数量が更新される()
     {
-        var instrument = new Instrument(id: 1);
-        var exchange = new TestExchange(new Dictionary<int, int>
-        {
-            { 1, 10 },
-        });
-        var position = new Position(instrument, quantity: 8);
+        var exchange = TestData.CreateExchange((1, 10));
+        var position = new Position(TestData.Instrument1, quantity: 8);
         var portfolio = new Portfolio(cash: 1000, positions: new[] { position });
 
         var (resultPortfolio, warning) = portfolio.Sell(exchange, instrumentId: 1, quantity: 3);
@@ -90,12 +72,8 @@ public class PortfolioTests
     [Fact]
     public void 現金の範囲内の購入は現金と数量が更新される()
     {
-        var instrument = new Instrument(id: 1);
-        var exchange = new TestExchange(new Dictionary<int, int>
-        {
-            { 1, 10 },
-        });
-        var position = new Position(instrument, quantity: 5);
+        var exchange = TestData.CreateExchange((1, 10));
+        var position = new Position(TestData.Instrument1, quantity: 5);
         var portfolio = new Portfolio(cash: 100, positions: new[] { position });
 
         var (resultPortfolio, warning) = portfolio.Buy(exchange, instrumentId: 1, quantity: 3);
@@ -108,12 +86,8 @@ public class PortfolioTests
     [Fact]
     public void 現金の範囲外の購入は警告して何もしない()
     {
-        var instrument = new Instrument(id: 1);
-        var exchange = new TestExchange(new Dictionary<int, int>
-        {
-            { 1, 10 },
-        });
-        var position = new Position(instrument, quantity: 5);
+        var exchange = TestData.CreateExchange((1, 10));
+        var position = new Position(TestData.Instrument1, quantity: 5);
         var portfolio = new Portfolio(cash: 20, positions: new[] { position });
 
         var (resultPortfolio, warning) = portfolio.Buy(exchange, instrumentId: 1, quantity: 3);
@@ -126,13 +100,8 @@ public class PortfolioTests
     [Fact]
     public void 未保有銘柄の購入は許可され現金と数量が更新される()
     {
-        var exchange = new TestExchange(new Dictionary<int, int>
-        {
-            { 1, 10 },
-            { 2, 20 },
-        });
-        var instrument = new Instrument(id: 1);
-        var position = new Position(instrument, quantity: 5);
+        var exchange = TestData.CreateExchange((1, 10), (2, 20));
+        var position = new Position(TestData.Instrument1, quantity: 5);
         var portfolio = new Portfolio(cash: 200, positions: new[] { position });
 
         var (resultPortfolio, warning) = portfolio.Buy(exchange, instrumentId: 2, quantity: 3);
@@ -145,12 +114,8 @@ public class PortfolioTests
     [Fact]
     public void Sellの数量が0以下の場合は警告して何もしない()
     {
-        var instrument = new Instrument(id: 1);
-        var exchange = new TestExchange(new Dictionary<int, int>
-        {
-            { 1, 10 },
-        });
-        var position = new Position(instrument, quantity: 5);
+        var exchange = TestData.CreateExchange((1, 10));
+        var position = new Position(TestData.Instrument1, quantity: 5);
         var portfolio = new Portfolio(cash: 1000, positions: new[] { position });
 
         var (resultPortfolio, warning) = portfolio.Sell(exchange, instrumentId: 1, quantity: 0);
@@ -163,12 +128,8 @@ public class PortfolioTests
     [Fact]
     public void Buyの数量が0以下の場合は警告して何もしない()
     {
-        var instrument = new Instrument(id: 1);
-        var exchange = new TestExchange(new Dictionary<int, int>
-        {
-            { 1, 10 },
-        });
-        var position = new Position(instrument, quantity: 5);
+        var exchange = TestData.CreateExchange((1, 10));
+        var position = new Position(TestData.Instrument1, quantity: 5);
         var portfolio = new Portfolio(cash: 1000, positions: new[] { position });
 
         var (resultPortfolio, warning) = portfolio.Buy(exchange, instrumentId: 1, quantity: -1);

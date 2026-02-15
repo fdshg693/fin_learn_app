@@ -1,6 +1,5 @@
 namespace MyApp.Tests;
 
-using System.Collections.Generic;
 using MyApp.Core;
 
 public class PlayerTests
@@ -17,10 +16,7 @@ public class PlayerTests
     [Fact]
     public void ポジションを購入できる()
     {
-        var exchange = new TestExchange(new Dictionary<int, int>
-        {
-            { 1, 10 },
-        });
+        var exchange = TestData.CreateExchange((1, 10));
         var player = new Player();
 
         var (result, warning) = player.Buy(exchange, instrumentId: 1, quantity: 3);
