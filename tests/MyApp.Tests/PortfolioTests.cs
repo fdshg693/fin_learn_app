@@ -179,5 +179,4 @@ public class PortfolioTests
 
         Assert.Equal(Messages.InsufficientCashToBuy, warning);
         Assert.Equal(70, resultPortfolio.Cash);
-    }
-}
+    }}

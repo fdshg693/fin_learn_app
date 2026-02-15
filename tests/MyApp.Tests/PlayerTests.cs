@@ -67,4 +67,20 @@ public class PlayerTests
         // 評価額 = 現金9000 + 株100×15 = 10500、損益 = 10500 - 10000 = 500
         Assert.Equal(500, bought.ProfitLoss(currentExchange));
     }
+
+    [Fact]
+    public void 待つとポートフォリオが変わらない()
+    {
+        var exchange = TestData.CreateExchange((1, 10));
+        var player = new Player();
+        var (bought, _) = player.Buy(exchange, instrumentId: 1, quantity: 3);
+
+        var (result, warning) = bought.Wait();
+
+        Assert.Null(warning);
+        Assert.Equal(9970, result.Portfolio.Cash);
+        Assert.Equal(3, result.Portfolio.QuantityOf(instrumentId: 1));
+        // 元のプレイヤーは不変
+        Assert.Equal(9970, bought.Portfolio.Cash);
+    }
 }

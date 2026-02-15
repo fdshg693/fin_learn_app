@@ -20,7 +20,7 @@
 | 買う（即時） | 済 | `Portfolio.Buy` / `Player.Buy` |
 | 売る（即時） | 済 | `Portfolio.Sell` / `Player.Sell` |
 | 手数料の徴収 | 済 | `Portfolio.Trade` 内で加減算 |
-| 待つ（パス） | 未着手 | — |
+| 待つ（パス） | 済 | `Player.Wait` |
 
 ## ビジネスルール
 

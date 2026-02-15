@@ -36,6 +36,11 @@ public sealed class Player
         return (new Player(resultPortfolio), null);
     }
 
+    public (Player Result, string? Warning) Wait()
+    {
+        return (this, null);
+    }
+
     public int ProfitLoss(IExchange exchange)
     {
         return Portfolio.TotalAmount(exchange) - InitialCash;
