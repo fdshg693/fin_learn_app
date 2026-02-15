@@ -59,7 +59,8 @@ public sealed class Portfolio
         }
 
         var cost = price * quantity;
-        if (isBuy && _cash < cost)
+        var fee = exchange.Fee;
+        if (isBuy && _cash < cost + fee)
         {
             return (this, Messages.InsufficientCashToBuy);
         }
@@ -69,7 +70,7 @@ public sealed class Portfolio
             : _positionSet.GetExistingInstrument(instrumentId);
         var newQuantity = isBuy ? totalQuantity + quantity : totalQuantity - quantity;
         var newPositions = _positionSet.SetQuantity(instrument, newQuantity);
-        var newCash = _cash + (isBuy ? -cost : cost);
+        var newCash = _cash + (isBuy ? -(cost + fee) : cost - fee);
 
         return (new Portfolio(newCash, newPositions.Positions), null);
     }

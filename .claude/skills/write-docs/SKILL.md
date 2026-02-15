@@ -25,6 +25,6 @@ Whenever you find big folders which contain no `CLAUDE.md`, always add `CLAUDE.m
 Place `CLAUDE.md` at the narrowest possible scope.
 Content specific to `backend` should be in `backend/CLAUDE.md`, not in the root `CLAUDE.md`.
 A `folder/CLAUDE.md` should only contain content not already covered by `CLAUDE.md` files in its subfolders, or brief summaries of each subfolder (so it's easy to determine what information exists where).
-Also, keep each `CLAUDE.md` to around 150 lines. If splitting into subfolders is not possible or not appropriate, create dedicated content files under {{filepath}} and import them from `CLAUDE.md`.
+Also, keep each `CLAUDE.md` to around 150 lines. If splitting into subfolders is not possible or not appropriate, create dedicated content files under `ai/docs` and import them from `CLAUDE.md`.
 
 In `src/CLAUDE.md`, you can import the contents of `ai/docs/feature1/overview.md` by writing @./../ai/docs/feature1/overview.md (omit backticks).

@@ -6,4 +6,5 @@ namespace MyApp.Core;
 public interface IExchange
 {
     int PriceOf(int instrumentId);
+    int Fee { get; }
 }

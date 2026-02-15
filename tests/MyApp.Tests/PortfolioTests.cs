@@ -138,4 +138,46 @@ public class PortfolioTests
         Assert.Equal(1000, resultPortfolio.Cash);
         Assert.Equal(5, resultPortfolio.QuantityOf(instrumentId: 1));
     }
+
+    [Fact]
+    public void 購入時に手数料が差し引かれる()
+    {
+        var exchange = TestData.CreateExchange(fee: 50, (1, 10));
+        var portfolio = new Portfolio(cash: 1000, positions: new Position[] { });
+
+        var (resultPortfolio, warning) = portfolio.Buy(exchange, instrumentId: 1, quantity: 3);
+
+        Assert.Null(warning);
+        // 株価10 × 3株 = 30 + 手数料50 = 80
+        Assert.Equal(920, resultPortfolio.Cash);
+        Assert.Equal(3, resultPortfolio.QuantityOf(instrumentId: 1));
+    }
+
+    [Fact]
+    public void 売却時に手数料が差し引かれる()
+    {
+        var exchange = TestData.CreateExchange(fee: 50, (1, 10));
+        var position = new Position(TestData.Instrument1, quantity: 5);
+        var portfolio = new Portfolio(cash: 1000, positions: new[] { position });
+
+        var (resultPortfolio, warning) = portfolio.Sell(exchange, instrumentId: 1, quantity: 3);
+
+        Assert.Null(warning);
+        // 現金1000 + 株価10 × 3株 = 30 - 手数料50 = 980
+        Assert.Equal(980, resultPortfolio.Cash);
+        Assert.Equal(2, resultPortfolio.QuantityOf(instrumentId: 1));
+    }
+
+    [Fact]
+    public void 手数料込みで現金が不足する購入は警告して何もしない()
+    {
+        var exchange = TestData.CreateExchange(fee: 50, (1, 10));
+        var portfolio = new Portfolio(cash: 70, positions: new Position[] { });
+
+        // 株価10 × 3株 = 30 + 手数料50 = 80 > 現金70
+        var (resultPortfolio, warning) = portfolio.Buy(exchange, instrumentId: 1, quantity: 3);
+
+        Assert.Equal(Messages.InsufficientCashToBuy, warning);
+        Assert.Equal(70, resultPortfolio.Cash);
+    }
 }
