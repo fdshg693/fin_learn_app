@@ -14,6 +14,42 @@ public sealed class PositionSet : IEquatable<PositionSet>
 
     public IReadOnlyList<Position> Positions => _positions;
 
+    public int QuantityOf(int instrumentId)
+    {
+        return _positions
+            .Where(position => position.Instrument.Id == instrumentId)
+            .Sum(position => position.Quantity);
+    }
+
+    public Instrument GetExistingInstrument(int instrumentId)
+    {
+        return _positions
+            .First(position => position.Instrument.Id == instrumentId)
+            .Instrument;
+    }
+
+    public Instrument GetOrCreateInstrument(int instrumentId)
+    {
+        return _positions
+            .FirstOrDefault(position => position.Instrument.Id == instrumentId)
+            ?.Instrument
+            ?? new Instrument(instrumentId);
+    }
+
+    public PositionSet SetQuantity(int instrumentId, Instrument instrument, int quantity)
+    {
+        var newPositions = _positions
+            .Where(position => position.Instrument.Id != instrumentId)
+            .ToList();
+
+        if (quantity > 0)
+        {
+            newPositions.Add(new Position(instrument, quantity));
+        }
+
+        return new PositionSet(newPositions);
+    }
+
     public PositionSet Add(Position position)
     {
         return new PositionSet(_positions.Append(position));
@@ -32,6 +68,11 @@ public sealed class PositionSet : IEquatable<PositionSet>
     public static PositionSet operator +(Position left, PositionSet right)
     {
         return right.Add(left);
+    }
+
+    public int Amount(IExchange exchange)
+    {
+        return _positions.Sum(position => position.Amount(exchange));
     }
 
     private static IReadOnlyList<Position> Normalize(IEnumerable<Position> positions)

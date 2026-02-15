@@ -20,17 +20,29 @@ public sealed class Portfolio
 
     public int TotalAmount(IExchange exchange)
     {
-        return _cash + _positionSet.Positions.Sum(position => position.Amount(exchange));
+        return _cash + _positionSet.Amount(exchange);
     }
 
     public int QuantityOf(int instrumentId)
     {
-        return _positionSet.Positions
-            .Where(position => position.Instrument.Id == instrumentId)
-            .Sum(position => position.Quantity);
+        return _positionSet.QuantityOf(instrumentId);
     }
 
     public (Portfolio Result, string? Warning) Sell(IExchange exchange, int instrumentId, int quantity)
+    {
+        return Trade(exchange, instrumentId, quantity, isBuy: false);
+    }
+
+    public (Portfolio Result, string? Warning) Buy(IExchange exchange, int instrumentId, int quantity)
+    {
+        return Trade(exchange, instrumentId, quantity, isBuy: true);
+    }
+
+    private (Portfolio Result, string? Warning) Trade(
+        IExchange exchange,
+        int instrumentId,
+        int quantity,
+        bool isBuy)
     {
         if (quantity <= 0)
         {
@@ -43,58 +55,25 @@ public sealed class Portfolio
         }
 
         var totalQuantity = QuantityOf(instrumentId);
-        if (totalQuantity < quantity)
+        if (!isBuy && totalQuantity < quantity)
         {
             return (this, "保有数量を超えて売却できません");
         }
 
-        var instrument = _positionSet.Positions
-            .First(position => position.Instrument.Id == instrumentId)
-            .Instrument;
-        var remainingQuantity = totalQuantity - quantity;
-        var newPositions = _positionSet.Positions
-            .Where(position => position.Instrument.Id != instrumentId)
-            .ToList();
-
-        if (remainingQuantity > 0)
-        {
-            newPositions.Add(new Position(instrument, remainingQuantity));
-        }
-
-        var newCash = _cash + price * quantity;
-        return (new Portfolio(newCash, newPositions), null);
-    }
-
-    public (Portfolio Result, string? Warning) Buy(IExchange exchange, int instrumentId, int quantity)
-    {
-        if (quantity <= 0)
-        {
-            return (this, "数量は0より大きい必要があります");
-        }
-
-        if (!TryGetPrice(exchange, instrumentId, out var price, out var priceWarning))
-        {
-            return (this, priceWarning);
-        }
-
-        var instrument = _positionSet.Positions
-            .FirstOrDefault(position => position.Instrument.Id == instrumentId)
-            ?.Instrument
-            ?? new Instrument(instrumentId);
         var cost = price * quantity;
-        if (_cash < cost)
+        if (isBuy && _cash < cost)
         {
             return (this, "現金が不足して購入できません");
         }
 
-        var totalQuantity = QuantityOf(instrumentId) + quantity;
-        var newPositions = _positionSet.Positions
-            .Where(position => position.Instrument.Id != instrumentId)
-            .ToList();
-        newPositions.Add(new Position(instrument, totalQuantity));
+        var instrument = isBuy
+            ? _positionSet.GetOrCreateInstrument(instrumentId)
+            : _positionSet.GetExistingInstrument(instrumentId);
+        var newQuantity = isBuy ? totalQuantity + quantity : totalQuantity - quantity;
+        var newPositions = _positionSet.SetQuantity(instrumentId, instrument, newQuantity);
+        var newCash = _cash + (isBuy ? -cost : cost);
 
-        var newCash = _cash - cost;
-        return (new Portfolio(newCash, newPositions), null);
+        return (new Portfolio(newCash, newPositions.Positions), null);
     }
 
     private static bool TryGetPrice(
