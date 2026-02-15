@@ -1,7 +1,5 @@
 namespace MyApp.Core;
 
-using System.Collections.Generic;
-
 /// <summary>
 /// 複数ポジションの集合
 /// </summary>
@@ -49,7 +47,7 @@ public sealed class Portfolio
             return (this, "数量は0より大きい必要があります");
         }
 
-        if (!TryGetPrice(exchange, instrumentId, out var price, out var priceWarning))
+        if (!exchange.TryGetPrice(instrumentId, out var price, out var priceWarning))
         {
             return (this, priceWarning);
         }
@@ -74,32 +72,5 @@ public sealed class Portfolio
         var newCash = _cash + (isBuy ? -cost : cost);
 
         return (new Portfolio(newCash, newPositions.Positions), null);
-    }
-
-    private static bool TryGetPrice(
-        IExchange exchange,
-        int instrumentId,
-        out int price,
-        out string? warning)
-    {
-        try
-        {
-            price = exchange.PriceOf(instrumentId);
-        }
-        catch (KeyNotFoundException)
-        {
-            price = 0;
-            warning = "価格が取得できません";
-            return false;
-        }
-
-        if (price <= 0)
-        {
-            warning = "価格は0より大きい必要があります";
-            return false;
-        }
-
-        warning = null;
-        return true;
     }
 }

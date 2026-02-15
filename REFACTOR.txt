@@ -1,29 +1,5 @@
 
 ---
-おすすめリファクタ一覧
-
-1. Player の可変設計を見直す（高）
-
-src/MyApp.Core/Player.cs は Portfolio プロパティを private set
-で変更しており、CLAUDE.md
-に記載の「ドメインオブジェクトは不変」という原則に反しています。Buy が this
-を返しつつ内部状態も変えるため、呼び出し側にとって混乱しやすい設計です。
-
-- 案A: Player も不変にし、Buy が新しい Player を返す
-- 案B: 返り値を string? (警告のみ) にし、可変であることを明示する
-
-2. TryGetPrice の重複を排除する（中）
-
-src/MyApp.Core/Position.cs#L37-L50 と src/MyApp.Core/Portfolio.cs#L72-L93 に
-TryGetPrice がほぼ同じロジックで存在しています。IExchange
-の拡張メソッドやヘルパーに抽出できます。
-
-3. Instrument に等値性を実装する（中）
-
-src/MyApp.Core/Instrument.cs は Equals/GetHashCode
-を持たず、他のクラスでは常に Instrument.Id 
-で比較しています。IEquatable<Instrument> を実装すれば、各所で .Id 
-を参照する必要がなくなり、コードが簡潔になります。
 
 4. Position を sealed にする（低）
 

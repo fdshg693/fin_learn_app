@@ -78,13 +78,12 @@ public sealed class PositionSet : IEquatable<PositionSet>
     private static IReadOnlyList<Position> Normalize(IEnumerable<Position> positions)
     {
         return positions
-            .GroupBy(position => position.Instrument.Id)
-            .OrderBy(group => group.Key)
+            .GroupBy(position => position.Instrument)
+            .OrderBy(group => group.Key.Id)
             .Select(group =>
             {
-                var first = group.First();
                 var totalQuantity = group.Sum(position => position.Quantity);
-                return new Position(first.Instrument, totalQuantity);
+                return new Position(group.Key, totalQuantity);
             })
             .ToList()
             .AsReadOnly();

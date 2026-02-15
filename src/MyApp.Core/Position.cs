@@ -1,7 +1,5 @@
 namespace MyApp.Core;
 
-using System.Collections.Generic;
-
 /// <summary>
 /// 銘柄の保有（銘柄IDと数量）
 /// </summary>
@@ -21,7 +19,7 @@ public class Position : IEquatable<Position>
     public Instrument Instrument { get; }
     public int Amount(IExchange exchange)
     {
-        if (!TryGetPrice(exchange, Instrument.Id, out var price))
+        if (!exchange.TryGetPrice(Instrument.Id, out var price, out _))
         {
             return 0;
         }
@@ -39,7 +37,7 @@ public class Position : IEquatable<Position>
         {
             return false;
         }
-        return Instrument.Id == other.Instrument.Id
+        return Instrument.Equals(other.Instrument)
             && Quantity == other.Quantity;
     }
 
@@ -50,22 +48,8 @@ public class Position : IEquatable<Position>
     public override int GetHashCode()
     {
         var hash = new HashCode();
-        hash.Add(Instrument.Id);
+        hash.Add(Instrument);
         hash.Add(Quantity);
         return hash.ToHashCode();
-    }
-
-    private static bool TryGetPrice(IExchange exchange, int instrumentId, out int price)
-    {
-        try
-        {
-            price = exchange.PriceOf(instrumentId);
-        }
-        catch (KeyNotFoundException)
-        {
-            price = 0;
-            return false;
-        }
-        return price > 0;
     }
 }
