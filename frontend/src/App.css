@@ -1,0 +1,89 @@
+#root {
+  min-height: 100vh;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 2rem;
+  background: #0b1120;
+  border-bottom: 1px solid #1e293b;
+}
+
+.app-title {
+  font-weight: 700;
+  font-size: 1.125rem;
+}
+
+.app-header nav {
+  display: flex;
+  gap: 1rem;
+}
+
+.app-header a {
+  color: #cbd5f5;
+  text-decoration: none;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  transition: background 0.2s ease;
+}
+
+.app-header a.active {
+  background: #1e293b;
+  color: #f8fafc;
+}
+
+.app-header a:hover {
+  background: #1f2937;
+}
+
+.app-main {
+  flex: 1;
+  padding: 2rem;
+  max-width: 960px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+section {
+  background: #111827;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.4);
+}
+
+section h1 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+}
+
+section ul {
+  padding-left: 1.25rem;
+}
+
+.actions {
+  margin: 1rem 0;
+}
+
+.actions a {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background: #2563eb;
+  color: white;
+  border-radius: 8px;
+  text-decoration: none;
+}
+
+.actions a:hover {
+  background: #1d4ed8;
+}
