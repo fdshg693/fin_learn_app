@@ -3,12 +3,19 @@ namespace MyApp.Core;
 public sealed class Game
 {
     public Game(IOrderPlacer orderPlacer, IReadOnlyList<Instrument> instruments)
-        : this(new Player(), turn: 1, new OrderBook(), nextOrderId: 1, orderPlacer, instruments)
+        : this(new Player(), turn: 1, new OrderBook(), nextOrderId: 1,
+               orderPlacer, instruments, new Market())
+    {
+    }
+
+    public Game(IOrderPlacer orderPlacer, IReadOnlyList<Instrument> instruments, IMarket market)
+        : this(new Player(), turn: 1, new OrderBook(), nextOrderId: 1,
+               orderPlacer, instruments, market)
     {
     }
 
     private Game(Player player, int turn, OrderBook orderBook, int nextOrderId,
-        IOrderPlacer orderPlacer, IReadOnlyList<Instrument> instruments)
+        IOrderPlacer orderPlacer, IReadOnlyList<Instrument> instruments, IMarket market)
     {
         Player = player;
         Turn = turn;
@@ -16,6 +23,7 @@ public sealed class Game
         NextOrderId = nextOrderId;
         OrderPlacer = orderPlacer;
         Instruments = instruments;
+        Market = market;
     }
 
     public int Turn { get; }
@@ -24,6 +32,7 @@ public sealed class Game
     public int NextOrderId { get; }
     public IOrderPlacer OrderPlacer { get; }
     public IReadOnlyList<Instrument> Instruments { get; }
+    public IMarket Market { get; }
 
     public (Game Result, string? Warning) Buy(IExchange exchange, int instrumentId, int quantity)
     {
@@ -33,20 +42,24 @@ public sealed class Game
         // 1. コンピューター注文を生成
         var (bookWithOrders, nextId) = OrderPlacer.PlaceOrders(OrderBook, exchange, Instruments, NextOrderId);
 
-        // 2. 注文帳で約定（プレイヤーの買い注文 vs コンピューターの売り注文）
+        // 2. プレイヤーの買い注文を生成
+        var instrument = new Instrument(instrumentId);
         var buyPrice = exchange.PriceOf(instrumentId);
-        var fillResult = bookWithOrders.FillBuy(instrumentId, quantity, buyPrice);
+        var order = Player.CreateBuyOrder(nextId, instrument, quantity, buyPrice);
 
-        if (fillResult.FilledQuantity == 0)
+        // 3. 市場で約定
+        var matchResult = Market.Execute(bookWithOrders, order, exchange);
+
+        if (matchResult.Trade.FilledQuantity == 0)
             return (this, Messages.NoMatchingSellOrders);
 
-        // 3. プレイヤーのポートフォリオを更新
-        var (resultPlayer, warning) = Player.Buy(
-            instrumentId, fillResult.FilledQuantity, fillResult.TotalAmount, exchange.Fee);
+        // 4. プレイヤーのポートフォリオを更新
+        var (resultPlayer, warning) = Player.ApplyTrade(matchResult.Trade);
         if (warning is not null)
             return (this, warning);
 
-        return (new Game(resultPlayer, Turn + 1, fillResult.UpdatedBook, nextId, OrderPlacer, Instruments), null);
+        return (new Game(resultPlayer, Turn + 1, matchResult.UpdatedBook,
+            nextId + 1, OrderPlacer, Instruments, Market), null);
     }
 
     public (Game Result, string? Warning) Sell(IExchange exchange, int instrumentId, int quantity)
@@ -61,30 +74,31 @@ public sealed class Game
         // 1. コンピューター注文を生成
         var (bookWithOrders, nextId) = OrderPlacer.PlaceOrders(OrderBook, exchange, Instruments, NextOrderId);
 
-        // 2. 最高買い注文価格を取得して売り約定
-        var buyOrders = bookWithOrders.BuyOrders(instrumentId);
-        if (buyOrders.Count == 0)
+        // 2. プレイヤーの売り注文を生成
+        var instrument = new Instrument(instrumentId);
+        var sellPrice = exchange.PriceOf(instrumentId);
+        var order = Player.CreateSellOrder(nextId, instrument, quantity, sellPrice);
+
+        // 3. 市場で約定（Marketが最高買い注文価格を自動決定）
+        var matchResult = Market.Execute(bookWithOrders, order, exchange);
+
+        if (matchResult.Trade.FilledQuantity == 0)
             return (this, Messages.NoMatchingBuyOrders);
 
-        var bestBuyPrice = buyOrders[0].Price; // 降順ソート済み
-        var fillResult = bookWithOrders.FillSell(instrumentId, quantity, bestBuyPrice);
-
-        if (fillResult.FilledQuantity == 0)
-            return (this, Messages.NoMatchingBuyOrders);
-
-        // 3. プレイヤーのポートフォリオを更新
-        var (resultPlayer, warning) = Player.Sell(
-            instrumentId, fillResult.FilledQuantity, fillResult.TotalAmount, exchange.Fee);
+        // 4. プレイヤーのポートフォリオを更新
+        var (resultPlayer, warning) = Player.ApplyTrade(matchResult.Trade);
         if (warning is not null)
             return (this, warning);
 
-        return (new Game(resultPlayer, Turn + 1, fillResult.UpdatedBook, nextId, OrderPlacer, Instruments), null);
+        return (new Game(resultPlayer, Turn + 1, matchResult.UpdatedBook,
+            nextId + 1, OrderPlacer, Instruments, Market), null);
     }
 
     public (Game Result, string? Warning) Wait(IExchange exchange)
     {
         // コンピューター注文を生成してからターンを進める
         var (bookWithOrders, nextId) = OrderPlacer.PlaceOrders(OrderBook, exchange, Instruments, NextOrderId);
-        return (new Game(Player, Turn + 1, bookWithOrders, nextId, OrderPlacer, Instruments), null);
+        return (new Game(Player, Turn + 1, bookWithOrders, nextId,
+            OrderPlacer, Instruments, Market), null);
     }
 }

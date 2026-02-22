@@ -16,17 +16,29 @@ public sealed class Player
 
     public Portfolio Portfolio { get; }
 
-    public (Player Result, string? Warning) Buy(int instrumentId, int filledQuantity, int totalCost, int fee)
+    private const string PlayerId = "player";
+
+    public Order CreateBuyOrder(int orderId, Instrument instrument, int quantity, int price)
     {
-        var (resultPortfolio, warning) = Portfolio.Buy(instrumentId, filledQuantity, totalCost, fee);
-        if (warning is not null)
-            return (this, warning);
-        return (new Player(resultPortfolio), null);
+        return new Order(orderId, PlayerId, instrument, OrderSide.Buy, quantity, price);
     }
 
-    public (Player Result, string? Warning) Sell(int instrumentId, int filledQuantity, int totalProceeds, int fee)
+    public Order CreateSellOrder(int orderId, Instrument instrument, int quantity, int price)
     {
-        var (resultPortfolio, warning) = Portfolio.Sell(instrumentId, filledQuantity, totalProceeds, fee);
+        return new Order(orderId, PlayerId, instrument, OrderSide.Sell, quantity, price);
+    }
+
+    public (Player Result, string? Warning) ApplyTrade(TradeResult trade)
+    {
+        var (resultPortfolio, warning) = trade.Side switch
+        {
+            OrderSide.Buy => Portfolio.Buy(
+                trade.InstrumentId, trade.FilledQuantity, trade.TotalAmount, trade.Fee),
+            OrderSide.Sell => Portfolio.Sell(
+                trade.InstrumentId, trade.FilledQuantity, trade.TotalAmount, trade.Fee),
+            _ => throw new ArgumentOutOfRangeException(nameof(trade))
+        };
+
         if (warning is not null)
             return (this, warning);
         return (new Player(resultPortfolio), null);
