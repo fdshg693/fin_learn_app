@@ -3,8 +3,8 @@
 - **Framework:** .NET 9, C# with nullable reference types
 - **Test framework:** xUnit
 - **Solution:** `fin_learn_app.sln` with two projects:
-  - `src/MyApp.Core` — Domain model (no external dependencies)
-  - `tests/MyApp.Tests` — Unit tests
+  - `src/FinLearn.Core` — Domain model (no external dependencies)
+  - `tests/FinLearn.Tests` — Unit tests
 
 ### Domain Model
 
@@ -20,7 +20,7 @@ Key models (see `docs/DDD.md` for full domain glossary):
 - **TurnProcessor (ターン処理)** — Domain service: orchestrates turn progression (Buy/Sell/Wait actions, computer order generation, market matching, portfolio update)
 - **IExchange (取引所)** — Interface for price lookups (dependency injection)
 - **Order (注文)** — Buy/sell order with trader, instrument, quantity, price
-- **OrderBook (注文帳)** — Immutable order book with price-based matching (see `src/MyApp.Core/CLAUDE.md` for details)
+- **OrderBook (注文帳)** — Immutable order book with price-based matching (see `src/FinLearn.Core/CLAUDE.md` for details)
 - **FillResult (約定結果)** — Result of order matching: filled quantity, total amount, updated book
 
 ### Design Patterns

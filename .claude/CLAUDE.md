@@ -18,7 +18,7 @@ dotnet build
 dotnet test
 
 # TDD watch mode (recommended during development)
-cd tests/MyApp.Tests && dotnet watch test
+cd tests/FinLearn.Tests && dotnet watch test
 ```
 
 ## Documentation

@@ -5,11 +5,11 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyApp.Core", "src\MyApp.Core\MyApp.Core.csproj", "{78777A8B-7825-4974-BC03-1581DAEA86B2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FinLearn.Core", "src\FinLearn.Core\FinLearn.Core.csproj", "{78777A8B-7825-4974-BC03-1581DAEA86B2}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyApp.Tests", "tests\MyApp.Tests\MyApp.Tests.csproj", "{61497A19-A512-423B-BD29-1A63E9C61A14}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FinLearn.Tests", "tests\FinLearn.Tests\FinLearn.Tests.csproj", "{61497A19-A512-423B-BD29-1A63E9C61A14}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
