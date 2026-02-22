@@ -17,6 +17,9 @@ Key models (see `docs/DDD.md` for full domain glossary):
 - **Portfolio (ポートフォリオ)** — Aggregate root: cash + positions, with Buy/Sell trade logic
 - **Player (プレイヤー)** — Investor who owns a portfolio
 - **IExchange (取引所)** — Interface for price lookups (dependency injection)
+- **Order (注文)** — Buy/sell order with trader, instrument, quantity, price
+- **OrderBook (注文帳)** — Immutable order book with price-based matching (see `src/MyApp.Core/CLAUDE.md` for details)
+- **FillResult (約定結果)** — Result of order matching: filled quantity, total amount, updated book
 
 ### Design Patterns
 

@@ -115,7 +115,7 @@ public class OrderBookTests
         var book = new OrderBook()
             .Add(new Order(1, "computer", new Instrument(1), OrderSide.Sell, 5, 100));
 
-        var result = book.FillBuy(instrumentId: 1, quantity: 3);
+        var result = book.FillBuy(instrumentId: 1, quantity: 3, buyPrice: 100);
 
         Assert.Equal(3, result.FilledQuantity);
         Assert.Equal(300, result.TotalAmount); // 3 * 100
@@ -133,7 +133,7 @@ public class OrderBookTests
         var book = new OrderBook()
             .Add(new Order(1, "computer", new Instrument(1), OrderSide.Sell, 3, 100));
 
-        var result = book.FillBuy(instrumentId: 1, quantity: 3);
+        var result = book.FillBuy(instrumentId: 1, quantity: 3, buyPrice: 100);
 
         Assert.Equal(3, result.FilledQuantity);
         Assert.Equal(300, result.TotalAmount);
@@ -147,7 +147,7 @@ public class OrderBookTests
             .Add(new Order(1, "computer", new Instrument(1), OrderSide.Sell, 3, 100))
             .Add(new Order(2, "computer", new Instrument(1), OrderSide.Sell, 5, 110));
 
-        var result = book.FillBuy(instrumentId: 1, quantity: 5);
+        var result = book.FillBuy(instrumentId: 1, quantity: 5, buyPrice: 110);
 
         Assert.Equal(5, result.FilledQuantity);
         Assert.Equal(520, result.TotalAmount); // 3*100 + 2*110
@@ -165,7 +165,7 @@ public class OrderBookTests
         var book = new OrderBook()
             .Add(new Order(1, "computer", new Instrument(1), OrderSide.Sell, 2, 100));
 
-        var result = book.FillBuy(instrumentId: 1, quantity: 5);
+        var result = book.FillBuy(instrumentId: 1, quantity: 5, buyPrice: 100);
 
         Assert.Equal(2, result.FilledQuantity);
         Assert.Equal(200, result.TotalAmount);
@@ -177,7 +177,7 @@ public class OrderBookTests
     {
         var book = new OrderBook();
 
-        var result = book.FillBuy(instrumentId: 1, quantity: 3);
+        var result = book.FillBuy(instrumentId: 1, quantity: 3, buyPrice: 100);
 
         Assert.Equal(0, result.FilledQuantity);
         Assert.Equal(0, result.TotalAmount);
@@ -190,7 +190,7 @@ public class OrderBookTests
             .Add(new Order(1, "computer", new Instrument(1), OrderSide.Sell, 2, 200))
             .Add(new Order(2, "computer", new Instrument(1), OrderSide.Sell, 3, 100));
 
-        var result = book.FillBuy(instrumentId: 1, quantity: 3);
+        var result = book.FillBuy(instrumentId: 1, quantity: 3, buyPrice: 200);
 
         Assert.Equal(3, result.FilledQuantity);
         Assert.Equal(300, result.TotalAmount); // 3*100（安い方から消化）
@@ -210,10 +210,10 @@ public class OrderBookTests
         var book = new OrderBook()
             .Add(new Order(1, "computer", new Instrument(1), OrderSide.Buy, 5, 95));
 
-        var result = book.FillSell(instrumentId: 1, quantity: 3);
+        var result = book.FillSell(instrumentId: 1, quantity: 3, sellPrice: 90);
 
         Assert.Equal(3, result.FilledQuantity);
-        Assert.Equal(285, result.TotalAmount); // 3 * 95
+        Assert.Equal(270, result.TotalAmount); // 3 * 90（約定価格は売り注文の価格）
 
         var remainingBuys = result.UpdatedBook.BuyOrders(instrumentId: 1);
         Assert.Single(remainingBuys);
@@ -227,10 +227,10 @@ public class OrderBookTests
             .Add(new Order(1, "computer", new Instrument(1), OrderSide.Buy, 3, 100))
             .Add(new Order(2, "computer", new Instrument(1), OrderSide.Buy, 5, 90));
 
-        var result = book.FillSell(instrumentId: 1, quantity: 5);
+        var result = book.FillSell(instrumentId: 1, quantity: 5, sellPrice: 85);
 
         Assert.Equal(5, result.FilledQuantity);
-        Assert.Equal(480, result.TotalAmount); // 3*100 + 2*90
+        Assert.Equal(425, result.TotalAmount); // 5 * 85（約定価格は売り注文の価格）
 
         var remainingBuys = result.UpdatedBook.BuyOrders(instrumentId: 1);
         Assert.Single(remainingBuys);
@@ -243,7 +243,7 @@ public class OrderBookTests
     {
         var book = new OrderBook();
 
-        var result = book.FillSell(instrumentId: 1, quantity: 3);
+        var result = book.FillSell(instrumentId: 1, quantity: 3, sellPrice: 100);
 
         Assert.Equal(0, result.FilledQuantity);
         Assert.Equal(0, result.TotalAmount);
@@ -256,10 +256,10 @@ public class OrderBookTests
             .Add(new Order(1, "computer", new Instrument(1), OrderSide.Buy, 2, 80))
             .Add(new Order(2, "computer", new Instrument(1), OrderSide.Buy, 3, 100));
 
-        var result = book.FillSell(instrumentId: 1, quantity: 2);
+        var result = book.FillSell(instrumentId: 1, quantity: 2, sellPrice: 80);
 
         Assert.Equal(2, result.FilledQuantity);
-        Assert.Equal(200, result.TotalAmount); // 2*100（高い方から消化）
+        Assert.Equal(160, result.TotalAmount); // 2*80（約定価格は売り注文の価格）
 
         var remainingBuys = result.UpdatedBook.BuyOrders(instrumentId: 1);
         Assert.Equal(2, remainingBuys.Count);
@@ -275,10 +275,10 @@ public class OrderBookTests
         var book = new OrderBook()
             .Add(new Order(1, "computer", new Instrument(1), OrderSide.Buy, 2, 95));
 
-        var result = book.FillSell(instrumentId: 1, quantity: 5);
+        var result = book.FillSell(instrumentId: 1, quantity: 5, sellPrice: 90);
 
         Assert.Equal(2, result.FilledQuantity);
-        Assert.Equal(190, result.TotalAmount);
+        Assert.Equal(180, result.TotalAmount); // 2 * 90（約定価格は売り注文の価格）
         Assert.Empty(result.UpdatedBook.BuyOrders(instrumentId: 1));
     }
 
@@ -302,7 +302,7 @@ public class OrderBookTests
         var book = new OrderBook()
             .Add(new Order(1, "computer", new Instrument(1), OrderSide.Sell, 5, 100));
 
-        var result = book.FillBuy(instrumentId: 1, quantity: 3);
+        var result = book.FillBuy(instrumentId: 1, quantity: 3, buyPrice: 100);
 
         // 元の注文帳は変わらない
         Assert.Equal(5, book.SellOrders(instrumentId: 1)[0].Quantity);
@@ -319,12 +319,93 @@ public class OrderBookTests
             .Add(new Order(1, "computer", new Instrument(1), OrderSide.Sell, 5, 100))
             .Add(new Order(2, "computer", new Instrument(1), OrderSide.Buy, 3, 90));
 
-        var result = book.FillBuy(instrumentId: 1, quantity: 2);
+        var result = book.FillBuy(instrumentId: 1, quantity: 2, buyPrice: 100);
 
         // 売り注文は消化される
         Assert.Equal(3, result.UpdatedBook.SellOrders(instrumentId: 1)[0].Quantity);
         // 買い注文はそのまま
         Assert.Single(result.UpdatedBook.BuyOrders(instrumentId: 1));
         Assert.Equal(3, result.UpdatedBook.BuyOrders(instrumentId: 1)[0].Quantity);
+    }
+
+    // --- 約定の価格判定 ---
+
+    [Fact]
+    public void 買い約定_買い価格以下の売り注文のみ約定する()
+    {
+        var book = new OrderBook()
+            .Add(new Order(1, "computer", new Instrument(1), OrderSide.Sell, 3, 90))
+            .Add(new Order(2, "computer", new Instrument(1), OrderSide.Sell, 3, 100))
+            .Add(new Order(3, "computer", new Instrument(1), OrderSide.Sell, 3, 110));
+
+        var result = book.FillBuy(instrumentId: 1, quantity: 10, buyPrice: 100);
+
+        // 90と100は約定、110は約定しない
+        Assert.Equal(6, result.FilledQuantity);
+        Assert.Equal(570, result.TotalAmount); // 3*90 + 3*100
+
+        // 110の売り注文のみ残る
+        var remainingSells = result.UpdatedBook.SellOrders(instrumentId: 1);
+        Assert.Single(remainingSells);
+        Assert.Equal(110, remainingSells[0].Price);
+    }
+
+    [Fact]
+    public void 買い約定_全ての売り注文が買い価格より高い場合は約定しない()
+    {
+        var book = new OrderBook()
+            .Add(new Order(1, "computer", new Instrument(1), OrderSide.Sell, 5, 200));
+
+        var result = book.FillBuy(instrumentId: 1, quantity: 3, buyPrice: 100);
+
+        Assert.Equal(0, result.FilledQuantity);
+        Assert.Equal(0, result.TotalAmount);
+        Assert.Single(result.UpdatedBook.SellOrders(instrumentId: 1));
+    }
+
+    [Fact]
+    public void 売り約定_売り価格以上の買い注文のみ約定する()
+    {
+        var book = new OrderBook()
+            .Add(new Order(1, "computer", new Instrument(1), OrderSide.Buy, 3, 110))
+            .Add(new Order(2, "computer", new Instrument(1), OrderSide.Buy, 3, 100))
+            .Add(new Order(3, "computer", new Instrument(1), OrderSide.Buy, 3, 90));
+
+        var result = book.FillSell(instrumentId: 1, quantity: 10, sellPrice: 100);
+
+        // 110と100は約定（買い価格>=売り価格）、90は約定しない
+        Assert.Equal(6, result.FilledQuantity);
+        Assert.Equal(600, result.TotalAmount); // 6 * 100（約定価格は売り注文の価格）
+
+        // 90の買い注文のみ残る
+        var remainingBuys = result.UpdatedBook.BuyOrders(instrumentId: 1);
+        Assert.Single(remainingBuys);
+        Assert.Equal(90, remainingBuys[0].Price);
+    }
+
+    [Fact]
+    public void 売り約定_全ての買い注文が売り価格より低い場合は約定しない()
+    {
+        var book = new OrderBook()
+            .Add(new Order(1, "computer", new Instrument(1), OrderSide.Buy, 5, 80));
+
+        var result = book.FillSell(instrumentId: 1, quantity: 3, sellPrice: 100);
+
+        Assert.Equal(0, result.FilledQuantity);
+        Assert.Equal(0, result.TotalAmount);
+        Assert.Single(result.UpdatedBook.BuyOrders(instrumentId: 1));
+    }
+
+    [Fact]
+    public void 売り約定_約定価格は売り注文の価格になる()
+    {
+        // 買い注文が110だが、約定価格は売り注文の価格100になる
+        var book = new OrderBook()
+            .Add(new Order(1, "computer", new Instrument(1), OrderSide.Buy, 3, 110));
+
+        var result = book.FillSell(instrumentId: 1, quantity: 2, sellPrice: 100);
+
+        Assert.Equal(2, result.FilledQuantity);
+        Assert.Equal(200, result.TotalAmount); // 2 * 100（売り注文の価格で約定、110ではない）
     }
 }

@@ -39,13 +39,23 @@ public sealed class OrderBook
             .OrderByDescending(o => o.Price)
             .ToList();
 
-    public FillResult FillBuy(int instrumentId, int quantity) =>
-        Fill(SellOrders(instrumentId), quantity, OrderSide.Sell);
+    public FillResult FillBuy(int instrumentId, int quantity, int buyPrice)
+    {
+        var eligible = SellOrders(instrumentId)
+            .TakeWhile(o => o.Price <= buyPrice)
+            .ToList();
+        return Fill(eligible, quantity, contractPrice: null);
+    }
 
-    public FillResult FillSell(int instrumentId, int quantity) =>
-        Fill(BuyOrders(instrumentId), quantity, OrderSide.Buy);
+    public FillResult FillSell(int instrumentId, int quantity, int sellPrice)
+    {
+        var eligible = BuyOrders(instrumentId)
+            .TakeWhile(o => o.Price >= sellPrice)
+            .ToList();
+        return Fill(eligible, quantity, contractPrice: sellPrice);
+    }
 
-    private FillResult Fill(IReadOnlyList<Order> matchingOrders, int quantity, OrderSide side)
+    private FillResult Fill(IReadOnlyList<Order> matchingOrders, int quantity, int? contractPrice)
     {
         var remaining = quantity;
         var totalAmount = 0;
@@ -56,7 +66,7 @@ public sealed class OrderBook
             if (remaining <= 0) break;
 
             var fill = Math.Min(remaining, order.Quantity);
-            totalAmount += fill * order.Price;
+            totalAmount += fill * (contractPrice ?? order.Price);
             remaining -= fill;
 
             if (fill == order.Quantity)
