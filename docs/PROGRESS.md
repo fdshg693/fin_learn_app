@@ -19,6 +19,9 @@
 | 注文生成戦略 | `IOrderPlacer` | 済 | 注文生成のインターフェース（テスト差し替え可能） |
 | ゲーム | `Game` | 済 | ターン制の進行管理、OrderBook + IOrderPlacer 統合 |
 | コンピュータートレーダー | `ComputerTrader` | 済 | `IOrderPlacer` 実装。毎ターン自動注文生成（買10・売10） |
+| 株価変動戦略 | `IPriceFluctuator` | 済 | 価格変動ロジックのインターフェース（DI ポイント） |
+| ランダム株価変動 | `RandomPriceFluctuator` | 済 | `IPriceFluctuator` 実装。毎ターン ±5% 変動（最低価格1） |
+| 簡易取引所 | `SimpleExchange` | 済 | `IExchange` 実装。Game.Prices + fee から構築 |
 
 ## アクション
 
@@ -37,7 +40,7 @@
 | 保有数超過の売り注文を拒否 | 済 |
 | 手数料込みのバリデーション | 済 |
 | ターン制の進行 | 済 |
-| 株価のランダム変動 | 未着手 |
+| 株価のランダム変動 | 済 |
 | コンピューターの自動注文 | 済 |
 | 注文帳（オーダーブック）での約定判定 | 済 |
 
@@ -55,5 +58,7 @@
 | `OrderTests` | プロパティ・等価性・バリデーション |
 | `OrderBookTests` | 追加・ソート・約定・価格判定・不変性 |
 | `ComputerTraderTests` | 注文生成・価格・数量・分散・不変性 |
+| `PriceFluctuatorTests` | 変動範囲・最低価格・決定性・NoPriceFluctuator |
+| `SimpleExchangeTests` | 価格取得・未登録銘柄・手数料 |
 
-テストダブル: `TestExchange`（価格辞書）, `TestData`（共通フィクスチャ）
+テストダブル: `TestExchange`（価格辞書）, `TestData`（共通フィクスチャ）, `NoPriceFluctuator`（変動なし）

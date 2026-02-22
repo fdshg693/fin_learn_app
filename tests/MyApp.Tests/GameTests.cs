@@ -9,9 +9,12 @@ public class GameTests
         new Instrument(1), new Instrument(2), new Instrument(3)
     };
 
+    private static readonly IReadOnlyDictionary<int, int> Prices =
+        new Dictionary<int, int> { { 1, 100 }, { 2, 200 }, { 3, 300 } };
+
     private static Game CreateGame()
     {
-        return new Game(Instruments);
+        return new Game(Instruments, Prices);
     }
 
     [Fact]
@@ -38,5 +41,15 @@ public class GameTests
 
         Assert.Empty(game.OrderBook.BuyOrders(1));
         Assert.Empty(game.OrderBook.SellOrders(1));
+    }
+
+    [Fact]
+    public void 初期状態の価格が保持される()
+    {
+        var game = CreateGame();
+
+        Assert.Equal(100, game.Prices[1]);
+        Assert.Equal(200, game.Prices[2]);
+        Assert.Equal(300, game.Prices[3]);
     }
 }

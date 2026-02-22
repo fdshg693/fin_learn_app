@@ -14,7 +14,7 @@ Pure domain layer with zero external dependencies. All types are **immutable sea
 | `IExchange.cs` | 取引所 | Interface: price lookup + fee |
 | `ExchangeExtensions.cs` | — | `TryGetPrice` safe helper |
 | `IOrderPlacer.cs` | 注文生成戦略 | Interface for order generation (DI point for testing) |
-| `Game.cs` | ゲーム | Turn-based progression orchestrating Player, Market, OrderBook |
+| `Game.cs` | ゲーム | State snapshot: turn, player, order book, instruments, **prices** |
 | `ComputerTrader.cs` | コンピュータートレーダー | Implements `IOrderPlacer`. Generates 10 buy (95%) + 10 sell (100%) orders per turn |
 | `Order.cs` | 注文 | ID, trader, instrument, side, quantity, price |
 | `OrderSide.cs` | 売買区分 | `Buy` / `Sell` enum |
@@ -26,6 +26,9 @@ Pure domain layer with zero external dependencies. All types are **immutable sea
 | `TradeResult.cs` | 取引結果 | Player-facing fill result (no OrderBook knowledge) |
 | `MatchResult.cs` | マッチング結果 | TradeResult + updated OrderBook (Game internal) |
 | `Messages.cs` | — | Japanese error message constants |
+| `IPriceFluctuator.cs` | 株価変動戦略 | Interface: price fluctuation strategy (DI point) |
+| `RandomPriceFluctuator.cs` | ランダム株価変動 | ±5% per turn, floor of 1. Takes `Random` for deterministic tests |
+| `SimpleExchange.cs` | 簡易取引所 | `IExchange` impl from price dictionary + fee. Used internally by `TurnProcessor` |
 
 ### OrderBook Matching Rules
 
@@ -41,13 +44,15 @@ Sell orders are sorted ascending (cheapest first), buy orders descending (highes
 
 ### Game Turn Flow
 
-`Game` depends on `IOrderPlacer` and `IMarket` (both DI points), enabling test doubles.
+`TurnProcessor` depends on `IOrderPlacer`, `IMarket`, and `IPriceFluctuator` (all DI points). Method signatures use `int fee` instead of `IExchange` — prices come from `Game.Prices`.
 
 Each turn follows this sequence:
-1. `IOrderPlacer.PlaceOrders` generates computer orders and adds them to the `OrderBook`
-2. `Player.CreateOrder` creates the player's order (expressing intent)
-3. `IMarket.Execute` matches the order against the OrderBook, returns `MatchResult`
-4. `Portfolio.ApplyTrade` updates the portfolio, then `Player.WithPortfolio` creates updated player
+1. `SimpleExchange` constructed from `Game.Prices` + `fee` parameter
+2. `IOrderPlacer.PlaceOrders` generates computer orders using current prices
+3. `Player.CreateOrder` creates the player's order (expressing intent)
+4. `IMarket.Execute` matches the order against the OrderBook, returns `MatchResult`
+5. `Portfolio.ApplyTrade` updates the portfolio, then `Player.WithPortfolio` creates updated player
+6. `IPriceFluctuator.Fluctuate` applies random price changes for the next turn
 
 **Responsibility boundaries:**
 - **Player** — identity (Name), order creation (intent), profit/loss calculation. Does NOT know about OrderBook or trade execution

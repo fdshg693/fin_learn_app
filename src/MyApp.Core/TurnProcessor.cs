@@ -8,19 +8,21 @@ public sealed class TurnProcessor
 {
     public IOrderPlacer OrderPlacer { get; }
     public IMarket Market { get; }
+    public IPriceFluctuator Fluctuator { get; }
 
-    public TurnProcessor(IOrderPlacer orderPlacer)
-        : this(orderPlacer, new Market())
+    public TurnProcessor(IOrderPlacer orderPlacer, IPriceFluctuator fluctuator)
+        : this(orderPlacer, new Market(), fluctuator)
     {
     }
 
-    public TurnProcessor(IOrderPlacer orderPlacer, IMarket market)
+    public TurnProcessor(IOrderPlacer orderPlacer, IMarket market, IPriceFluctuator fluctuator)
     {
         OrderPlacer = orderPlacer;
         Market = market;
+        Fluctuator = fluctuator;
     }
 
-    public (Game Result, string? Warning) Buy(Game game, IExchange exchange, int instrumentId, int quantity, int? price = null)
+    public (Game Result, string? Warning) Buy(Game game, int fee, int instrumentId, int quantity, int? price = null)
     {
         if (quantity <= 0)
             return (game, Messages.QuantityMustBePositive);
@@ -28,10 +30,10 @@ public sealed class TurnProcessor
             return (game, Messages.PriceMustBePositive);
 
         var instrument = new Instrument(instrumentId);
-        return PlaceOrder(game, exchange, instrument, OrderSide.Buy, quantity, price, Messages.NoMatchingSellOrders);
+        return PlaceOrder(game, fee, instrument, OrderSide.Buy, quantity, price, Messages.NoMatchingSellOrders);
     }
 
-    public (Game Result, string? Warning) Sell(Game game, IExchange exchange, int instrumentId, int quantity, int? price = null)
+    public (Game Result, string? Warning) Sell(Game game, int fee, int instrumentId, int quantity, int? price = null)
     {
         if (quantity <= 0)
             return (game, Messages.QuantityMustBePositive);
@@ -42,19 +44,23 @@ public sealed class TurnProcessor
             return (game, Messages.InsufficientQuantityToSell);
 
         var instrument = new Instrument(instrumentId);
-        return PlaceOrder(game, exchange, instrument, OrderSide.Sell, quantity, price, Messages.NoMatchingBuyOrders);
+        return PlaceOrder(game, fee, instrument, OrderSide.Sell, quantity, price, Messages.NoMatchingBuyOrders);
     }
 
-    public (Game Result, string? Warning) Wait(Game game, IExchange exchange)
+    public (Game Result, string? Warning) Wait(Game game, int fee)
     {
+        var exchange = new SimpleExchange(game.Prices, fee);
         var (bookWithOrders, nextId) = OrderPlacer.PlaceOrders(game.OrderBook, exchange, game.Instruments, game.NextOrderId);
-        return (new Game(game.Player, game.Turn + 1, bookWithOrders, nextId, game.Instruments), null);
+        var newPrices = Fluctuator.Fluctuate(game.Prices);
+        return (new Game(game.Player, game.Turn + 1, bookWithOrders, nextId, game.Instruments, newPrices), null);
     }
 
     private (Game Result, string? Warning) PlaceOrder(
-        Game game, IExchange exchange, Instrument instrument, OrderSide side,
+        Game game, int fee, Instrument instrument, OrderSide side,
         int quantity, int? price, string noMatchMessage)
     {
+        var exchange = new SimpleExchange(game.Prices, fee);
+
         // 1. コンピューター注文を生成
         var (bookWithOrders, nextId) = OrderPlacer.PlaceOrders(game.OrderBook, exchange, game.Instruments, game.NextOrderId);
 
@@ -89,7 +95,9 @@ public sealed class TurnProcessor
             }
         }
 
+        // 7. 株価変動を適用して新しいゲーム状態を返す
+        var newPrices = Fluctuator.Fluctuate(game.Prices);
         return (new Game(resultPlayer, game.Turn + 1, updatedBook,
-            nextId + 1, game.Instruments), null);
+            nextId + 1, game.Instruments, newPrices), null);
     }
 }
