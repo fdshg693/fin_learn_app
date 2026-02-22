@@ -18,8 +18,9 @@ Pure domain layer with zero external dependencies. All types are **immutable sea
 | `ComputerTrader.cs` | コンピュータートレーダー | Implements `IOrderPlacer`. Generates 10 buy (95%) + 10 sell (100%) orders per turn |
 | `Order.cs` | 注文 | ID, trader, instrument, side, quantity, price |
 | `OrderSide.cs` | 売買区分 | `Buy` / `Sell` enum |
-| `OrderBook.cs` | 注文帳 | Order management + execution matching |
-| `FillResult.cs` | 約定結果 | Filled quantity, total amount, updated book (OrderBook internal) |
+| `OrderBook.cs` | 注文帳 | Order management + symmetric matching via `Match(Order)` |
+| `OrderFill.cs` | 注文約定明細 | Per-order fill result: order ID, filled quantity, total amount |
+| `FillResult.cs` | 約定結果 | List of `OrderFill` per order ID + updated book. `GetFill(orderId)` for lookup |
 | `IMarket.cs` | 市場 | Interface: order matching mediator between Player and OrderBook |
 | `Market.cs` | 市場 | Default `IMarket` implementation using OrderBook |
 | `TradeResult.cs` | 取引結果 | Player-facing fill result (no OrderBook knowledge) |
@@ -28,12 +29,13 @@ Pure domain layer with zero external dependencies. All types are **immutable sea
 
 ### OrderBook Matching Rules
 
-The `OrderBook` implements price-based order matching per `docs/DDD.md`:
+The `OrderBook` implements symmetric price-based order matching via a single `Match(Order incoming)` method:
 
 - **Condition**: Buy price >= Sell price triggers a match
-- **Contract price**: Always the **sell order's price**
-- `FillBuy(instrumentId, quantity, buyPrice)` — matches sell orders where `sellPrice <= buyPrice`, cheapest first. Contract at each sell order's price
-- `FillSell(instrumentId, quantity, sellPrice)` — matches buy orders where `buyPrice >= sellPrice`, highest first. Contract at the incoming sell price
+- **Contract price**: Always the **resting order's price** (the order already in the book)
+  - Buy incoming, sell resting → contract price = sell order's price
+  - Sell incoming, buy resting → contract price = buy order's price
+- `Match(Order incoming)` — finds opposite-side eligible orders, matches at resting order's price, returns `FillResult` with per-order `OrderFill` entries
 
 Sell orders are sorted ascending (cheapest first), buy orders descending (highest first). `TakeWhile` efficiently filters by price since lists are pre-sorted.
 
@@ -49,10 +51,10 @@ Each turn follows this sequence:
 
 **Responsibility boundaries:**
 - **Player** — creates orders (intent), applies trade results (portfolio update). Does NOT know about OrderBook
-- **Market** — mediates between orders and OrderBook. Determines execution price (e.g., best buy price for sells)
-- **Game** — orchestrates the turn flow, connecting Player, Market, and OrderPlacer
+- **Market** — thin wrapper: calls `OrderBook.Match`, extracts the incoming order's `OrderFill`, builds `TradeResult`
+- **Game** — orchestrates the turn flow, connecting Player, Market, and OrderPlacer. Sets sell price = 1 (market order)
 
-`FillResult` is internal to OrderBook/Market. `TradeResult` is the player-facing result. `MatchResult` bridges them for Game's use.
+`FillResult` contains per-order `OrderFill` entries + updated book. `TradeResult` is the player-facing result. `MatchResult` bridges them for Game's use.
 
 ### Conventions
 

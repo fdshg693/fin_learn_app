@@ -74,12 +74,11 @@ public sealed class Game
         // 1. コンピューター注文を生成
         var (bookWithOrders, nextId) = OrderPlacer.PlaceOrders(OrderBook, exchange, Instruments, NextOrderId);
 
-        // 2. プレイヤーの売り注文を生成
+        // 2. プレイヤーの売り注文を生成（成行注文: price=1で全買い注文とマッチ可能）
         var instrument = new Instrument(instrumentId);
-        var sellPrice = exchange.PriceOf(instrumentId);
-        var order = Player.CreateSellOrder(nextId, instrument, quantity, sellPrice);
+        var order = Player.CreateSellOrder(nextId, instrument, quantity, price: 1);
 
-        // 3. 市場で約定（Marketが最高買い注文価格を自動決定）
+        // 3. 市場で約定
         var matchResult = Market.Execute(bookWithOrders, order, exchange);
 
         if (matchResult.Trade.FilledQuantity == 0)

@@ -3,7 +3,7 @@ using System.Collections.Immutable;
 namespace MyApp.Core;
 
 /// <summary>
-/// 注文帳（不変）— 売り注文・買い注文を銘柄別に管理し、約定を行う
+/// 注文帳（不変）— 売り注文・買い注文を銘柄別に管理し、対称的な約定を行う
 /// </summary>
 public sealed class OrderBook
 {
@@ -39,35 +39,38 @@ public sealed class OrderBook
             .OrderByDescending(o => o.Price)
             .ToList();
 
-    public FillResult FillBuy(int instrumentId, int quantity, int buyPrice)
+    /// <summary>
+    /// 対称的マッチング — 受注注文を板の反対側注文とマッチングする。
+    /// 約定価格は常に待機注文（板にいた注文）の価格。
+    /// </summary>
+    public FillResult Match(Order incoming)
     {
-        var eligible = SellOrders(instrumentId)
-            .TakeWhile(o => o.Price <= buyPrice)
-            .ToList();
-        return Fill(eligible, quantity, contractPrice: null);
+        var eligible = incoming.Side == OrderSide.Buy
+            ? SellOrders(incoming.Instrument.Id)
+                .TakeWhile(o => o.Price <= incoming.Price).ToList()
+            : BuyOrders(incoming.Instrument.Id)
+                .TakeWhile(o => o.Price >= incoming.Price).ToList();
+
+        return Fill(incoming, eligible);
     }
 
-    public FillResult FillSell(int instrumentId, int quantity, int sellPrice)
+    private FillResult Fill(Order incoming, IReadOnlyList<Order> matchingOrders)
     {
-        var eligible = BuyOrders(instrumentId)
-            .TakeWhile(o => o.Price >= sellPrice)
-            .ToList();
-        return Fill(eligible, quantity, contractPrice: sellPrice);
-    }
-
-    private FillResult Fill(IReadOnlyList<Order> matchingOrders, int quantity, int? contractPrice)
-    {
-        var remaining = quantity;
-        var totalAmount = 0;
+        var remaining = incoming.Quantity;
+        var incomingTotalAmount = 0;
         var updatedOrders = _orders;
+        var fills = new List<OrderFill>();
 
         foreach (var order in matchingOrders)
         {
             if (remaining <= 0) break;
 
             var fill = Math.Min(remaining, order.Quantity);
-            totalAmount += fill * (contractPrice ?? order.Price);
+            var amount = fill * order.Price;
+            incomingTotalAmount += amount;
             remaining -= fill;
+
+            fills.Add(new OrderFill(order.Id, fill, amount));
 
             if (fill == order.Quantity)
             {
@@ -80,9 +83,8 @@ public sealed class OrderBook
             }
         }
 
-        return new FillResult(
-            FilledQuantity: quantity - remaining,
-            TotalAmount: totalAmount,
-            UpdatedBook: new OrderBook(updatedOrders, _ids));
+        fills.Add(new OrderFill(incoming.Id, incoming.Quantity - remaining, incomingTotalAmount));
+
+        return new FillResult(fills, new OrderBook(updatedOrders, _ids));
     }
 }

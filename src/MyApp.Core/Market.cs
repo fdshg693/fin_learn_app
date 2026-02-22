@@ -1,41 +1,22 @@
 namespace MyApp.Core;
 
 /// <summary>
-/// 市場の既定実装 — OrderBookを使った約定処理
+/// 市場の既定実装 — OrderBookの対称的マッチングを呼び出し、TradeResultを生成する
 /// </summary>
 public sealed class Market : IMarket
 {
     public MatchResult Execute(OrderBook book, Order order, IExchange exchange)
     {
-        var fillResult = order.Side switch
-        {
-            OrderSide.Buy => ExecuteBuy(book, order),
-            OrderSide.Sell => ExecuteSell(book, order),
-            _ => throw new ArgumentOutOfRangeException(nameof(order))
-        };
+        var fillResult = book.Match(order);
+        var incomingFill = fillResult.GetFill(order.Id);
 
         var trade = new TradeResult(
             InstrumentId: order.Instrument.Id,
             Side: order.Side,
-            FilledQuantity: fillResult.FilledQuantity,
-            TotalAmount: fillResult.TotalAmount,
+            FilledQuantity: incomingFill?.FilledQuantity ?? 0,
+            TotalAmount: incomingFill?.TotalAmount ?? 0,
             Fee: exchange.Fee);
 
         return new MatchResult(trade, fillResult.UpdatedBook);
-    }
-
-    private static FillResult ExecuteBuy(OrderBook book, Order order)
-    {
-        return book.FillBuy(order.Instrument.Id, order.Quantity, order.Price);
-    }
-
-    private static FillResult ExecuteSell(OrderBook book, Order order)
-    {
-        var buyOrders = book.BuyOrders(order.Instrument.Id);
-        if (buyOrders.Count == 0)
-            return new FillResult(0, 0, book);
-
-        var bestBuyPrice = buyOrders[0].Price;
-        return book.FillSell(order.Instrument.Id, order.Quantity, bestBuyPrice);
     }
 }

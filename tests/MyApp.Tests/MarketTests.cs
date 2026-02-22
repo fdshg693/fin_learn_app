@@ -78,14 +78,15 @@ public class MarketTests
         var exchange = TestData.CreateExchange((1, 100));
         var book = new OrderBook()
             .Add(new Order(1, "computer", new Instrument(1), OrderSide.Buy, 5, 95));
-        var order = new Order(10, "player", new Instrument(1), OrderSide.Sell, 3, 100);
+        // 成行注文（price=1）で全買い注文とマッチ
+        var order = new Order(10, "player", new Instrument(1), OrderSide.Sell, 3, 1);
 
         var result = market.Execute(book, order, exchange);
 
         Assert.Equal(1, result.Trade.InstrumentId);
         Assert.Equal(OrderSide.Sell, result.Trade.Side);
         Assert.Equal(3, result.Trade.FilledQuantity);
-        // 約定価格 = bestBuyPrice = 95
+        // 約定価格 = 待機注文の価格 = 95
         Assert.Equal(285, result.Trade.TotalAmount); // 3 * 95
     }
 
@@ -95,7 +96,7 @@ public class MarketTests
         var market = new Market();
         var exchange = TestData.CreateExchange((1, 100));
         var book = new OrderBook();
-        var order = new Order(10, "player", new Instrument(1), OrderSide.Sell, 3, 100);
+        var order = new Order(10, "player", new Instrument(1), OrderSide.Sell, 3, 1);
 
         var result = market.Execute(book, order, exchange);
 
@@ -103,21 +104,21 @@ public class MarketTests
     }
 
     [Fact]
-    public void 売り約定価格は最高買い注文価格で決まる()
+    public void 売り約定_複数の買い注文にまたがって約定する()
     {
         var market = new Market();
         var exchange = TestData.CreateExchange((1, 100));
         var book = new OrderBook()
             .Add(new Order(1, "computer", new Instrument(1), OrderSide.Buy, 3, 90))
             .Add(new Order(2, "computer", new Instrument(1), OrderSide.Buy, 2, 95));
-        var order = new Order(10, "player", new Instrument(1), OrderSide.Sell, 2, 100);
+        // 成行注文で全買い注文とマッチ
+        var order = new Order(10, "player", new Instrument(1), OrderSide.Sell, 4, 1);
 
         var result = market.Execute(book, order, exchange);
 
-        // bestBuyPrice = 95、FillSellでsellPrice=95として約定
-        // 95以上の買い注文のみマッチ → 2株@95
-        Assert.Equal(2, result.Trade.FilledQuantity);
-        Assert.Equal(190, result.Trade.TotalAmount); // 2 * 95
+        // 高い方から: 2*95 + 2*90 = 370
+        Assert.Equal(4, result.Trade.FilledQuantity);
+        Assert.Equal(370, result.Trade.TotalAmount);
     }
 
     [Fact]
@@ -127,7 +128,7 @@ public class MarketTests
         var exchange = TestData.CreateExchange((1, 100));
         var book = new OrderBook()
             .Add(new Order(1, "computer", new Instrument(1), OrderSide.Buy, 5, 95));
-        var order = new Order(10, "player", new Instrument(1), OrderSide.Sell, 3, 100);
+        var order = new Order(10, "player", new Instrument(1), OrderSide.Sell, 3, 1);
 
         var result = market.Execute(book, order, exchange);
 
