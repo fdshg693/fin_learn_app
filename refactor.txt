@@ -1,20 +1,4 @@
   ---
-  2. 「成行注文」がハードコードされている（注文タイプの欠如）
-
-  src/MyApp.Core/Game.cs#L61 で売りの成行注文を price: 1
-  というマジックナンバーで表現しています:
-
-  // 成行注文: price=1で全買い注文とマッチ可能
-  return PlaceOrder(exchange, instrument, OrderSide.Sell, quantity, price: 1,
-  ...);
-
-  買いも exchange.PriceOf(instrumentId)
-  を「成行注文のつもり」で使っています。Order モデル自体には「成行 /
-  指値」の区別がないため、価格決定ロジックが Game に漏れ出しています。
-
-  方向性: OrderType（Market / Limit）を Order
-  に持たせ、マッチングロジック側で成行の意味を解釈する。Game
-  は注文の種類を伝えるだけにする。
 
   ---
   3. IExchange の例外ベース制御フロー

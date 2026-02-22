@@ -5,6 +5,6 @@ namespace MyApp.Core;
 /// </summary>
 public interface IExchange
 {
-    int PriceOf(int instrumentId);
+    bool TryGetPrice(int instrumentId, out int price);
     int Fee { get; }
 }

@@ -33,7 +33,9 @@ public sealed class ComputerTrader : IOrderPlacer
         for (int i = 0; i < BuyOrderCount; i++)
         {
             var instrument = instruments[_random.Next(instruments.Count)];
-            var price = Math.Max(1, exchange.PriceOf(instrument.Id) * 95 / 100);
+            if (!exchange.TryGetPrice(instrument.Id, out var marketPrice))
+                continue;
+            var price = Math.Max(1, marketPrice * 95 / 100);
             updatedBook = updatedBook.Add(
                 new Order(currentId++, TraderId, instrument, OrderSide.Buy, 1, price));
         }
@@ -42,7 +44,8 @@ public sealed class ComputerTrader : IOrderPlacer
         for (int i = 0; i < SellOrderCount; i++)
         {
             var instrument = instruments[_random.Next(instruments.Count)];
-            var price = exchange.PriceOf(instrument.Id);
+            if (!exchange.TryGetPrice(instrument.Id, out var price))
+                continue;
             updatedBook = updatedBook.Add(
                 new Order(currentId++, TraderId, instrument, OrderSide.Sell, 1, price));
         }

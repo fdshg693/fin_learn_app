@@ -13,9 +13,19 @@ public sealed class TestExchange : IExchange
         Fee = fee;
     }
 
-    public int PriceOf(int instrumentId)
+    public bool TryGetPrice(int instrumentId, out int price)
     {
-        return _prices[instrumentId];
+        if (!_prices.TryGetValue(instrumentId, out price))
+        {
+            price = 0;
+            return false;
+        }
+        if (price <= 0)
+        {
+            price = 0;
+            return false;
+        }
+        return true;
     }
 
     public int Fee { get; }

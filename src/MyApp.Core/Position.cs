@@ -20,7 +20,7 @@ public sealed record Position
 
     public int Amount(IExchange exchange)
     {
-        if (!exchange.TryGetPrice(Instrument.Id, out var price, out _))
+        if (!exchange.TryGetPrice(Instrument.Id, out var price))
         {
             return 0;
         }
