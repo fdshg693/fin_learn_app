@@ -26,17 +26,7 @@ public sealed class Portfolio
         return _positionSet.QuantityOf(instrumentId);
     }
 
-    public (Portfolio Result, string? Warning) Sell(IExchange exchange, int instrumentId, int quantity)
-    {
-        return Trade(exchange, instrumentId, quantity, isBuy: false);
-    }
-
-    public (Portfolio Result, string? Warning) Buy(IExchange exchange, int instrumentId, int quantity)
-    {
-        return Trade(exchange, instrumentId, quantity, isBuy: true);
-    }
-
-    public (Portfolio Result, string? Warning) BuyFilled(int instrumentId, int filledQuantity, int totalCost, int fee)
+    public (Portfolio Result, string? Warning) Buy(int instrumentId, int filledQuantity, int totalCost, int fee)
     {
         if (filledQuantity <= 0)
             return (this, Messages.QuantityMustBePositive);
@@ -50,7 +40,7 @@ public sealed class Portfolio
         return (new Portfolio(newCash, newPositions.Positions), null);
     }
 
-    public (Portfolio Result, string? Warning) SellFilled(int instrumentId, int filledQuantity, int totalProceeds, int fee)
+    public (Portfolio Result, string? Warning) Sell(int instrumentId, int filledQuantity, int totalProceeds, int fee)
     {
         if (filledQuantity <= 0)
             return (this, Messages.QuantityMustBePositive);
@@ -62,45 +52,6 @@ public sealed class Portfolio
         var newQuantity = totalQuantity - filledQuantity;
         var newPositions = _positionSet.SetQuantity(instrument, newQuantity);
         var newCash = _cash + totalProceeds - fee;
-        return (new Portfolio(newCash, newPositions.Positions), null);
-    }
-
-    private (Portfolio Result, string? Warning) Trade(
-        IExchange exchange,
-        int instrumentId,
-        int quantity,
-        bool isBuy)
-    {
-        if (quantity <= 0)
-        {
-            return (this, Messages.QuantityMustBePositive);
-        }
-
-        if (!exchange.TryGetPrice(instrumentId, out var price, out var priceWarning))
-        {
-            return (this, priceWarning);
-        }
-
-        var totalQuantity = QuantityOf(instrumentId);
-        if (!isBuy && totalQuantity < quantity)
-        {
-            return (this, Messages.InsufficientQuantityToSell);
-        }
-
-        var cost = price * quantity;
-        var fee = exchange.Fee;
-        if (isBuy && _cash < cost + fee)
-        {
-            return (this, Messages.InsufficientCashToBuy);
-        }
-
-        var instrument = isBuy
-            ? _positionSet.GetOrCreateInstrument(instrumentId)
-            : _positionSet.GetExistingInstrument(instrumentId);
-        var newQuantity = isBuy ? totalQuantity + quantity : totalQuantity - quantity;
-        var newPositions = _positionSet.SetQuantity(instrument, newQuantity);
-        var newCash = _cash + (isBuy ? -(cost + fee) : cost - fee);
-
         return (new Portfolio(newCash, newPositions.Positions), null);
     }
 }

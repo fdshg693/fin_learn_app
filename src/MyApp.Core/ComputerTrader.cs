@@ -3,7 +3,7 @@ namespace MyApp.Core;
 /// <summary>
 /// コンピュータートレーダー（毎ターン自動注文を生成する）
 /// </summary>
-public sealed class ComputerTrader
+public sealed class ComputerTrader : IOrderPlacer
 {
     private const string TraderId = "computer";
     private const int BuyOrderCount = 10;

@@ -44,11 +44,10 @@ public class PortfolioTests
     [Fact]
     public void 保有数量を超える売却は警告して何もしない()
     {
-        var exchange = TestData.CreateExchange((1, 10));
         var position = new Position(TestData.Instrument1, quantity: 5);
         var portfolio = new Portfolio(cash: 1000, positions: new[] { position });
 
-        var (resultPortfolio, warning) = portfolio.Sell(exchange, instrumentId: 1, quantity: 10);
+        var (resultPortfolio, warning) = portfolio.Sell(instrumentId: 1, filledQuantity: 10, totalProceeds: 100, fee: 0);
 
         Assert.Equal(Messages.InsufficientQuantityToSell, warning);
         Assert.Equal(1000, resultPortfolio.Cash);
@@ -58,11 +57,11 @@ public class PortfolioTests
     [Fact]
     public void 保有数量以内の売却は現金と数量が更新される()
     {
-        var exchange = TestData.CreateExchange((1, 10));
         var position = new Position(TestData.Instrument1, quantity: 8);
         var portfolio = new Portfolio(cash: 1000, positions: new[] { position });
 
-        var (resultPortfolio, warning) = portfolio.Sell(exchange, instrumentId: 1, quantity: 3);
+        // 約定価格10円 × 3株 = 30円
+        var (resultPortfolio, warning) = portfolio.Sell(instrumentId: 1, filledQuantity: 3, totalProceeds: 30, fee: 0);
 
         Assert.Null(warning);
         Assert.Equal(1030, resultPortfolio.Cash);
@@ -72,11 +71,11 @@ public class PortfolioTests
     [Fact]
     public void 現金の範囲内の購入は現金と数量が更新される()
     {
-        var exchange = TestData.CreateExchange((1, 10));
         var position = new Position(TestData.Instrument1, quantity: 5);
         var portfolio = new Portfolio(cash: 100, positions: new[] { position });
 
-        var (resultPortfolio, warning) = portfolio.Buy(exchange, instrumentId: 1, quantity: 3);
+        // 約定価格10円 × 3株 = 30円
+        var (resultPortfolio, warning) = portfolio.Buy(instrumentId: 1, filledQuantity: 3, totalCost: 30, fee: 0);
 
         Assert.Null(warning);
         Assert.Equal(70, resultPortfolio.Cash);
@@ -86,11 +85,11 @@ public class PortfolioTests
     [Fact]
     public void 現金の範囲外の購入は警告して何もしない()
     {
-        var exchange = TestData.CreateExchange((1, 10));
         var position = new Position(TestData.Instrument1, quantity: 5);
         var portfolio = new Portfolio(cash: 20, positions: new[] { position });
 
-        var (resultPortfolio, warning) = portfolio.Buy(exchange, instrumentId: 1, quantity: 3);
+        // 約定価格10円 × 3株 = 30 > 現金20
+        var (resultPortfolio, warning) = portfolio.Buy(instrumentId: 1, filledQuantity: 3, totalCost: 30, fee: 0);
 
         Assert.Equal(Messages.InsufficientCashToBuy, warning);
         Assert.Equal(20, resultPortfolio.Cash);
@@ -100,11 +99,11 @@ public class PortfolioTests
     [Fact]
     public void 未保有銘柄の購入は許可され現金と数量が更新される()
     {
-        var exchange = TestData.CreateExchange((1, 10), (2, 20));
         var position = new Position(TestData.Instrument1, quantity: 5);
         var portfolio = new Portfolio(cash: 200, positions: new[] { position });
 
-        var (resultPortfolio, warning) = portfolio.Buy(exchange, instrumentId: 2, quantity: 3);
+        // 約定価格20円 × 3株 = 60円
+        var (resultPortfolio, warning) = portfolio.Buy(instrumentId: 2, filledQuantity: 3, totalCost: 60, fee: 0);
 
         Assert.Null(warning);
         Assert.Equal(140, resultPortfolio.Cash);
@@ -114,11 +113,10 @@ public class PortfolioTests
     [Fact]
     public void Sellの数量が0以下の場合は警告して何もしない()
     {
-        var exchange = TestData.CreateExchange((1, 10));
         var position = new Position(TestData.Instrument1, quantity: 5);
         var portfolio = new Portfolio(cash: 1000, positions: new[] { position });
 
-        var (resultPortfolio, warning) = portfolio.Sell(exchange, instrumentId: 1, quantity: 0);
+        var (resultPortfolio, warning) = portfolio.Sell(instrumentId: 1, filledQuantity: 0, totalProceeds: 0, fee: 0);
 
         Assert.Equal(Messages.QuantityMustBePositive, warning);
         Assert.Equal(1000, resultPortfolio.Cash);
@@ -128,11 +126,10 @@ public class PortfolioTests
     [Fact]
     public void Buyの数量が0以下の場合は警告して何もしない()
     {
-        var exchange = TestData.CreateExchange((1, 10));
         var position = new Position(TestData.Instrument1, quantity: 5);
         var portfolio = new Portfolio(cash: 1000, positions: new[] { position });
 
-        var (resultPortfolio, warning) = portfolio.Buy(exchange, instrumentId: 1, quantity: -1);
+        var (resultPortfolio, warning) = portfolio.Buy(instrumentId: 1, filledQuantity: -1, totalCost: 0, fee: 0);
 
         Assert.Equal(Messages.QuantityMustBePositive, warning);
         Assert.Equal(1000, resultPortfolio.Cash);
@@ -142,13 +139,12 @@ public class PortfolioTests
     [Fact]
     public void 購入時に手数料が差し引かれる()
     {
-        var exchange = TestData.CreateExchange(fee: 50, (1, 10));
         var portfolio = new Portfolio(cash: 1000, positions: new Position[] { });
 
-        var (resultPortfolio, warning) = portfolio.Buy(exchange, instrumentId: 1, quantity: 3);
+        // 約定価格10円 × 3株 = 30 + 手数料50 = 80
+        var (resultPortfolio, warning) = portfolio.Buy(instrumentId: 1, filledQuantity: 3, totalCost: 30, fee: 50);
 
         Assert.Null(warning);
-        // 株価10 × 3株 = 30 + 手数料50 = 80
         Assert.Equal(920, resultPortfolio.Cash);
         Assert.Equal(3, resultPortfolio.QuantityOf(instrumentId: 1));
     }
@@ -156,14 +152,13 @@ public class PortfolioTests
     [Fact]
     public void 売却時に手数料が差し引かれる()
     {
-        var exchange = TestData.CreateExchange(fee: 50, (1, 10));
         var position = new Position(TestData.Instrument1, quantity: 5);
         var portfolio = new Portfolio(cash: 1000, positions: new[] { position });
 
-        var (resultPortfolio, warning) = portfolio.Sell(exchange, instrumentId: 1, quantity: 3);
+        // 現金1000 + 約定価格10円 × 3株 = 30 - 手数料50 = 980
+        var (resultPortfolio, warning) = portfolio.Sell(instrumentId: 1, filledQuantity: 3, totalProceeds: 30, fee: 50);
 
         Assert.Null(warning);
-        // 現金1000 + 株価10 × 3株 = 30 - 手数料50 = 980
         Assert.Equal(980, resultPortfolio.Cash);
         Assert.Equal(2, resultPortfolio.QuantityOf(instrumentId: 1));
     }
@@ -171,63 +166,12 @@ public class PortfolioTests
     [Fact]
     public void 手数料込みで現金が不足する購入は警告して何もしない()
     {
-        var exchange = TestData.CreateExchange(fee: 50, (1, 10));
         var portfolio = new Portfolio(cash: 70, positions: new Position[] { });
 
-        // 株価10 × 3株 = 30 + 手数料50 = 80 > 現金70
-        var (resultPortfolio, warning) = portfolio.Buy(exchange, instrumentId: 1, quantity: 3);
+        // 約定価格10円 × 3株 = 30 + 手数料50 = 80 > 現金70
+        var (resultPortfolio, warning) = portfolio.Buy(instrumentId: 1, filledQuantity: 3, totalCost: 30, fee: 50);
 
         Assert.Equal(Messages.InsufficientCashToBuy, warning);
         Assert.Equal(70, resultPortfolio.Cash);
-    }
-
-    [Fact]
-    public void BuyFilledで約定結果に基づいて購入できる()
-    {
-        var portfolio = new Portfolio(cash: 1000, positions: new Position[] { });
-
-        var (result, warning) = portfolio.BuyFilled(instrumentId: 1, filledQuantity: 3, totalCost: 285, fee: 50);
-
-        Assert.Null(warning);
-        Assert.Equal(665, result.Cash); // 1000 - 285 - 50
-        Assert.Equal(3, result.QuantityOf(instrumentId: 1));
-    }
-
-    [Fact]
-    public void BuyFilledで現金不足の場合は警告して何もしない()
-    {
-        var portfolio = new Portfolio(cash: 100, positions: new Position[] { });
-
-        var (result, warning) = portfolio.BuyFilled(instrumentId: 1, filledQuantity: 3, totalCost: 285, fee: 50);
-
-        Assert.Equal(Messages.InsufficientCashToBuy, warning);
-        Assert.Equal(100, result.Cash);
-        Assert.Equal(0, result.QuantityOf(instrumentId: 1));
-    }
-
-    [Fact]
-    public void SellFilledで約定結果に基づいて売却できる()
-    {
-        var position = new Position(TestData.Instrument1, quantity: 5);
-        var portfolio = new Portfolio(cash: 1000, positions: new[] { position });
-
-        var (result, warning) = portfolio.SellFilled(instrumentId: 1, filledQuantity: 3, totalProceeds: 285, fee: 50);
-
-        Assert.Null(warning);
-        Assert.Equal(1235, result.Cash); // 1000 + 285 - 50
-        Assert.Equal(2, result.QuantityOf(instrumentId: 1));
-    }
-
-    [Fact]
-    public void SellFilledで保有数不足の場合は警告して何もしない()
-    {
-        var position = new Position(TestData.Instrument1, quantity: 2);
-        var portfolio = new Portfolio(cash: 1000, positions: new[] { position });
-
-        var (result, warning) = portfolio.SellFilled(instrumentId: 1, filledQuantity: 3, totalProceeds: 285, fee: 50);
-
-        Assert.Equal(Messages.InsufficientQuantityToSell, warning);
-        Assert.Equal(1000, result.Cash);
-        Assert.Equal(2, result.QuantityOf(instrumentId: 1));
     }
 }

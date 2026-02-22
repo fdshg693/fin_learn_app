@@ -16,19 +16,18 @@
 | 約定結果 | `FillResult` | 済 | 約定数量・合計金額・更新後の注文帳 |
 | エラーメッセージ | `Messages` | 済 | 日本語の定数定義 |
 | 価格取得ヘルパー | `ExchangeExtensions` | 済 | `TryGetPrice` 安全な価格取得 |
-| ゲーム | `Game` | 済 | ターン制の進行管理、OrderBook + ComputerTrader 統合 |
-| コンピュータートレーダー | `ComputerTrader` | 済 | 毎ターン自動注文生成（買10・売10） |
+| 注文生成戦略 | `IOrderPlacer` | 済 | 注文生成のインターフェース（テスト差し替え可能） |
+| ゲーム | `Game` | 済 | ターン制の進行管理、OrderBook + IOrderPlacer 統合 |
+| コンピュータートレーダー | `ComputerTrader` | 済 | `IOrderPlacer` 実装。毎ターン自動注文生成（買10・売10） |
 
 ## アクション
 
 | 機能 | 状態 | 実装箇所 |
 |---|---|---|
-| 買う（即時） | 済 | `Portfolio.Buy` / `Player.Buy` |
-| 売る（即時） | 済 | `Portfolio.Sell` / `Player.Sell` |
-| 手数料の徴収 | 済 | `Portfolio.Trade` 内で加減算 |
+| 買う（約定ベース） | 済 | `Portfolio.Buy(id, qty, cost, fee)` / `Player.Buy` |
+| 売る（約定ベース） | 済 | `Portfolio.Sell(id, qty, proceeds, fee)` / `Player.Sell` |
+| 手数料の徴収 | 済 | `Portfolio.Buy`/`Sell` 内で加減算 |
 | 待つ（パス） | 済 | `Player.Wait` |
-| 約定ベースの購入 | 済 | `Portfolio.BuyFilled` / `Player.BuyFilled` |
-| 約定ベースの売却 | 済 | `Portfolio.SellFilled` / `Player.SellFilled` |
 
 ## ビジネスルール
 

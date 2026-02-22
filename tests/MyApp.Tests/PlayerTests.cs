@@ -16,14 +16,15 @@ public class PlayerTests
     [Fact]
     public void ポジションを購入できる()
     {
-        var exchange = TestData.CreateExchange((1, 10));
         var player = new Player();
 
-        var (result, warning) = player.Buy(exchange, instrumentId: 1, quantity: 3);
+        // 約定価格10円 × 3株 = 30円、手数料0
+        var (result, warning) = player.Buy(instrumentId: 1, filledQuantity: 3, totalCost: 30, fee: 0);
 
         Assert.Null(warning);
         Assert.Equal(9970, result.Portfolio.Cash);
         Assert.Equal(3, result.Portfolio.QuantityOf(instrumentId: 1));
+        // 元のプレイヤーは不変
         Assert.Equal(10000, player.Portfolio.Cash);
         Assert.Equal(0, player.Portfolio.QuantityOf(instrumentId: 1));
     }
@@ -31,11 +32,12 @@ public class PlayerTests
     [Fact]
     public void ポジションを売却できる()
     {
-        var exchange = TestData.CreateExchange((1, 10));
         var player = new Player();
 
-        var (bought, _) = player.Buy(exchange, instrumentId: 1, quantity: 3);
-        var (result, warning) = bought.Sell(exchange, instrumentId: 1, quantity: 2);
+        // まず購入: 10円 × 3株 = 30円
+        var (bought, _) = player.Buy(instrumentId: 1, filledQuantity: 3, totalCost: 30, fee: 0);
+        // 売却: 10円 × 2株 = 20円
+        var (result, warning) = bought.Sell(instrumentId: 1, filledQuantity: 2, totalProceeds: 20, fee: 0);
 
         Assert.Null(warning);
         Assert.Equal(9990, result.Portfolio.Cash);
@@ -57,10 +59,10 @@ public class PlayerTests
     [Fact]
     public void 株価が上がると損益がプラスになる()
     {
-        var buyExchange = TestData.CreateExchange((1, 10));
         var player = new Player();
 
-        var (bought, _) = player.Buy(buyExchange, instrumentId: 1, quantity: 100);
+        // 10円 × 100株 = 1000円で購入
+        var (bought, _) = player.Buy(instrumentId: 1, filledQuantity: 100, totalCost: 1000, fee: 0);
         // 株価が10→15に上昇
         var currentExchange = TestData.CreateExchange((1, 15));
 
@@ -71,9 +73,8 @@ public class PlayerTests
     [Fact]
     public void 待つとポートフォリオが変わらない()
     {
-        var exchange = TestData.CreateExchange((1, 10));
         var player = new Player();
-        var (bought, _) = player.Buy(exchange, instrumentId: 1, quantity: 3);
+        var (bought, _) = player.Buy(instrumentId: 1, filledQuantity: 3, totalCost: 30, fee: 0);
 
         var (result, warning) = bought.Wait();
 
@@ -82,32 +83,5 @@ public class PlayerTests
         Assert.Equal(3, result.Portfolio.QuantityOf(instrumentId: 1));
         // 元のプレイヤーは不変
         Assert.Equal(9970, bought.Portfolio.Cash);
-    }
-
-    [Fact]
-    public void BuyFilledで約定結果に基づいて購入できる()
-    {
-        var player = new Player();
-
-        var (result, warning) = player.BuyFilled(instrumentId: 1, filledQuantity: 3, totalCost: 300, fee: 0);
-
-        Assert.Null(warning);
-        Assert.Equal(9700, result.Portfolio.Cash);
-        Assert.Equal(3, result.Portfolio.QuantityOf(instrumentId: 1));
-        Assert.Equal(10000, player.Portfolio.Cash);
-    }
-
-    [Fact]
-    public void SellFilledで約定結果に基づいて売却できる()
-    {
-        var exchange = TestData.CreateExchange((1, 100));
-        var player = new Player();
-        var (bought, _) = player.Buy(exchange, instrumentId: 1, quantity: 5);
-
-        var (result, warning) = bought.SellFilled(instrumentId: 1, filledQuantity: 3, totalProceeds: 285, fee: 0);
-
-        Assert.Null(warning);
-        Assert.Equal(9785, result.Portfolio.Cash); // 9500 + 285
-        Assert.Equal(2, result.Portfolio.QuantityOf(instrumentId: 1));
     }
 }
