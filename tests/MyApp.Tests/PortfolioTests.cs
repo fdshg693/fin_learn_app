@@ -47,7 +47,8 @@ public class PortfolioTests
         var position = new Position(TestData.Instrument1, quantity: 5);
         var portfolio = new Portfolio(cash: 1000, positions: new[] { position });
 
-        var (resultPortfolio, warning) = portfolio.Sell(instrumentId: 1, filledQuantity: 10, totalProceeds: 100, fee: 0);
+        var trade = new TradeResult(InstrumentId: 1, Side: OrderSide.Sell, FilledQuantity: 10, TotalAmount: 100, Fee: 0);
+        var (resultPortfolio, warning) = portfolio.ApplyTrade(trade);
 
         Assert.Equal(Messages.InsufficientQuantityToSell, warning);
         Assert.Equal(1000, resultPortfolio.Cash);
@@ -61,7 +62,8 @@ public class PortfolioTests
         var portfolio = new Portfolio(cash: 1000, positions: new[] { position });
 
         // 約定価格10円 × 3株 = 30円
-        var (resultPortfolio, warning) = portfolio.Sell(instrumentId: 1, filledQuantity: 3, totalProceeds: 30, fee: 0);
+        var trade = new TradeResult(InstrumentId: 1, Side: OrderSide.Sell, FilledQuantity: 3, TotalAmount: 30, Fee: 0);
+        var (resultPortfolio, warning) = portfolio.ApplyTrade(trade);
 
         Assert.Null(warning);
         Assert.Equal(1030, resultPortfolio.Cash);
@@ -75,7 +77,8 @@ public class PortfolioTests
         var portfolio = new Portfolio(cash: 100, positions: new[] { position });
 
         // 約定価格10円 × 3株 = 30円
-        var (resultPortfolio, warning) = portfolio.Buy(instrumentId: 1, filledQuantity: 3, totalCost: 30, fee: 0);
+        var trade = new TradeResult(InstrumentId: 1, Side: OrderSide.Buy, FilledQuantity: 3, TotalAmount: 30, Fee: 0);
+        var (resultPortfolio, warning) = portfolio.ApplyTrade(trade);
 
         Assert.Null(warning);
         Assert.Equal(70, resultPortfolio.Cash);
@@ -89,7 +92,8 @@ public class PortfolioTests
         var portfolio = new Portfolio(cash: 20, positions: new[] { position });
 
         // 約定価格10円 × 3株 = 30 > 現金20
-        var (resultPortfolio, warning) = portfolio.Buy(instrumentId: 1, filledQuantity: 3, totalCost: 30, fee: 0);
+        var trade = new TradeResult(InstrumentId: 1, Side: OrderSide.Buy, FilledQuantity: 3, TotalAmount: 30, Fee: 0);
+        var (resultPortfolio, warning) = portfolio.ApplyTrade(trade);
 
         Assert.Equal(Messages.InsufficientCashToBuy, warning);
         Assert.Equal(20, resultPortfolio.Cash);
@@ -103,7 +107,8 @@ public class PortfolioTests
         var portfolio = new Portfolio(cash: 200, positions: new[] { position });
 
         // 約定価格20円 × 3株 = 60円
-        var (resultPortfolio, warning) = portfolio.Buy(instrumentId: 2, filledQuantity: 3, totalCost: 60, fee: 0);
+        var trade = new TradeResult(InstrumentId: 2, Side: OrderSide.Buy, FilledQuantity: 3, TotalAmount: 60, Fee: 0);
+        var (resultPortfolio, warning) = portfolio.ApplyTrade(trade);
 
         Assert.Null(warning);
         Assert.Equal(140, resultPortfolio.Cash);
@@ -116,7 +121,8 @@ public class PortfolioTests
         var position = new Position(TestData.Instrument1, quantity: 5);
         var portfolio = new Portfolio(cash: 1000, positions: new[] { position });
 
-        var (resultPortfolio, warning) = portfolio.Sell(instrumentId: 1, filledQuantity: 0, totalProceeds: 0, fee: 0);
+        var trade = new TradeResult(InstrumentId: 1, Side: OrderSide.Sell, FilledQuantity: 0, TotalAmount: 0, Fee: 0);
+        var (resultPortfolio, warning) = portfolio.ApplyTrade(trade);
 
         Assert.Equal(Messages.QuantityMustBePositive, warning);
         Assert.Equal(1000, resultPortfolio.Cash);
@@ -129,7 +135,8 @@ public class PortfolioTests
         var position = new Position(TestData.Instrument1, quantity: 5);
         var portfolio = new Portfolio(cash: 1000, positions: new[] { position });
 
-        var (resultPortfolio, warning) = portfolio.Buy(instrumentId: 1, filledQuantity: -1, totalCost: 0, fee: 0);
+        var trade = new TradeResult(InstrumentId: 1, Side: OrderSide.Buy, FilledQuantity: -1, TotalAmount: 0, Fee: 0);
+        var (resultPortfolio, warning) = portfolio.ApplyTrade(trade);
 
         Assert.Equal(Messages.QuantityMustBePositive, warning);
         Assert.Equal(1000, resultPortfolio.Cash);
@@ -142,7 +149,8 @@ public class PortfolioTests
         var portfolio = new Portfolio(cash: 1000, positions: new Position[] { });
 
         // 約定価格10円 × 3株 = 30 + 手数料50 = 80
-        var (resultPortfolio, warning) = portfolio.Buy(instrumentId: 1, filledQuantity: 3, totalCost: 30, fee: 50);
+        var trade = new TradeResult(InstrumentId: 1, Side: OrderSide.Buy, FilledQuantity: 3, TotalAmount: 30, Fee: 50);
+        var (resultPortfolio, warning) = portfolio.ApplyTrade(trade);
 
         Assert.Null(warning);
         Assert.Equal(920, resultPortfolio.Cash);
@@ -156,7 +164,8 @@ public class PortfolioTests
         var portfolio = new Portfolio(cash: 1000, positions: new[] { position });
 
         // 現金1000 + 約定価格10円 × 3株 = 30 - 手数料50 = 980
-        var (resultPortfolio, warning) = portfolio.Sell(instrumentId: 1, filledQuantity: 3, totalProceeds: 30, fee: 50);
+        var trade = new TradeResult(InstrumentId: 1, Side: OrderSide.Sell, FilledQuantity: 3, TotalAmount: 30, Fee: 50);
+        var (resultPortfolio, warning) = portfolio.ApplyTrade(trade);
 
         Assert.Null(warning);
         Assert.Equal(980, resultPortfolio.Cash);
@@ -169,7 +178,8 @@ public class PortfolioTests
         var portfolio = new Portfolio(cash: 70, positions: new Position[] { });
 
         // 約定価格10円 × 3株 = 30 + 手数料50 = 80 > 現金70
-        var (resultPortfolio, warning) = portfolio.Buy(instrumentId: 1, filledQuantity: 3, totalCost: 30, fee: 50);
+        var trade = new TradeResult(InstrumentId: 1, Side: OrderSide.Buy, FilledQuantity: 3, TotalAmount: 30, Fee: 50);
+        var (resultPortfolio, warning) = portfolio.ApplyTrade(trade);
 
         Assert.Equal(Messages.InsufficientCashToBuy, warning);
         Assert.Equal(70, resultPortfolio.Cash);

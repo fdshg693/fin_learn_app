@@ -1,31 +1,4 @@
   ---
-
-  ---
-  3. IExchange の例外ベース制御フロー
-
-  src/MyApp.Core/IExchange.cs の PriceOf は存在しない銘柄に対して
-  KeyNotFoundException を投げ、src/MyApp.Core/ExchangeExtensions.cs が try-catch
-   でラップしています。例外をビジネスロジックの分岐に使っているのは、他のドメイ
-  ンオブジェクトの (T Result, string? Warning) パターンと矛盾します。
-
-  方向性: IExchange に bool TryGetPrice(int instrumentId, out int price)
-  を定義し、ExchangeExtensions を廃止する。
-
-  ---
-  4. Portfolio.Buy/Sell のプリミティブ過多
-
-  src/MyApp.Core/Portfolio.cs の Buy/Sell は (int instrumentId, int 
-  filledQuantity, int totalCost, int fee) と4つの int
-  を取ります。引数の取り違え（totalCost と fee
-  の入れ替えなど）がコンパイル時に検出できません。
-
-  一方、Player.ApplyTrade は TradeResult を受け取っており、Portfolio と Player
-  で抽象度が揃っていません。
-
-  方向性: Portfolio.Buy/Sell も TradeResult
-  を受け取るか、専用の値オブジェクト（例: TradeOrder）を導入して型安全にする。
-
-  ---
   5. Player の責務の曖昧さ
 
   src/MyApp.Core/Player.cs は Portfolio

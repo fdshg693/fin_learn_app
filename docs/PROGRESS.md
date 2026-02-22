@@ -24,9 +24,9 @@
 
 | 機能 | 状態 | 実装箇所 |
 |---|---|---|
-| 買う（約定ベース） | 済 | `Portfolio.Buy(id, qty, cost, fee)` / `Player.Buy` |
-| 売る（約定ベース） | 済 | `Portfolio.Sell(id, qty, proceeds, fee)` / `Player.Sell` |
-| 手数料の徴収 | 済 | `Portfolio.Buy`/`Sell` 内で加減算 |
+| 買う（約定ベース） | 済 | `Portfolio.ApplyTrade(TradeResult)` / `Player.ApplyTrade` |
+| 売る（約定ベース） | 済 | `Portfolio.ApplyTrade(TradeResult)` / `Player.ApplyTrade` |
+| 手数料の徴収 | 済 | `Portfolio.ApplyTrade` 内で加減算 |
 | 待つ（パス） | 済 | `Player.Wait` |
 
 ## ビジネスルール

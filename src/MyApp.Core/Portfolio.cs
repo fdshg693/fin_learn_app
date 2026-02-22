@@ -26,32 +26,42 @@ public sealed class Portfolio
         return _positionSet.QuantityOf(instrumentId);
     }
 
-    public (Portfolio Result, string? Warning) Buy(int instrumentId, int filledQuantity, int totalCost, int fee)
+    public (Portfolio Result, string? Warning) ApplyTrade(TradeResult trade)
     {
-        if (filledQuantity <= 0)
+        return trade.Side switch
+        {
+            OrderSide.Buy => Buy(trade),
+            OrderSide.Sell => Sell(trade),
+            _ => throw new ArgumentOutOfRangeException(nameof(trade))
+        };
+    }
+
+    private (Portfolio Result, string? Warning) Buy(TradeResult trade)
+    {
+        if (trade.FilledQuantity <= 0)
             return (this, Messages.QuantityMustBePositive);
-        if (_cash < totalCost + fee)
+        if (_cash < trade.TotalAmount + trade.Fee)
             return (this, Messages.InsufficientCashToBuy);
 
-        var instrument = _positionSet.GetOrCreateInstrument(instrumentId);
-        var newQuantity = QuantityOf(instrumentId) + filledQuantity;
+        var instrument = _positionSet.GetOrCreateInstrument(trade.InstrumentId);
+        var newQuantity = QuantityOf(trade.InstrumentId) + trade.FilledQuantity;
         var newPositions = _positionSet.SetQuantity(instrument, newQuantity);
-        var newCash = _cash - totalCost - fee;
+        var newCash = _cash - trade.TotalAmount - trade.Fee;
         return (new Portfolio(newCash, newPositions.Positions), null);
     }
 
-    public (Portfolio Result, string? Warning) Sell(int instrumentId, int filledQuantity, int totalProceeds, int fee)
+    private (Portfolio Result, string? Warning) Sell(TradeResult trade)
     {
-        if (filledQuantity <= 0)
+        if (trade.FilledQuantity <= 0)
             return (this, Messages.QuantityMustBePositive);
-        var totalQuantity = QuantityOf(instrumentId);
-        if (totalQuantity < filledQuantity)
+        var totalQuantity = QuantityOf(trade.InstrumentId);
+        if (totalQuantity < trade.FilledQuantity)
             return (this, Messages.InsufficientQuantityToSell);
 
-        var instrument = _positionSet.GetExistingInstrument(instrumentId);
-        var newQuantity = totalQuantity - filledQuantity;
+        var instrument = _positionSet.GetExistingInstrument(trade.InstrumentId);
+        var newQuantity = totalQuantity - trade.FilledQuantity;
         var newPositions = _positionSet.SetQuantity(instrument, newQuantity);
-        var newCash = _cash + totalProceeds - fee;
+        var newCash = _cash + trade.TotalAmount - trade.Fee;
         return (new Portfolio(newCash, newPositions.Positions), null);
     }
 }

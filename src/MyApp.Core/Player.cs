@@ -27,14 +27,7 @@ public sealed class Player
 
     public (Player Result, string? Warning) ApplyTrade(TradeResult trade)
     {
-        var (resultPortfolio, warning) = trade.Side switch
-        {
-            OrderSide.Buy => Portfolio.Buy(
-                trade.InstrumentId, trade.FilledQuantity, trade.TotalAmount, trade.Fee),
-            OrderSide.Sell => Portfolio.Sell(
-                trade.InstrumentId, trade.FilledQuantity, trade.TotalAmount, trade.Fee),
-            _ => throw new ArgumentOutOfRangeException(nameof(trade))
-        };
+        var (resultPortfolio, warning) = Portfolio.ApplyTrade(trade);
 
         if (warning is not null)
             return (this, warning);
