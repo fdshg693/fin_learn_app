@@ -124,6 +124,23 @@ public class PlayerTests
         Assert.Equal(95, order.Price);
     }
 
+    [Fact]
+    public void 成行注文を生成できる()
+    {
+        var player = new Player();
+        var instrument = new Instrument(1);
+
+        var order = player.CreateOrder(orderId: 10, instrument, OrderSide.Buy, quantity: 5, price: null);
+
+        Assert.Equal(10, order.Id);
+        Assert.Equal("player", order.TraderId);
+        Assert.Equal(instrument, order.Instrument);
+        Assert.Equal(OrderSide.Buy, order.Side);
+        Assert.Equal(OrderType.Market, order.Type);
+        Assert.Equal(5, order.Quantity);
+        Assert.Null(order.Price);
+    }
+
     // --- 約定結果の適用 ---
 
     [Fact]

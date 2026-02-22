@@ -20,25 +20,29 @@ public sealed class TurnProcessor
         Market = market;
     }
 
-    public (Game Result, string? Warning) Buy(Game game, IExchange exchange, int instrumentId, int quantity)
+    public (Game Result, string? Warning) Buy(Game game, IExchange exchange, int instrumentId, int quantity, int? price = null)
     {
         if (quantity <= 0)
             return (game, Messages.QuantityMustBePositive);
+        if (price is not null && price <= 0)
+            return (game, Messages.PriceMustBePositive);
 
         var instrument = new Instrument(instrumentId);
-        return PlaceMarketOrder(game, exchange, instrument, OrderSide.Buy, quantity, Messages.NoMatchingSellOrders);
+        return PlaceOrder(game, exchange, instrument, OrderSide.Buy, quantity, price, Messages.NoMatchingSellOrders);
     }
 
-    public (Game Result, string? Warning) Sell(Game game, IExchange exchange, int instrumentId, int quantity)
+    public (Game Result, string? Warning) Sell(Game game, IExchange exchange, int instrumentId, int quantity, int? price = null)
     {
         if (quantity <= 0)
             return (game, Messages.QuantityMustBePositive);
+        if (price is not null && price <= 0)
+            return (game, Messages.PriceMustBePositive);
 
         if (game.Player.Portfolio.QuantityOf(instrumentId) < quantity)
             return (game, Messages.InsufficientQuantityToSell);
 
         var instrument = new Instrument(instrumentId);
-        return PlaceMarketOrder(game, exchange, instrument, OrderSide.Sell, quantity, Messages.NoMatchingBuyOrders);
+        return PlaceOrder(game, exchange, instrument, OrderSide.Sell, quantity, price, Messages.NoMatchingBuyOrders);
     }
 
     public (Game Result, string? Warning) Wait(Game game, IExchange exchange)
@@ -47,28 +51,45 @@ public sealed class TurnProcessor
         return (new Game(game.Player, game.Turn + 1, bookWithOrders, nextId, game.Instruments), null);
     }
 
-    private (Game Result, string? Warning) PlaceMarketOrder(
+    private (Game Result, string? Warning) PlaceOrder(
         Game game, IExchange exchange, Instrument instrument, OrderSide side,
-        int quantity, string noMatchMessage)
+        int quantity, int? price, string noMatchMessage)
     {
         // 1. コンピューター注文を生成
         var (bookWithOrders, nextId) = OrderPlacer.PlaceOrders(game.OrderBook, exchange, game.Instruments, game.NextOrderId);
 
-        // 2. プレイヤーの成行注文を生成
-        var order = game.Player.CreateMarketOrder(nextId, instrument, side, quantity);
+        // 2. プレイヤーの注文を生成
+        var order = game.Player.CreateOrder(nextId, instrument, side, quantity, price);
 
         // 3. 市場で約定
         var matchResult = Market.Execute(bookWithOrders, order, exchange);
 
-        if (matchResult.Trade.FilledQuantity == 0)
+        // 4. 成行注文で約定ゼロ → 警告を返す
+        if (price is null && matchResult.Trade.FilledQuantity == 0)
             return (game, noMatchMessage);
 
-        // 4. プレイヤーのポートフォリオを更新
-        var (resultPlayer, warning) = game.Player.ApplyTrade(matchResult.Trade);
-        if (warning is not null)
-            return (game, warning);
+        // 5. 約定分があればポートフォリオを更新
+        var resultPlayer = game.Player;
+        if (matchResult.Trade.FilledQuantity > 0)
+        {
+            string? warning;
+            (resultPlayer, warning) = game.Player.ApplyTrade(matchResult.Trade);
+            if (warning is not null)
+                return (game, warning);
+        }
 
-        return (new Game(resultPlayer, game.Turn + 1, matchResult.UpdatedBook,
+        // 6. 指値注文の未約定分を板に追加
+        var updatedBook = matchResult.UpdatedBook;
+        if (price is not null)
+        {
+            var remainingQty = quantity - matchResult.Trade.FilledQuantity;
+            if (remainingQty > 0)
+            {
+                updatedBook = updatedBook.Add(order.WithQuantity(remainingQty));
+            }
+        }
+
+        return (new Game(resultPlayer, game.Turn + 1, updatedBook,
             nextId + 1, game.Instruments), null);
     }
 }
