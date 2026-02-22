@@ -72,10 +72,10 @@ public sealed class TurnProcessor
         var resultPlayer = game.Player;
         if (matchResult.Trade.FilledQuantity > 0)
         {
-            string? warning;
-            (resultPlayer, warning) = game.Player.ApplyTrade(matchResult.Trade);
+            var (resultPortfolio, warning) = game.Player.Portfolio.ApplyTrade(matchResult.Trade);
             if (warning is not null)
                 return (game, warning);
+            resultPlayer = game.Player.WithPortfolio(resultPortfolio);
         }
 
         // 6. 指値注文の未約定分を板に追加

@@ -1,22 +1,4 @@
-  ---
-  5. Player の責務の曖昧さ
 
-  src/MyApp.Core/Player.cs は Portfolio
-  のラッパーに近く、独自のドメインロジックが薄い状態です:
-
-  - ApplyTrade → Portfolio.Buy/Sell に委譲するだけ
-  - Wait → 何もせず自身を返す
-  - CreateOrder → Order の new を呼ぶだけ
-  - ProfitLoss → Portfolio.TotalAmount - InitialCash
-
-  Player と Portfolio の境界が不明確で、将来「複数プレイヤー」「プレイヤー固有の
-  戦略」を入れようとした時に、どちらに置くべきか判断できません。
-
-  方向性: Player を「ゲーム参加者としての識別・戦略・履歴」に特化し、Portfolio
-  を純粋な資産管理に整理する。もしくは、現時点では Player を Portfolio
-  に統合して YAGNI に従う。
-
-  ---
   6. ComputerTrader の戦略が固定的
 
   src/MyApp.Core/ComputerTrader.cs は「買い10本 × 95%、売り10本 ×

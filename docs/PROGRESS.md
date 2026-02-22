@@ -8,7 +8,7 @@
 | ポジション | `Position` | 済 | 銘柄 + 数量、評価額算出 |
 | ポジション集合 | `PositionSet` | 済 | 同一銘柄の自動集約、`+` 演算子 |
 | ポートフォリオ | `Portfolio` | 済 | 現金 + ポジション集合、売買ロジック |
-| 投資家（プレイヤー） | `Player` | 済 | 初期資産 10,000 JPY、損益算出 |
+| 投資家（プレイヤー） | `Player` | 済 | 識別（Name）・注文生成・損益算出・初期資産 10,000 JPY |
 | 取引所 | `IExchange` | 済 | 価格取得 + 手数料（インターフェース） |
 | 注文 | `Order` | 済 | ID・注文者・銘柄・売買区分・数量・価格 |
 | 売買区分 | `OrderSide` | 済 | Buy / Sell の列挙型 |
@@ -24,10 +24,10 @@
 
 | 機能 | 状態 | 実装箇所 |
 |---|---|---|
-| 買う（約定ベース） | 済 | `Portfolio.ApplyTrade(TradeResult)` / `Player.ApplyTrade` |
-| 売る（約定ベース） | 済 | `Portfolio.ApplyTrade(TradeResult)` / `Player.ApplyTrade` |
+| 買う（約定ベース） | 済 | `Portfolio.ApplyTrade(TradeResult)` + `Player.WithPortfolio` |
+| 売る（約定ベース） | 済 | `Portfolio.ApplyTrade(TradeResult)` + `Player.WithPortfolio` |
 | 手数料の徴収 | 済 | `Portfolio.ApplyTrade` 内で加減算 |
-| 待つ（パス） | 済 | `Player.Wait` |
+| 待つ（パス） | 済 | `TurnProcessor.Wait`（Player は関与しない） |
 
 ## ビジネスルール
 
@@ -50,7 +50,7 @@
 | `PositionSetTests` | 集約・演算子・合計額 |
 | `ExchangeExtensionsTests` | 安全な価格取得 |
 | `PortfolioTests` | 売買・手数料・バリデーション |
-| `PlayerTests` | 初期状態・損益・不変性 |
+| `PlayerTests` | 識別（Name）・WithPortfolio・損益・注文生成 |
 | `GameTests` | ターン進行・不変性・失敗時ターン不変 |
 | `OrderTests` | プロパティ・等価性・バリデーション |
 | `OrderBookTests` | 追加・ソート・約定・価格判定・不変性 |

@@ -4,39 +4,30 @@ public sealed class Player
 {
     private const int InitialCash = 10000;
 
-    public Player()
-        : this(new Portfolio(cash: InitialCash, positions: Array.Empty<Position>()))
+    public Player(string name = "player")
+        : this(name, new Portfolio(cash: InitialCash, positions: Array.Empty<Position>()))
     {
     }
 
-    private Player(Portfolio portfolio)
+    private Player(string name, Portfolio portfolio)
     {
+        Name = name;
         Portfolio = portfolio;
     }
 
+    public string Name { get; }
     public Portfolio Portfolio { get; }
 
-    private const string PlayerId = "player";
+    public Player WithPortfolio(Portfolio portfolio)
+    {
+        return new Player(Name, portfolio);
+    }
 
     public Order CreateOrder(int orderId, Instrument instrument, OrderSide side, int quantity, int? price)
     {
         return price is not null
-            ? new Order(orderId, PlayerId, instrument, side, quantity, price.Value)
-            : Order.CreateMarket(orderId, PlayerId, instrument, side, quantity);
-    }
-
-    public (Player Result, string? Warning) ApplyTrade(TradeResult trade)
-    {
-        var (resultPortfolio, warning) = Portfolio.ApplyTrade(trade);
-
-        if (warning is not null)
-            return (this, warning);
-        return (new Player(resultPortfolio), null);
-    }
-
-    public (Player Result, string? Warning) Wait()
-    {
-        return (this, null);
+            ? new Order(orderId, Name, instrument, side, quantity, price.Value)
+            : Order.CreateMarket(orderId, Name, instrument, side, quantity);
     }
 
     public int ProfitLoss(IExchange exchange)

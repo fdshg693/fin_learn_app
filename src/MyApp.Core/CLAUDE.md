@@ -10,7 +10,7 @@ Pure domain layer with zero external dependencies. All types are **immutable sea
 | `Position.cs` | ポジション | Instrument + quantity, evaluation amount |
 | `PositionSet.cs` | ポジション集合 | Immutable collection, auto-aggregates same instrument via `+` |
 | `Portfolio.cs` | ポートフォリオ | Cash + PositionSet, fill-based Buy/Sell logic |
-| `Player.cs` | プレイヤー | Investor: creates orders, applies trade results, profit/loss calculation |
+| `Player.cs` | プレイヤー | Game participant identity (Name), order creation, profit/loss. Portfolio updates via `WithPortfolio` |
 | `IExchange.cs` | 取引所 | Interface: price lookup + fee |
 | `ExchangeExtensions.cs` | — | `TryGetPrice` safe helper |
 | `IOrderPlacer.cs` | 注文生成戦略 | Interface for order generation (DI point for testing) |
@@ -45,14 +45,15 @@ Sell orders are sorted ascending (cheapest first), buy orders descending (highes
 
 Each turn follows this sequence:
 1. `IOrderPlacer.PlaceOrders` generates computer orders and adds them to the `OrderBook`
-2. `Player.CreateBuyOrder`/`CreateSellOrder` creates the player's order (expressing intent)
+2. `Player.CreateOrder` creates the player's order (expressing intent)
 3. `IMarket.Execute` matches the order against the OrderBook, returns `MatchResult`
-4. `Player.ApplyTrade` updates the portfolio from the structured `TradeResult`
+4. `Portfolio.ApplyTrade` updates the portfolio, then `Player.WithPortfolio` creates updated player
 
 **Responsibility boundaries:**
-- **Player** — creates orders (intent), applies trade results (portfolio update). Does NOT know about OrderBook
+- **Player** — identity (Name), order creation (intent), profit/loss calculation. Does NOT know about OrderBook or trade execution
+- **Portfolio** — pure asset management: cash, positions, trade application (`ApplyTrade`)
 - **Market** — thin wrapper: calls `OrderBook.Match`, extracts the incoming order's `OrderFill`, builds `TradeResult`
-- **Game** — orchestrates the turn flow, connecting Player, Market, and OrderPlacer. Sets sell price = 1 (market order)
+- **TurnProcessor** — orchestrates the turn flow, connecting Player, Portfolio, Market, and OrderPlacer
 
 `FillResult` contains per-order `OrderFill` entries + updated book. `TradeResult` is the player-facing result. `MatchResult` bridges them for Game's use.
 
