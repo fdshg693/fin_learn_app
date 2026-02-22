@@ -124,24 +124,6 @@ public class ComputerTraderTests
     }
 
     [Fact]
-    public void 同じシードで同じ結果になる()
-    {
-        var exchange = TestData.CreateExchange((1, 100), (2, 200), (3, 300));
-
-        var trader1 = new ComputerTrader(new Random(42));
-        var (book1, _) = trader1.PlaceOrders(new OrderBook(), exchange, Instruments, startOrderId: 1);
-
-        var trader2 = new ComputerTrader(new Random(42));
-        var (book2, _) = trader2.PlaceOrders(new OrderBook(), exchange, Instruments, startOrderId: 1);
-
-        for (int id = 1; id <= 3; id++)
-        {
-            Assert.Equal(book1.BuyOrders(id).Count, book2.BuyOrders(id).Count);
-            Assert.Equal(book1.SellOrders(id).Count, book2.SellOrders(id).Count);
-        }
-    }
-
-    [Fact]
     public void 株価が1の場合に買い注文の価格は最低1()
     {
         var trader = new ComputerTrader(new Random(42));

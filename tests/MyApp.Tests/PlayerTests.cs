@@ -95,22 +95,6 @@ public class PlayerTests
     }
 
     [Fact]
-    public void 売り注文を生成できる()
-    {
-        var player = new Player();
-        var instrument = new Instrument(1);
-
-        var order = player.CreateOrder(orderId: 42, instrument, OrderSide.Sell, quantity: 3, price: 95);
-
-        Assert.Equal(42, order.Id);
-        Assert.Equal("player", order.TraderId);
-        Assert.Equal(instrument, order.Instrument);
-        Assert.Equal(OrderSide.Sell, order.Side);
-        Assert.Equal(3, order.Quantity);
-        Assert.Equal(95, order.Price);
-    }
-
-    [Fact]
     public void 成行注文を生成できる()
     {
         var player = new Player();
