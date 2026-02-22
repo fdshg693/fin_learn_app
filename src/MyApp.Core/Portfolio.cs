@@ -36,6 +36,35 @@ public sealed class Portfolio
         return Trade(exchange, instrumentId, quantity, isBuy: true);
     }
 
+    public (Portfolio Result, string? Warning) BuyFilled(int instrumentId, int filledQuantity, int totalCost, int fee)
+    {
+        if (filledQuantity <= 0)
+            return (this, Messages.QuantityMustBePositive);
+        if (_cash < totalCost + fee)
+            return (this, Messages.InsufficientCashToBuy);
+
+        var instrument = _positionSet.GetOrCreateInstrument(instrumentId);
+        var newQuantity = QuantityOf(instrumentId) + filledQuantity;
+        var newPositions = _positionSet.SetQuantity(instrument, newQuantity);
+        var newCash = _cash - totalCost - fee;
+        return (new Portfolio(newCash, newPositions.Positions), null);
+    }
+
+    public (Portfolio Result, string? Warning) SellFilled(int instrumentId, int filledQuantity, int totalProceeds, int fee)
+    {
+        if (filledQuantity <= 0)
+            return (this, Messages.QuantityMustBePositive);
+        var totalQuantity = QuantityOf(instrumentId);
+        if (totalQuantity < filledQuantity)
+            return (this, Messages.InsufficientQuantityToSell);
+
+        var instrument = _positionSet.GetExistingInstrument(instrumentId);
+        var newQuantity = totalQuantity - filledQuantity;
+        var newPositions = _positionSet.SetQuantity(instrument, newQuantity);
+        var newCash = _cash + totalProceeds - fee;
+        return (new Portfolio(newCash, newPositions.Positions), null);
+    }
+
     private (Portfolio Result, string? Warning) Trade(
         IExchange exchange,
         int instrumentId,

@@ -179,4 +179,55 @@ public class PortfolioTests
 
         Assert.Equal(Messages.InsufficientCashToBuy, warning);
         Assert.Equal(70, resultPortfolio.Cash);
-    }}
+    }
+
+    [Fact]
+    public void BuyFilledで約定結果に基づいて購入できる()
+    {
+        var portfolio = new Portfolio(cash: 1000, positions: new Position[] { });
+
+        var (result, warning) = portfolio.BuyFilled(instrumentId: 1, filledQuantity: 3, totalCost: 285, fee: 50);
+
+        Assert.Null(warning);
+        Assert.Equal(665, result.Cash); // 1000 - 285 - 50
+        Assert.Equal(3, result.QuantityOf(instrumentId: 1));
+    }
+
+    [Fact]
+    public void BuyFilledで現金不足の場合は警告して何もしない()
+    {
+        var portfolio = new Portfolio(cash: 100, positions: new Position[] { });
+
+        var (result, warning) = portfolio.BuyFilled(instrumentId: 1, filledQuantity: 3, totalCost: 285, fee: 50);
+
+        Assert.Equal(Messages.InsufficientCashToBuy, warning);
+        Assert.Equal(100, result.Cash);
+        Assert.Equal(0, result.QuantityOf(instrumentId: 1));
+    }
+
+    [Fact]
+    public void SellFilledで約定結果に基づいて売却できる()
+    {
+        var position = new Position(TestData.Instrument1, quantity: 5);
+        var portfolio = new Portfolio(cash: 1000, positions: new[] { position });
+
+        var (result, warning) = portfolio.SellFilled(instrumentId: 1, filledQuantity: 3, totalProceeds: 285, fee: 50);
+
+        Assert.Null(warning);
+        Assert.Equal(1235, result.Cash); // 1000 + 285 - 50
+        Assert.Equal(2, result.QuantityOf(instrumentId: 1));
+    }
+
+    [Fact]
+    public void SellFilledで保有数不足の場合は警告して何もしない()
+    {
+        var position = new Position(TestData.Instrument1, quantity: 2);
+        var portfolio = new Portfolio(cash: 1000, positions: new[] { position });
+
+        var (result, warning) = portfolio.SellFilled(instrumentId: 1, filledQuantity: 3, totalProceeds: 285, fee: 50);
+
+        Assert.Equal(Messages.InsufficientQuantityToSell, warning);
+        Assert.Equal(1000, result.Cash);
+        Assert.Equal(2, result.QuantityOf(instrumentId: 1));
+    }
+}

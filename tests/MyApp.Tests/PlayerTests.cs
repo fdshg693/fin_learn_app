@@ -83,4 +83,31 @@ public class PlayerTests
         // 元のプレイヤーは不変
         Assert.Equal(9970, bought.Portfolio.Cash);
     }
+
+    [Fact]
+    public void BuyFilledで約定結果に基づいて購入できる()
+    {
+        var player = new Player();
+
+        var (result, warning) = player.BuyFilled(instrumentId: 1, filledQuantity: 3, totalCost: 300, fee: 0);
+
+        Assert.Null(warning);
+        Assert.Equal(9700, result.Portfolio.Cash);
+        Assert.Equal(3, result.Portfolio.QuantityOf(instrumentId: 1));
+        Assert.Equal(10000, player.Portfolio.Cash);
+    }
+
+    [Fact]
+    public void SellFilledで約定結果に基づいて売却できる()
+    {
+        var exchange = TestData.CreateExchange((1, 100));
+        var player = new Player();
+        var (bought, _) = player.Buy(exchange, instrumentId: 1, quantity: 5);
+
+        var (result, warning) = bought.SellFilled(instrumentId: 1, filledQuantity: 3, totalProceeds: 285, fee: 0);
+
+        Assert.Null(warning);
+        Assert.Equal(9785, result.Portfolio.Cash); // 9500 + 285
+        Assert.Equal(2, result.Portfolio.QuantityOf(instrumentId: 1));
+    }
 }

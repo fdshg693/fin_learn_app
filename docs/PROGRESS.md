@@ -16,7 +16,8 @@
 | 約定結果 | `FillResult` | 済 | 約定数量・合計金額・更新後の注文帳 |
 | エラーメッセージ | `Messages` | 済 | 日本語の定数定義 |
 | 価格取得ヘルパー | `ExchangeExtensions` | 済 | `TryGetPrice` 安全な価格取得 |
-| ゲーム | `Game` | 済 | ターン制の進行管理、Player への委譲 |
+| ゲーム | `Game` | 済 | ターン制の進行管理、OrderBook + ComputerTrader 統合 |
+| コンピュータートレーダー | `ComputerTrader` | 済 | 毎ターン自動注文生成（買10・売10） |
 
 ## アクション
 
@@ -26,6 +27,8 @@
 | 売る（即時） | 済 | `Portfolio.Sell` / `Player.Sell` |
 | 手数料の徴収 | 済 | `Portfolio.Trade` 内で加減算 |
 | 待つ（パス） | 済 | `Player.Wait` |
+| 約定ベースの購入 | 済 | `Portfolio.BuyFilled` / `Player.BuyFilled` |
+| 約定ベースの売却 | 済 | `Portfolio.SellFilled` / `Player.SellFilled` |
 
 ## ビジネスルール
 
@@ -36,7 +39,7 @@
 | 手数料込みのバリデーション | 済 |
 | ターン制の進行 | 済 |
 | 株価のランダム変動 | 未着手 |
-| コンピューターの自動注文 | 未着手 |
+| コンピューターの自動注文 | 済 |
 | 注文帳（オーダーブック）での約定判定 | 済 |
 
 ## テスト
@@ -52,5 +55,6 @@
 | `GameTests` | ターン進行・不変性・失敗時ターン不変 |
 | `OrderTests` | プロパティ・等価性・バリデーション |
 | `OrderBookTests` | 追加・ソート・約定・価格判定・不変性 |
+| `ComputerTraderTests` | 注文生成・価格・数量・分散・不変性 |
 
 テストダブル: `TestExchange`（価格辞書）, `TestData`（共通フィクスチャ）

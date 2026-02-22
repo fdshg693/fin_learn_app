@@ -36,6 +36,22 @@ public sealed class Player
         return (new Player(resultPortfolio), null);
     }
 
+    public (Player Result, string? Warning) BuyFilled(int instrumentId, int filledQuantity, int totalCost, int fee)
+    {
+        var (resultPortfolio, warning) = Portfolio.BuyFilled(instrumentId, filledQuantity, totalCost, fee);
+        if (warning is not null)
+            return (this, warning);
+        return (new Player(resultPortfolio), null);
+    }
+
+    public (Player Result, string? Warning) SellFilled(int instrumentId, int filledQuantity, int totalProceeds, int fee)
+    {
+        var (resultPortfolio, warning) = Portfolio.SellFilled(instrumentId, filledQuantity, totalProceeds, fee);
+        if (warning is not null)
+            return (this, warning);
+        return (new Player(resultPortfolio), null);
+    }
+
     public (Player Result, string? Warning) Wait()
     {
         return (this, null);
