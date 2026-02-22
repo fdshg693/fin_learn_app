@@ -23,6 +23,11 @@ public sealed class Player
         return new Order(orderId, PlayerId, instrument, side, quantity, price);
     }
 
+    public Order CreateMarketOrder(int orderId, Instrument instrument, OrderSide side, int quantity)
+    {
+        return Order.CreateMarket(orderId, PlayerId, instrument, side, quantity);
+    }
+
     public (Player Result, string? Warning) ApplyTrade(TradeResult trade)
     {
         var (resultPortfolio, warning) = trade.Side switch

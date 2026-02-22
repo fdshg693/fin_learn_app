@@ -70,4 +70,38 @@ public class OrderTests
         Assert.Throws<ArgumentException>(() =>
             new Order(1, "player", new Instrument(1), OrderSide.Buy, 5, -100));
     }
+
+    // --- 注文タイプ ---
+
+    [Fact]
+    public void 指値注文はOrderTypeLimitでPriceを持つ()
+    {
+        var order = new Order(1, "player", new Instrument(1), OrderSide.Buy, 3, 100);
+
+        Assert.Equal(OrderType.Limit, order.Type);
+        Assert.Equal(100, order.Price);
+    }
+
+    [Fact]
+    public void 成行注文はOrderTypeMarketでPriceがnull()
+    {
+        var order = Order.CreateMarket(1, "player", new Instrument(1), OrderSide.Buy, 3);
+
+        Assert.Equal(OrderType.Market, order.Type);
+        Assert.Null(order.Price);
+    }
+
+    [Fact]
+    public void 成行注文はPriceなしで作成できる()
+    {
+        var order = Order.CreateMarket(1, "player", new Instrument(1), OrderSide.Sell, 5);
+
+        Assert.Equal(1, order.Id);
+        Assert.Equal("player", order.TraderId);
+        Assert.Equal(new Instrument(1), order.Instrument);
+        Assert.Equal(OrderSide.Sell, order.Side);
+        Assert.Equal(OrderType.Market, order.Type);
+        Assert.Equal(5, order.Quantity);
+        Assert.Null(order.Price);
+    }
 }

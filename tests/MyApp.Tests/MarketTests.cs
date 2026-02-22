@@ -78,8 +78,7 @@ public class MarketTests
         var exchange = TestData.CreateExchange((1, 100));
         var book = new OrderBook()
             .Add(new Order(1, "computer", new Instrument(1), OrderSide.Buy, 5, 95));
-        // 成行注文（price=1）で全買い注文とマッチ
-        var order = new Order(10, "player", new Instrument(1), OrderSide.Sell, 3, 1);
+        var order = Order.CreateMarket(10, "player", new Instrument(1), OrderSide.Sell, 3);
 
         var result = market.Execute(book, order, exchange);
 
@@ -96,7 +95,7 @@ public class MarketTests
         var market = new Market();
         var exchange = TestData.CreateExchange((1, 100));
         var book = new OrderBook();
-        var order = new Order(10, "player", new Instrument(1), OrderSide.Sell, 3, 1);
+        var order = Order.CreateMarket(10, "player", new Instrument(1), OrderSide.Sell, 3);
 
         var result = market.Execute(book, order, exchange);
 
@@ -111,8 +110,7 @@ public class MarketTests
         var book = new OrderBook()
             .Add(new Order(1, "computer", new Instrument(1), OrderSide.Buy, 3, 90))
             .Add(new Order(2, "computer", new Instrument(1), OrderSide.Buy, 2, 95));
-        // 成行注文で全買い注文とマッチ
-        var order = new Order(10, "player", new Instrument(1), OrderSide.Sell, 4, 1);
+        var order = Order.CreateMarket(10, "player", new Instrument(1), OrderSide.Sell, 4);
 
         var result = market.Execute(book, order, exchange);
 
@@ -128,7 +126,7 @@ public class MarketTests
         var exchange = TestData.CreateExchange((1, 100));
         var book = new OrderBook()
             .Add(new Order(1, "computer", new Instrument(1), OrderSide.Buy, 5, 95));
-        var order = new Order(10, "player", new Instrument(1), OrderSide.Sell, 3, 1);
+        var order = Order.CreateMarket(10, "player", new Instrument(1), OrderSide.Sell, 3);
 
         var result = market.Execute(book, order, exchange);
 

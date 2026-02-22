@@ -509,4 +509,40 @@ public class OrderBookTests
         // @200は約定しない
         Assert.Null(result.GetFill(2));
     }
+
+    // --- 成行注文のマッチング ---
+
+    [Fact]
+    public void 成行買い注文は全売り注文とマッチする()
+    {
+        var book = new OrderBook()
+            .Add(new Order(1, "computer", new Instrument(1), OrderSide.Sell, 3, 100))
+            .Add(new Order(2, "computer", new Instrument(1), OrderSide.Sell, 2, 500));
+        var incoming = Order.CreateMarket(10, "player", new Instrument(1), OrderSide.Buy, 4);
+
+        var result = book.Match(incoming);
+        var incomingFill = result.GetFill(10);
+
+        Assert.NotNull(incomingFill);
+        Assert.Equal(4, incomingFill.FilledQuantity);
+        // 安い方から: 3*100 + 1*500 = 800
+        Assert.Equal(800, incomingFill.TotalAmount);
+    }
+
+    [Fact]
+    public void 成行売り注文は全買い注文とマッチする()
+    {
+        var book = new OrderBook()
+            .Add(new Order(1, "computer", new Instrument(1), OrderSide.Buy, 3, 95))
+            .Add(new Order(2, "computer", new Instrument(1), OrderSide.Buy, 2, 10));
+        var incoming = Order.CreateMarket(10, "player", new Instrument(1), OrderSide.Sell, 4);
+
+        var result = book.Match(incoming);
+        var incomingFill = result.GetFill(10);
+
+        Assert.NotNull(incomingFill);
+        Assert.Equal(4, incomingFill.FilledQuantity);
+        // 高い方から: 3*95 + 1*10 = 295
+        Assert.Equal(295, incomingFill.TotalAmount);
+    }
 }

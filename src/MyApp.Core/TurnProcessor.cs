@@ -26,8 +26,7 @@ public sealed class TurnProcessor
             return (game, Messages.QuantityMustBePositive);
 
         var instrument = new Instrument(instrumentId);
-        var price = exchange.PriceOf(instrumentId);
-        return PlaceOrder(game, exchange, instrument, OrderSide.Buy, quantity, price, Messages.NoMatchingSellOrders);
+        return PlaceMarketOrder(game, exchange, instrument, OrderSide.Buy, quantity, Messages.NoMatchingSellOrders);
     }
 
     public (Game Result, string? Warning) Sell(Game game, IExchange exchange, int instrumentId, int quantity)
@@ -39,8 +38,7 @@ public sealed class TurnProcessor
             return (game, Messages.InsufficientQuantityToSell);
 
         var instrument = new Instrument(instrumentId);
-        // 成行注文: price=1で全買い注文とマッチ可能
-        return PlaceOrder(game, exchange, instrument, OrderSide.Sell, quantity, price: 1, Messages.NoMatchingBuyOrders);
+        return PlaceMarketOrder(game, exchange, instrument, OrderSide.Sell, quantity, Messages.NoMatchingBuyOrders);
     }
 
     public (Game Result, string? Warning) Wait(Game game, IExchange exchange)
@@ -49,15 +47,15 @@ public sealed class TurnProcessor
         return (new Game(game.Player, game.Turn + 1, bookWithOrders, nextId, game.Instruments), null);
     }
 
-    private (Game Result, string? Warning) PlaceOrder(
+    private (Game Result, string? Warning) PlaceMarketOrder(
         Game game, IExchange exchange, Instrument instrument, OrderSide side,
-        int quantity, int price, string noMatchMessage)
+        int quantity, string noMatchMessage)
     {
         // 1. コンピューター注文を生成
         var (bookWithOrders, nextId) = OrderPlacer.PlaceOrders(game.OrderBook, exchange, game.Instruments, game.NextOrderId);
 
-        // 2. プレイヤーの注文を生成
-        var order = game.Player.CreateOrder(nextId, instrument, side, quantity, price);
+        // 2. プレイヤーの成行注文を生成
+        var order = game.Player.CreateMarketOrder(nextId, instrument, side, quantity);
 
         // 3. 市場で約定
         var matchResult = Market.Execute(bookWithOrders, order, exchange);

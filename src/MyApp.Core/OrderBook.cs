@@ -30,13 +30,13 @@ public sealed class OrderBook
     public IReadOnlyList<Order> SellOrders(int instrumentId) =>
         _orders
             .Where(o => o.Side == OrderSide.Sell && o.Instrument.Id == instrumentId)
-            .OrderBy(o => o.Price)
+            .OrderBy(o => o.Price ?? 0)
             .ToList();
 
     public IReadOnlyList<Order> BuyOrders(int instrumentId) =>
         _orders
             .Where(o => o.Side == OrderSide.Buy && o.Instrument.Id == instrumentId)
-            .OrderByDescending(o => o.Price)
+            .OrderByDescending(o => o.Price ?? 0)
             .ToList();
 
     /// <summary>
@@ -45,11 +45,15 @@ public sealed class OrderBook
     /// </summary>
     public FillResult Match(Order incoming)
     {
-        var eligible = incoming.Side == OrderSide.Buy
-            ? SellOrders(incoming.Instrument.Id)
-                .TakeWhile(o => o.Price <= incoming.Price).ToList()
-            : BuyOrders(incoming.Instrument.Id)
-                .TakeWhile(o => o.Price >= incoming.Price).ToList();
+        var eligible = incoming.Type == OrderType.Market
+            ? (incoming.Side == OrderSide.Buy
+                ? SellOrders(incoming.Instrument.Id).ToList()
+                : BuyOrders(incoming.Instrument.Id).ToList())
+            : (incoming.Side == OrderSide.Buy
+                ? SellOrders(incoming.Instrument.Id)
+                    .TakeWhile(o => o.Price <= incoming.Price!.Value).ToList()
+                : BuyOrders(incoming.Instrument.Id)
+                    .TakeWhile(o => o.Price >= incoming.Price!.Value).ToList());
 
         return Fill(incoming, eligible);
     }
@@ -66,7 +70,7 @@ public sealed class OrderBook
             if (remaining <= 0) break;
 
             var fill = Math.Min(remaining, order.Quantity);
-            var amount = fill * order.Price;
+            var amount = fill * order.Price!.Value;
             incomingTotalAmount += amount;
             remaining -= fill;
 
