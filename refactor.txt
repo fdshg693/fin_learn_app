@@ -1,0 +1,74 @@
+  ---
+  2. 「成行注文」がハードコードされている（注文タイプの欠如）
+
+  src/MyApp.Core/Game.cs#L61 で売りの成行注文を price: 1
+  というマジックナンバーで表現しています:
+
+  // 成行注文: price=1で全買い注文とマッチ可能
+  return PlaceOrder(exchange, instrument, OrderSide.Sell, quantity, price: 1,
+  ...);
+
+  買いも exchange.PriceOf(instrumentId)
+  を「成行注文のつもり」で使っています。Order モデル自体には「成行 /
+  指値」の区別がないため、価格決定ロジックが Game に漏れ出しています。
+
+  方向性: OrderType（Market / Limit）を Order
+  に持たせ、マッチングロジック側で成行の意味を解釈する。Game
+  は注文の種類を伝えるだけにする。
+
+  ---
+  3. IExchange の例外ベース制御フロー
+
+  src/MyApp.Core/IExchange.cs の PriceOf は存在しない銘柄に対して
+  KeyNotFoundException を投げ、src/MyApp.Core/ExchangeExtensions.cs が try-catch
+   でラップしています。例外をビジネスロジックの分岐に使っているのは、他のドメイ
+  ンオブジェクトの (T Result, string? Warning) パターンと矛盾します。
+
+  方向性: IExchange に bool TryGetPrice(int instrumentId, out int price)
+  を定義し、ExchangeExtensions を廃止する。
+
+  ---
+  4. Portfolio.Buy/Sell のプリミティブ過多
+
+  src/MyApp.Core/Portfolio.cs の Buy/Sell は (int instrumentId, int 
+  filledQuantity, int totalCost, int fee) と4つの int
+  を取ります。引数の取り違え（totalCost と fee
+  の入れ替えなど）がコンパイル時に検出できません。
+
+  一方、Player.ApplyTrade は TradeResult を受け取っており、Portfolio と Player
+  で抽象度が揃っていません。
+
+  方向性: Portfolio.Buy/Sell も TradeResult
+  を受け取るか、専用の値オブジェクト（例: TradeOrder）を導入して型安全にする。
+
+  ---
+  5. Player の責務の曖昧さ
+
+  src/MyApp.Core/Player.cs は Portfolio
+  のラッパーに近く、独自のドメインロジックが薄い状態です:
+
+  - ApplyTrade → Portfolio.Buy/Sell に委譲するだけ
+  - Wait → 何もせず自身を返す
+  - CreateOrder → Order の new を呼ぶだけ
+  - ProfitLoss → Portfolio.TotalAmount - InitialCash
+
+  Player と Portfolio の境界が不明確で、将来「複数プレイヤー」「プレイヤー固有の
+  戦略」を入れようとした時に、どちらに置くべきか判断できません。
+
+  方向性: Player を「ゲーム参加者としての識別・戦略・履歴」に特化し、Portfolio
+  を純粋な資産管理に整理する。もしくは、現時点では Player を Portfolio
+  に統合して YAGNI に従う。
+
+  ---
+  6. ComputerTrader の戦略が固定的
+
+  src/MyApp.Core/ComputerTrader.cs は「買い10本 × 95%、売り10本 ×
+  100%」がハードコードされています。IOrderPlacer
+  インターフェースはあるものの、戦略のパラメータ（注文数、価格レンジ、スプレッド
+  幅）を変えるには新しいクラスが必要です。
+
+  方向性: ゲームの難易度や市場の活況度を変えたい場合に備え、戦略パラメータを設定
+  オブジェクトとして外出しする。ただし、現時点で複数戦略の要件がなければ YAGNI
+  として後回しも妥当。
+
+  ---

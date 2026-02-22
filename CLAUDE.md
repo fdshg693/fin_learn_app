@@ -16,6 +16,8 @@ Key models (see `docs/DDD.md` for full domain glossary):
 - **PositionSet (ポジション集合)** — Immutable collection that normalizes duplicate instruments by aggregating quantities
 - **Portfolio (ポートフォリオ)** — Aggregate root: cash + positions, with Buy/Sell trade logic
 - **Player (プレイヤー)** — Investor who owns a portfolio
+- **Game (ゲーム)** — Pure state snapshot: turn, player, order book, instruments (no workflow logic)
+- **TurnProcessor (ターン処理)** — Domain service: orchestrates turn progression (Buy/Sell/Wait actions, computer order generation, market matching, portfolio update)
 - **IExchange (取引所)** — Interface for price lookups (dependency injection)
 - **Order (注文)** — Buy/sell order with trader, instrument, quantity, price
 - **OrderBook (注文帳)** — Immutable order book with price-based matching (see `src/MyApp.Core/CLAUDE.md` for details)
