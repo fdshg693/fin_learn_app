@@ -18,14 +18,9 @@ public sealed class Player
 
     private const string PlayerId = "player";
 
-    public Order CreateBuyOrder(int orderId, Instrument instrument, int quantity, int price)
+    public Order CreateOrder(int orderId, Instrument instrument, OrderSide side, int quantity, int price)
     {
-        return new Order(orderId, PlayerId, instrument, OrderSide.Buy, quantity, price);
-    }
-
-    public Order CreateSellOrder(int orderId, Instrument instrument, int quantity, int price)
-    {
-        return new Order(orderId, PlayerId, instrument, OrderSide.Sell, quantity, price);
+        return new Order(orderId, PlayerId, instrument, side, quantity, price);
     }
 
     public (Player Result, string? Warning) ApplyTrade(TradeResult trade)
