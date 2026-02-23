@@ -6,18 +6,20 @@ namespace FinLearn.Api.Services;
 public sealed class GameStore
 {
     private readonly ConcurrentDictionary<string, Game> _games = new();
+    private readonly GameConfig _config;
 
-    private const int InstrumentCount = 3;
-    private const int InitialPrice = 100;
-    public const int Fee = 10;
+    public GameStore(GameConfig config)
+    {
+        _config = config;
+    }
 
     public (string GameId, Game Game) CreateGame()
     {
         var gameId = Guid.NewGuid().ToString("N");
-        var instruments = Enumerable.Range(1, InstrumentCount)
+        var instruments = Enumerable.Range(1, _config.InstrumentCount)
             .Select(id => new Instrument(id))
             .ToList();
-        var prices = instruments.ToDictionary(i => i.Id, _ => InitialPrice)
+        var prices = instruments.ToDictionary(i => i.Id, _ => _config.InitialPrice)
             .AsReadOnly();
         var game = new Game(instruments, prices);
         _games[gameId] = game;
