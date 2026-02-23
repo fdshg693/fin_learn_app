@@ -10,9 +10,9 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/tests/MyApp.Tests/bin/Debug/net9.0/MyApp.Tests.dll",
+            "program": "${workspaceFolder}/tests/FinLearn.Tests/bin/Debug/net9.0/FinLearn.Tests.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/tests/MyApp.Tests",
+            "cwd": "${workspaceFolder}/tests/FinLearn.Tests",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
             "console": "internalConsole",
             "stopAtEntry": false
