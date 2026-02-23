@@ -3,7 +3,13 @@
     "allow": [
       "Bash(dotnet test:*)",
       "Bash(dotnet build:*)",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "Bash(terraform init:*)",
+      "Bash(terraform validate:*)",
+      "Bash(az appservice list-locations:*)",
+      "Bash(az vm list-usage:*)",
+      "Bash(az provider show:*)",
+      "Bash(az account show:*)"
     ]
   }
 }
