@@ -1,7 +1,7 @@
 ## Frontend
 
-React 19 + React Router v7（フレームワークモード）+ Tailwind CSS v4 の SPA。
-バックエンド（.NET Minimal API、`localhost:5000`）とは CORS で接続。
+React 19 + React Router v7（フレームワークモード、SSR 有効）+ Tailwind CSS v4 のアプリケーション。
+バックエンド（.NET Minimal API、デフォルト: `http://localhost:5088`）とは CORS で接続。
 
 ### Commands
 

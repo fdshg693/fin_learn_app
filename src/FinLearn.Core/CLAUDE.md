@@ -12,7 +12,6 @@ Pure domain layer with zero external dependencies. All types are **immutable sea
 | `Portfolio.cs` | ポートフォリオ | Cash + PositionSet, fill-based Buy/Sell logic |
 | `Player.cs` | プレイヤー | Game participant identity (Name), order creation, profit/loss. Portfolio updates via `WithPortfolio` |
 | `IExchange.cs` | 取引所 | Interface: price lookup + fee |
-| `ExchangeExtensions.cs` | — | `TryGetPrice` safe helper |
 | `IOrderPlacer.cs` | 注文生成戦略 | Interface for order generation (DI point for testing) |
 | `Game.cs` | ゲーム | State snapshot: turn, player, order book, instruments, **prices** |
 | `ComputerTrader.cs` | コンピュータートレーダー | Implements `IOrderPlacer`. Generates 10 buy (95%) + 10 sell (100%) orders per turn |

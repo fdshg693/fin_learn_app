@@ -134,7 +134,7 @@ React Router の `clientLoader` / `clientAction` でデータ取得・アクシ�
 `app/api/gameApi.ts` — fetch ベースの薄いラッパー。
 
 ```ts
-const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:5000";
+const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:5088";
 
 createGame()             → POST /api/games
 getGame(id)              → GET  /api/games/:id

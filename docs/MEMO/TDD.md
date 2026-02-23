@@ -2,6 +2,6 @@
 
 以下のコマンドで、ファイル変更のたびに自動でテストを走らせられる
 ```shell
-cd tests/MyApp.Tests
+cd tests/FinLearn.Tests
 dotnet watch test
 ```

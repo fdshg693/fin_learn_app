@@ -6,6 +6,7 @@ namespace FinLearn.Api.Services;
 public sealed class GameStore
 {
     private readonly ConcurrentDictionary<string, Game> _games = new();
+    private readonly ConcurrentDictionary<string, object> _locks = new();
     private readonly GameConfig _config;
 
     public GameStore(GameConfig config)
@@ -34,5 +35,23 @@ public sealed class GameStore
     public void UpdateGame(string gameId, Game game)
     {
         _games[gameId] = game;
+    }
+
+    /// <summary>
+    /// ゲームの取得→更新をアトミックに実行する。
+    /// 同一ゲームIDへの並行アクセスをロックで直列化する。
+    /// </summary>
+    public Game? ExecuteUpdate(string gameId, Func<Game, Game?> updater)
+    {
+        var lockObj = _locks.GetOrAdd(gameId, _ => new object());
+        lock (lockObj)
+        {
+            var game = GetGame(gameId);
+            if (game is null) return null;
+            var updated = updater(game);
+            if (updated is not null)
+                UpdateGame(gameId, updated);
+            return updated;
+        }
     }
 }

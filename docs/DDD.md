@@ -15,7 +15,6 @@
 | 注文帳 | `OrderBook` | 済 | 売買注文の管理・約定判定（価格条件付き） |
 | 約定結果 | `FillResult` | 済 | 約定数量・合計金額・更新後の注文帳 |
 | エラーメッセージ | `Messages` | 済 | 日本語の定数定義 |
-| 価格取得ヘルパー | `ExchangeExtensions` | 済 | `TryGetPrice` 安全な価格取得 |
 | 注文生成戦略 | `IOrderPlacer` | 済 | 注文生成のインターフェース（テスト差し替え可能） |
 | ゲーム | `Game` | 済 | ターン制の進行管理、OrderBook + IOrderPlacer 統合 |
 | コンピュータートレーダー | `ComputerTrader` | 済 | `IOrderPlacer` 実装。毎ターン自動注文生成（買10・売10） |
@@ -48,10 +47,8 @@
 
 | テストクラス | 対象 |
 |---|---|
-| `InstrumentTests` | 等価性・ハッシュコード |
 | `PositionTests` | 評価額算出 |
 | `PositionSetTests` | 集約・演算子・合計額 |
-| `ExchangeExtensionsTests` | 安全な価格取得 |
 | `PortfolioTests` | 売買・手数料・バリデーション |
 | `PlayerTests` | 識別（Name）・WithPortfolio・損益・注文生成 |
 | `GameTests` | ターン進行・不変性・失敗時ターン不変 |

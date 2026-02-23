@@ -2,9 +2,12 @@
 
 - **Framework:** .NET 9, C# with nullable reference types
 - **Test framework:** xUnit
-- **Solution:** `fin_learn_app.sln` with two projects:
+- **Solution:** `fin_learn_app.sln` with multiple projects:
   - `src/FinLearn.Core` — Domain model (no external dependencies)
-  - `tests/FinLearn.Tests` — Unit tests
+  - `src/FinLearn.Api` — Minimal API backend
+  - `tests/FinLearn.Tests` — Core unit tests
+  - `tests/FinLearn.Api.Tests` — API integration tests
+  - `frontend/` — React (React Router v7) frontend
 
 ### Domain Model
 

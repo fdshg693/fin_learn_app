@@ -7,4 +7,4 @@ alwaysApply: true
 ひとまず、.NETのみを用いてコアな部分を作りこむ所に注力します。
 
 TDDを使い、テストが通ることを確認・リファクタしながら慎重に実装していきます。
-`src\MyApp.Core`にアプリコード本体を、`tests\MyApp.Tests`にテストコードを配置します。
+`src/FinLearn.Core`にアプリコード本体を、`tests/FinLearn.Tests`にテストコードを配置します。

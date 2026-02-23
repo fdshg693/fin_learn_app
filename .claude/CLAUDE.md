@@ -1,6 +1,6 @@
 ## Project Overview
 
-Stock trading simulator (株売買シュミレートアプリ) built with DDD + TDD methodology. Currently focused on .NET Core backend; React frontend is planned but not yet implemented.
+Stock trading simulator (株売買シミュレートアプリ) built with DDD + TDD methodology. The project consists of a .NET Core backend and a React frontend located in the `frontend/` directory.
 
 ## Development Methodology
 

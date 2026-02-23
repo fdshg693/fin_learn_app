@@ -7,11 +7,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<GameConfig>();
 builder.Services.AddSingleton<GameStore>();
 builder.Services.AddSingleton<IExchangeFactory, SimpleExchangeFactory>();
-builder.Services.AddSingleton<Random>(_ => new Random());
 builder.Services.AddTransient<TurnProcessor>(sp =>
 {
-    var random = sp.GetRequiredService<Random>();
-    return new TurnProcessor(new ComputerTrader(random), new RandomPriceFluctuator(random));
+    var exchangeFactory = sp.GetRequiredService<IExchangeFactory>();
+    return new TurnProcessor(new ComputerTrader(Random.Shared), new Market(), new RandomPriceFluctuator(Random.Shared), exchangeFactory);
 });
 
 builder.Services.AddCors(options =>
