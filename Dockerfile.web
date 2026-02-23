@@ -1,0 +1,27 @@
+# ── Build stage ───────────────────────────────
+FROM node:20-slim AS build
+WORKDIR /app
+
+# VITE_API_URL is baked into the client bundle at build time
+ARG VITE_API_URL
+ENV VITE_API_URL=${VITE_API_URL}
+
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+
+COPY frontend/ .
+RUN npm run build
+
+# ── Runtime stage ─────────────────────────────
+FROM node:20-slim AS runtime
+WORKDIR /app
+
+COPY --from=build /app/package.json /app/package-lock.json ./
+RUN npm ci --omit=dev
+
+COPY --from=build /app/build ./build
+
+ENV PORT=8080
+EXPOSE 8080
+
+CMD ["npx", "react-router-serve", "./build/server/index.js"]

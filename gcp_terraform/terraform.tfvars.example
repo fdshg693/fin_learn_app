@@ -1,0 +1,11 @@
+project_id            = "your-gcp-project-id"
+project_name          = "finlearn"
+environment           = "dev"
+region                = "asia-northeast1"
+cors_allowed_origins  = "*"
+backend_cpu           = "1"
+backend_memory        = "512Mi"
+backend_max_instances = 2
+frontend_cpu          = "1"
+frontend_memory       = "512Mi"
+frontend_max_instances = 2

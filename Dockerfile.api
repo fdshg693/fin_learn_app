@@ -1,0 +1,25 @@
+# ── Build stage ───────────────────────────────
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
+
+# Restore dependencies (cache-friendly layer)
+COPY fin_learn_app.sln ./
+COPY src/FinLearn.Core/FinLearn.Core.csproj src/FinLearn.Core/
+COPY src/FinLearn.Api/FinLearn.Api.csproj   src/FinLearn.Api/
+RUN dotnet restore src/FinLearn.Api/FinLearn.Api.csproj
+
+# Build & publish
+COPY src/ src/
+RUN dotnet publish src/FinLearn.Api/FinLearn.Api.csproj \
+    -c Release -o /app/publish --no-restore
+
+# ── Runtime stage ─────────────────────────────
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
+WORKDIR /app
+
+COPY --from=build /app/publish .
+
+ENV ASPNETCORE_URLS=http://+:8080
+EXPOSE 8080
+
+ENTRYPOINT ["dotnet", "FinLearn.Api.dll"]
