@@ -31,7 +31,10 @@ export async function clientAction({ params, request }: ClientActionFunctionArgs
   if (intent === "buy") {
     return buy(id, order);
   }
-  return sell(id, order);
+  if (intent === "sell") {
+    return sell(id, order);
+  }
+  throw new Error(`Invalid intent: ${intent}`);
 }
 
 export default function GamePage() {
