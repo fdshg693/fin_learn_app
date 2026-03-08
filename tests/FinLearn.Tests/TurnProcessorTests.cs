@@ -83,7 +83,7 @@ public class TurnProcessorTests
     }
 
     [Fact]
-    public void 保有なしで売ろうとすると失敗する()
+    public void 保有なしで売ろうとすると失敗するがターンは進む()
     {
         var game = CreateGame();
         var processor = CreateProcessor();
@@ -91,11 +91,14 @@ public class TurnProcessorTests
         var (result, warning) = processor.Sell(game, fee: 0, instrumentId: 1, quantity: 1);
 
         Assert.NotNull(warning);
-        Assert.Equal(1, result.Turn);
+        // コンピューター注文は生成済みなのでターンは進む（Waitと同じ挙動）
+        Assert.Equal(2, result.Turn);
+        // ポートフォリオは変わらない
+        Assert.Equal(10000, result.Player.Portfolio.Cash);
     }
 
     [Fact]
-    public void 現金不足の購入はターンが進まない()
+    public void 現金不足の購入は失敗するがターンは進む()
     {
         var expensivePrices = new Dictionary<int, int> { { 1, 10001 }, { 2, 200 }, { 3, 300 } };
         var game = CreateGame(expensivePrices);
@@ -104,7 +107,8 @@ public class TurnProcessorTests
         var (result, warning) = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 1);
 
         Assert.Equal(Messages.InsufficientCashToBuy, warning);
-        Assert.Equal(1, result.Turn);
+        // コンピューター注文は生成済みなのでターンは進む（Waitと同じ挙動）
+        Assert.Equal(2, result.Turn);
         Assert.Equal(10000, result.Player.Portfolio.Cash);
     }
 
@@ -303,16 +307,52 @@ public class TurnProcessorTests
     }
 
     [Fact]
-    public void アクション失敗時は価格が変動しない()
+    public void アクション失敗時でも価格が変動する()
     {
         var game = CreateGame();
         var fluctuator = new RandomPriceFluctuator(new Random(42));
         var processor = CreateProcessor(fluctuator: fluctuator);
 
+        // 保有なしで売却 → 失敗だがターンは進む（Waitと同じ挙動）
+        var (result, warning) = processor.Sell(game, fee: 0, instrumentId: 1, quantity: 1);
+
+        Assert.NotNull(warning);
+        Assert.NotEqual(game.Prices, result.Prices);
+    }
+
+    [Fact]
+    public void アクション失敗時でもコンピューター注文が板に残る()
+    {
+        var game = CreateGame();
+        var processor = CreateProcessor();
+
         // 保有なしで売却 → 失敗
         var (result, warning) = processor.Sell(game, fee: 0, instrumentId: 1, quantity: 1);
 
         Assert.NotNull(warning);
-        Assert.Equal(game.Prices, result.Prices);
+        // コンピューター注文は板に残っている
+        var totalBuys = result.OrderBook.BuyOrders(1).Count
+            + result.OrderBook.BuyOrders(2).Count
+            + result.OrderBook.BuyOrders(3).Count;
+        var totalSells = result.OrderBook.SellOrders(1).Count
+            + result.OrderBook.SellOrders(2).Count
+            + result.OrderBook.SellOrders(3).Count;
+        Assert.Equal(10, totalBuys);
+        Assert.Equal(10, totalSells);
+    }
+
+    [Fact]
+    public void 成行注文で約定ゼロでもコンピューター注文が板に残る()
+    {
+        // 全銘柄の売り注文がないような状況を作る（板が空の状態で成行買い）
+        var game = CreateGame();
+        var noOpPlacer = new NoOpOrderPlacer();
+        var processor = new TurnProcessor(noOpPlacer, new NoPriceFluctuator());
+
+        // 板に売り注文がないので成行買いは約定しない
+        var (result, warning) = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 1);
+
+        Assert.NotNull(warning);
+        Assert.Equal(2, result.Turn);
     }
 }

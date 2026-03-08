@@ -89,7 +89,7 @@ public class GameApiTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task POST_sell_保有なし売り注文でwarning付きターン不変()
+    public async Task POST_sell_保有なし売り注文でwarning付きだがターンは進む()
     {
         var created = await CreateGame();
 
@@ -101,7 +101,8 @@ public class GameApiTests : IClassFixture<WebApplicationFactory<Program>>
         var game = await response.Content.ReadFromJsonAsync<GameResponse>();
         Assert.NotNull(game);
         Assert.NotNull(game.Warning);
-        Assert.Equal(1, game.Turn);
+        // コンピューター注文は常に板に残すため、失敗時もターンが進む
+        Assert.Equal(2, game.Turn);
     }
 
     [Fact]

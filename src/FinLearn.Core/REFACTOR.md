@@ -1,39 +1,6 @@
 # リファクタ・バグ候補
 
-## 1. 売り注文の保有数チェックが約定前に行われる（論理矛盾リスク）
-
-**箇所**: [TurnProcessor.cs:46](TurnProcessor.cs#L46)
-
-```csharp
-if (game.Player.Portfolio.QuantityOf(instrumentId) < quantity)
-    return (game, Messages.InsufficientQuantityToSell);
-```
-
-**問題**: 売り注文のバリデーションが**注文時の保有数量**に対して行われるが、実際に約定するのは部分約定かもしれない。現状は「注文数量 > 保有数量」で即拒否しているため、「5株保有で3株だけ売る」は通るが、**板の状況に関わらず注文数量で判定している**。
-
-これ自体は正しい設計だが、`Portfolio.Sell` にも同じチェックがある（二重チェック）。`TurnProcessor` 側は早期リターン最適化として機能しているが、ロジックの一貫性のため `Portfolio` 側だけに寄せることも検討。
-
-## 2. コンピューター注文が失敗トランザクションでも生成される
-
-**箇所**: [TurnProcessor.cs:68-79](TurnProcessor.cs#L68-L79)
-
-```csharp
-var (bookWithOrders, nextId) = OrderPlacer.PlaceOrders(...);  // コンピューター注文生成
-var order = game.Player.CreateOrder(nextId, ...);
-var matchResult = Market.Execute(bookWithOrders, order, exchange);
-
-if (price is null && matchResult.Trade.FilledQuantity == 0)
-    return (game, noMatchMessage);  // ← 元のgameを返す（コンピューター注文は破棄）
-
-var (resultPlayer, warning) = ApplyTradeToPlayer(...);
-if (warning is not null)
-    return (game, warning);         // ← 元のgameを返す（コンピューター注文は破棄）
-```
-
-**問題**: 成行注文が約定ゼロの場合や、ポートフォリオ更新が失敗した場合、コンピューター注文20件は生成されたが破棄される。**ゲームとしての意図通りか要確認**。
-
-- 現状: 失敗時はコンピューター注文も「なかったこと」になる
-- 代替案: コンピューター注文は常に板に残す（`Wait` と同じ挙動にする）
+修正した後で、 `docs\DDD\EXCHANGE_RULE.md` も更新すること。
 
 ## 3. 成行注文の約定価格が不利になりうる
 

@@ -43,9 +43,6 @@ public sealed class TurnProcessor
         if (price is not null && price <= 0)
             return (game, Messages.PriceMustBePositive);
 
-        if (game.Player.Portfolio.QuantityOf(instrumentId) < quantity)
-            return (game, Messages.InsufficientQuantityToSell);
-
         var instrument = new Instrument(instrumentId);
         return PlaceOrder(game, fee, instrument, OrderSide.Sell, quantity, price, Messages.NoMatchingBuyOrders);
     }
@@ -69,14 +66,14 @@ public sealed class TurnProcessor
         var order = game.Player.CreateOrder(nextId, instrument, side, quantity, price);
         var matchResult = Market.Execute(bookWithOrders, order, exchange);
 
-        // 2. 成行注文で約定ゼロ → 警告を返す
+        // 2. 成行注文で約定ゼロ → コンピューター注文は板に残し、Waitと同じ挙動でターンを進める
         if (price is null && matchResult.Trade.FilledQuantity == 0)
-            return (game, noMatchMessage);
+            return (AdvanceTurn(game, game.Player, bookWithOrders, nextId), noMatchMessage);
 
         // 3. 約定分があればポートフォリオを更新
         var (resultPlayer, warning) = ApplyTradeToPlayer(game.Player, matchResult.Trade);
         if (warning is not null)
-            return (game, warning);
+            return (AdvanceTurn(game, game.Player, bookWithOrders, nextId), warning);
 
         // 4. 指値注文の未約定分を板に追加
         var updatedBook = AddRemainingLimitOrder(matchResult.UpdatedBook, order, quantity, matchResult.Trade.FilledQuantity, price);
