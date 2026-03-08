@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router";
 import { createGame } from "~/api/gameApi";
 
@@ -10,8 +11,10 @@ export function meta() {
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
 
   async function handleStart() {
+    setIsLoading(true);
     const game = await createGame();
     navigate(`/games/${game.gameId}`);
   }
@@ -23,9 +26,10 @@ export default function HomePage() {
         <p className="text-gray-500">株取引を体験してみよう</p>
         <button
           onClick={handleStart}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-lg"
+          disabled={isLoading}
+          className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold py-3 px-8 rounded-lg text-lg"
         >
-          ゲーム開始
+          {isLoading ? "準備中..." : "ゲーム開始"}
         </button>
       </div>
     </main>

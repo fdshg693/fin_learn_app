@@ -26,4 +26,4 @@ npm run typecheck  # TypeScript type check + route type generation
 
 ### Screen Design
 
-画面設計の詳細は @./../docs/FRONT.md を参照。
+@./../docs/FRONT.md
