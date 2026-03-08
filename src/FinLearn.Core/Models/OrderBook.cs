@@ -47,8 +47,10 @@ public sealed class OrderBook
     {
         var eligible = incoming.Type == OrderType.Market
             ? (incoming.Side == OrderSide.Buy
-                ? SellOrders(incoming.Instrument.Id).ToList()
-                : BuyOrders(incoming.Instrument.Id).ToList())
+                ? SellOrders(incoming.Instrument.Id)
+                    .TakeWhile(o => incoming.StopPrice is null || o.Price <= incoming.StopPrice.Value).ToList()
+                : BuyOrders(incoming.Instrument.Id)
+                    .TakeWhile(o => incoming.StopPrice is null || o.Price >= incoming.StopPrice.Value).ToList())
             : (incoming.Side == OrderSide.Buy
                 ? SellOrders(incoming.Instrument.Id)
                     .TakeWhile(o => o.Price <= incoming.Price!.Value).ToList()

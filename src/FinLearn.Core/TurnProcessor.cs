@@ -25,7 +25,7 @@ public sealed class TurnProcessor
         ExchangeFactory = exchangeFactory;
     }
 
-    public (Game Result, string? Warning) Buy(Game game, int fee, int instrumentId, int quantity, int? price = null)
+    public (Game Result, string? Warning) Buy(Game game, int fee, int instrumentId, int quantity, int? price = null, int? stopPrice = null)
     {
         if (quantity <= 0)
             return (game, Messages.QuantityMustBePositive);
@@ -33,10 +33,10 @@ public sealed class TurnProcessor
             return (game, Messages.PriceMustBePositive);
 
         var instrument = new Instrument(instrumentId);
-        return PlaceOrder(game, fee, instrument, OrderSide.Buy, quantity, price, Messages.NoMatchingSellOrders);
+        return PlaceOrder(game, fee, instrument, OrderSide.Buy, quantity, price, stopPrice, Messages.NoMatchingSellOrders);
     }
 
-    public (Game Result, string? Warning) Sell(Game game, int fee, int instrumentId, int quantity, int? price = null)
+    public (Game Result, string? Warning) Sell(Game game, int fee, int instrumentId, int quantity, int? price = null, int? stopPrice = null)
     {
         if (quantity <= 0)
             return (game, Messages.QuantityMustBePositive);
@@ -44,7 +44,7 @@ public sealed class TurnProcessor
             return (game, Messages.PriceMustBePositive);
 
         var instrument = new Instrument(instrumentId);
-        return PlaceOrder(game, fee, instrument, OrderSide.Sell, quantity, price, Messages.NoMatchingBuyOrders);
+        return PlaceOrder(game, fee, instrument, OrderSide.Sell, quantity, price, stopPrice, Messages.NoMatchingBuyOrders);
     }
 
     public (Game Result, string? Warning) Wait(Game game, int fee)
@@ -57,13 +57,13 @@ public sealed class TurnProcessor
 
     private (Game Result, string? Warning) PlaceOrder(
         Game game, int fee, Instrument instrument, OrderSide side,
-        int quantity, int? price, string noMatchMessage)
+        int quantity, int? price, int? stopPrice, string noMatchMessage)
     {
         var exchange = ExchangeFactory.Create(game.Prices, fee);
 
         // 1. コンピューター注文を生成 → プレイヤー注文を生成 → 市場で約定
         var (bookWithOrders, nextId) = OrderPlacer.PlaceOrders(game.OrderBook, exchange, game.Instruments, game.NextOrderId);
-        var order = game.Player.CreateOrder(nextId, instrument, side, quantity, price);
+        var order = game.Player.CreateOrder(nextId, instrument, side, quantity, price, stopPrice);
         var matchResult = Market.Execute(bookWithOrders, order, exchange);
 
         // 2. 成行注文で約定ゼロ → コンピューター注文は板に残し、Waitと同じ挙動でターンを進める

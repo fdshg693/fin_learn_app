@@ -15,7 +15,7 @@ Pure domain layer with zero external dependencies. All types are **immutable sea
 | `IOrderPlacer.cs` | 注文生成戦略 | Interface for order generation (DI point for testing) |
 | `Game.cs` | ゲーム | State snapshot: turn, player, order book, instruments, **prices** |
 | `ComputerTrader.cs` | コンピュータートレーダー | Implements `IOrderPlacer`. Generates 10 buy (95%) + 10 sell (100%) orders per turn |
-| `Order.cs` | 注文 | ID, trader, instrument, side, quantity, price |
+| `Order.cs` | 注文 | ID, trader, instrument, side, quantity, price, stopPrice (成行注文の価格ガード) |
 | `OrderSide.cs` | 売買区分 | `Buy` / `Sell` enum |
 | `OrderBook.cs` | 注文帳 | Order management + symmetric matching via `Match(Order)` |
 | `OrderFill.cs` | 注文約定明細 | Per-order fill result: order ID, filled quantity, total amount |

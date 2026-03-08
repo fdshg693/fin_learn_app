@@ -513,7 +513,7 @@ public class OrderBookTests
     // --- 成行注文のマッチング ---
 
     [Fact]
-    public void 成行買い注文は全売り注文とマッチする()
+    public void 成行買い注文_ストップ価格なしは全売り注文とマッチする()
     {
         var book = new OrderBook()
             .Add(new Order(1, "computer", new Instrument(1), OrderSide.Sell, 3, 100))
@@ -530,7 +530,7 @@ public class OrderBookTests
     }
 
     [Fact]
-    public void 成行売り注文は全買い注文とマッチする()
+    public void 成行売り注文_ストップ価格なしは全買い注文とマッチする()
     {
         var book = new OrderBook()
             .Add(new Order(1, "computer", new Instrument(1), OrderSide.Buy, 3, 95))
@@ -544,5 +544,69 @@ public class OrderBookTests
         Assert.Equal(4, incomingFill.FilledQuantity);
         // 高い方から: 3*95 + 1*10 = 295
         Assert.Equal(295, incomingFill.TotalAmount);
+    }
+
+    // --- 成行注文のストップ価格 ---
+
+    [Fact]
+    public void 成行買い注文_ストップ価格以下の売り注文のみ約定する()
+    {
+        var book = new OrderBook()
+            .Add(new Order(1, "computer", new Instrument(1), OrderSide.Sell, 3, 100))
+            .Add(new Order(2, "computer", new Instrument(1), OrderSide.Sell, 2, 200))
+            .Add(new Order(3, "computer", new Instrument(1), OrderSide.Sell, 2, 500));
+        var incoming = Order.CreateMarket(10, "player", new Instrument(1), OrderSide.Buy, 10, stopPrice: 200);
+
+        var result = book.Match(incoming);
+        var incomingFill = result.GetFill(10);
+
+        Assert.NotNull(incomingFill);
+        // 100と200は約定、500は約定しない
+        Assert.Equal(5, incomingFill.FilledQuantity);
+        Assert.Equal(700, incomingFill.TotalAmount); // 3*100 + 2*200
+
+        // 500の売り注文のみ残る
+        var remainingSells = result.UpdatedBook.SellOrders(instrumentId: 1);
+        Assert.Single(remainingSells);
+        Assert.Equal(500, remainingSells[0].Price);
+    }
+
+    [Fact]
+    public void 成行売り注文_ストップ価格以上の買い注文のみ約定する()
+    {
+        var book = new OrderBook()
+            .Add(new Order(1, "computer", new Instrument(1), OrderSide.Buy, 3, 100))
+            .Add(new Order(2, "computer", new Instrument(1), OrderSide.Buy, 2, 50))
+            .Add(new Order(3, "computer", new Instrument(1), OrderSide.Buy, 2, 10));
+        var incoming = Order.CreateMarket(10, "player", new Instrument(1), OrderSide.Sell, 10, stopPrice: 50);
+
+        var result = book.Match(incoming);
+        var incomingFill = result.GetFill(10);
+
+        Assert.NotNull(incomingFill);
+        // 100と50は約定、10は約定しない
+        Assert.Equal(5, incomingFill.FilledQuantity);
+        Assert.Equal(400, incomingFill.TotalAmount); // 3*100 + 2*50
+
+        // 10の買い注文のみ残る
+        var remainingBuys = result.UpdatedBook.BuyOrders(instrumentId: 1);
+        Assert.Single(remainingBuys);
+        Assert.Equal(10, remainingBuys[0].Price);
+    }
+
+    [Fact]
+    public void 成行買い注文_全売り注文がストップ価格超で約定ゼロ()
+    {
+        var book = new OrderBook()
+            .Add(new Order(1, "computer", new Instrument(1), OrderSide.Sell, 5, 500));
+        var incoming = Order.CreateMarket(10, "player", new Instrument(1), OrderSide.Buy, 3, stopPrice: 200);
+
+        var result = book.Match(incoming);
+        var incomingFill = result.GetFill(10);
+
+        Assert.NotNull(incomingFill);
+        Assert.Equal(0, incomingFill.FilledQuantity);
+        Assert.Equal(0, incomingFill.TotalAmount);
+        Assert.Single(result.UpdatedBook.SellOrders(instrumentId: 1));
     }
 }

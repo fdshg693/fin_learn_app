@@ -23,11 +23,11 @@ public sealed class Player
         return new Player(Name, portfolio);
     }
 
-    public Order CreateOrder(int orderId, Instrument instrument, OrderSide side, int quantity, int? price)
+    public Order CreateOrder(int orderId, Instrument instrument, OrderSide side, int quantity, int? price, int? stopPrice = null)
     {
         return price is not null
             ? new Order(orderId, Name, instrument, side, quantity, price.Value)
-            : Order.CreateMarket(orderId, Name, instrument, side, quantity);
+            : Order.CreateMarket(orderId, Name, instrument, side, quantity, stopPrice);
     }
 
     public int ProfitLoss(IExchange exchange)

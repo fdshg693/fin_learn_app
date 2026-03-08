@@ -12,6 +12,7 @@ public sealed record Order
     public OrderType Type { get; }
     public int Quantity { get; }
     public int? Price { get; }
+    public int? StopPrice { get; }
 
     /// <summary>
     /// 指値注文を作成する
@@ -30,12 +31,15 @@ public sealed record Order
         this.Type = OrderType.Limit;
         this.Quantity = Quantity;
         this.Price = Price;
+        this.StopPrice = null;
     }
 
-    private Order(int id, string traderId, Instrument instrument, OrderSide side, OrderType type, int quantity, int? price)
+    private Order(int id, string traderId, Instrument instrument, OrderSide side, OrderType type, int quantity, int? price, int? stopPrice)
     {
         if (quantity <= 0)
             throw new ArgumentException("数量は1以上である必要があります", nameof(quantity));
+        if (stopPrice is not null && stopPrice <= 0)
+            throw new ArgumentException("ストップ価格は1以上である必要があります", nameof(stopPrice));
 
         Id = id;
         TraderId = traderId;
@@ -44,14 +48,15 @@ public sealed record Order
         Type = type;
         Quantity = quantity;
         Price = price;
+        StopPrice = stopPrice;
     }
 
     /// <summary>
     /// 成行注文を作成する
     /// </summary>
-    public static Order CreateMarket(int id, string traderId, Instrument instrument, OrderSide side, int quantity) =>
-        new(id, traderId, instrument, side, OrderType.Market, quantity, null);
+    public static Order CreateMarket(int id, string traderId, Instrument instrument, OrderSide side, int quantity, int? stopPrice = null) =>
+        new(id, traderId, instrument, side, OrderType.Market, quantity, null, stopPrice);
 
     internal Order WithQuantity(int quantity) =>
-        new(Id, TraderId, Instrument, Side, Type, quantity, Price);
+        new(Id, TraderId, Instrument, Side, Type, quantity, Price, StopPrice);
 }

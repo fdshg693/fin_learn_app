@@ -49,13 +49,13 @@ app.MapGet("/api/games/{id}", (string id, GameStore store, IExchangeFactory exch
 app.MapPost("/api/games/{id}/buy", (string id, OrderRequest request, GameStore store, TurnProcessor processor, IExchangeFactory exchangeFactory, GameConfig config) =>
 {
     return ProcessOrder(id, request, store, processor, exchangeFactory, config,
-        (g, fee, req) => processor.Buy(g, fee, req.InstrumentId, req.Quantity, req.Price));
+        (g, fee, req) => processor.Buy(g, fee, req.InstrumentId, req.Quantity, req.Price, req.StopPrice));
 });
 
 app.MapPost("/api/games/{id}/sell", (string id, OrderRequest request, GameStore store, TurnProcessor processor, IExchangeFactory exchangeFactory, GameConfig config) =>
 {
     return ProcessOrder(id, request, store, processor, exchangeFactory, config,
-        (g, fee, req) => processor.Sell(g, fee, req.InstrumentId, req.Quantity, req.Price));
+        (g, fee, req) => processor.Sell(g, fee, req.InstrumentId, req.Quantity, req.Price, req.StopPrice));
 });
 
 app.MapPost("/api/games/{id}/wait", (string id, GameStore store, TurnProcessor processor, IExchangeFactory exchangeFactory, GameConfig config) =>

@@ -39,4 +39,29 @@ public class OrderTests
         Assert.Equal(OrderType.Market, order.Type);
         Assert.Null(order.Price);
     }
+
+    [Fact]
+    public void 成行注文にストップ価格を設定できる()
+    {
+        var order = Order.CreateMarket(1, "player", new Instrument(1), OrderSide.Buy, 3, stopPrice: 120);
+
+        Assert.Equal(OrderType.Market, order.Type);
+        Assert.Null(order.Price);
+        Assert.Equal(120, order.StopPrice);
+    }
+
+    [Fact]
+    public void ストップ価格なしの成行注文はStopPriceがnull()
+    {
+        var order = Order.CreateMarket(1, "player", new Instrument(1), OrderSide.Buy, 3);
+
+        Assert.Null(order.StopPrice);
+    }
+
+    [Fact]
+    public void ストップ価格が0以下の成行注文は作成できない()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            Order.CreateMarket(1, "player", new Instrument(1), OrderSide.Buy, 3, stopPrice: 0));
+    }
 }
