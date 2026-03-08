@@ -19,6 +19,7 @@ export default function Actions() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [currentTurn, setCurrentTurn] = useState(0)
 
   useEffect(() => {
     Promise.all([
@@ -28,6 +29,7 @@ export default function Actions() {
       .then(([tickersResult, portfolioResult]) => {
         setTickers(tickersResult)
         setPortfolio(portfolioResult)
+        setCurrentTurn(portfolioResult.currentTurn)
         if (tickersResult.length > 0) {
           setTickerId(tickersResult[0].tickerId)
         }
@@ -54,6 +56,7 @@ export default function Actions() {
       investorId: demoInvestorId,
       tickerId,
       quantity,
+      expectedTurn: currentTurn,
     }
 
     setIsSubmitting(true)
@@ -63,6 +66,7 @@ export default function Actions() {
 
       setResultMessage(result.message)
       setPortfolio(result.portfolio)
+      setCurrentTurn(result.currentTurn)
     } catch (err) {
       setError((err as Error).message)
     } finally {
@@ -76,6 +80,7 @@ export default function Actions() {
 
     const payload: ActionWaitRequestDto = {
       investorId: demoInvestorId,
+      expectedTurn: currentTurn,
     }
 
     setIsSubmitting(true)
@@ -84,6 +89,7 @@ export default function Actions() {
 
       setResultMessage(result.message)
       setPortfolio(result.portfolio)
+      setCurrentTurn(result.currentTurn)
     } catch (err) {
       setError((err as Error).message)
     } finally {
@@ -108,6 +114,7 @@ export default function Actions() {
           <p>
             損益: {portfolio.profitLoss.amount.toLocaleString()} {portfolio.profitLoss.currency}
           </p>
+          <p>現在ターン: {currentTurn}</p>
         </div>
       )}
 

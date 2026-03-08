@@ -41,8 +41,8 @@ APP.mdの技術スタック（.NET 9 / React 19 / TypeScript 5 / pnpm）で、DD
 - [x] 9. 動作確認と簡易ドキュメント
 - [ ] 10. モデル整理（record見直し）
 - [x] 11. ログ基盤導入（構造化ログ）
-- [ ] 12. ターン制導入（Turn/Phaseの最小仕様）
+- [x] 12. ターン制導入（Turn/Phaseの最小仕様）
 - [ ] 13. バリデーション基盤導入（FluentValidation / Zod）
 
 ## 直近の次アクション
-- 10. モデル整理（record見直し）
+- 13. バリデーション基盤導入（FluentValidation / Zod）

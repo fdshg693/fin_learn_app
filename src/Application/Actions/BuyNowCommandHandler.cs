@@ -27,6 +27,14 @@ public sealed class BuyNowCommandHandler : IRequestHandler<BuyNowCommand, Action
             return Task.FromResult(ActionExecutionResult.NotFound());
         }
 
+        var currentTurn = _store.GetCurrentTurn(portfolio.InvestorId);
+        if (command.ExpectedTurn != currentTurn)
+        {
+            return Task.FromResult(ActionExecutionResult.Conflict(
+                $"ExpectedTurn mismatch. expected={command.ExpectedTurn}, current={currentTurn}.",
+                currentTurn));
+        }
+
         var ticker = _store.FindTicker(new TickerId(command.TickerId));
         if (ticker is null)
         {
@@ -36,12 +44,14 @@ public sealed class BuyNowCommandHandler : IRequestHandler<BuyNowCommand, Action
         var totalCost = ticker.CurrentPrice.Multiply(command.Quantity);
         if (portfolio.Cash.Amount < totalCost.Amount)
         {
-            return Task.FromResult(ActionExecutionResult.Ok(false, "現金が不足しています。", portfolio));
+            var nextTurn = _store.AdvanceTurn(portfolio.InvestorId);
+            return Task.FromResult(ActionExecutionResult.Ok(false, "現金が不足しています。", portfolio, nextTurn));
         }
 
         portfolio.Withdraw(totalCost);
         portfolio.AddOrUpdateHolding(ticker.Id, command.Quantity);
+        var advancedTurn = _store.AdvanceTurn(portfolio.InvestorId);
 
-        return Task.FromResult(ActionExecutionResult.Ok(true, "BuyNow を実行しました。", portfolio));
+        return Task.FromResult(ActionExecutionResult.Ok(true, "BuyNow を実行しました。", portfolio, advancedTurn));
     }
 }

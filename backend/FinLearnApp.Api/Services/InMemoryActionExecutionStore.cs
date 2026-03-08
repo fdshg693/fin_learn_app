@@ -26,4 +26,14 @@ public sealed class InMemoryActionExecutionStore : IActionExecutionStore
     {
         return _store.FindTicker(tickerId);
     }
+
+    public int GetCurrentTurn(InvestorId investorId)
+    {
+        return _store.GetCurrentTurn(investorId);
+    }
+
+    public int AdvanceTurn(InvestorId investorId)
+    {
+        return _store.AdvanceTurn(investorId);
+    }
 }

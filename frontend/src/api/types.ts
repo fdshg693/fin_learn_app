@@ -28,6 +28,7 @@ export type HoldingDto = {
 export type PortfolioDto = {
   portfolioId: string
   investorId: string
+  currentTurn: number
   cash: MoneyDto
   valuation: MoneyDto
   profitLoss: MoneyDto
@@ -38,14 +39,17 @@ export type ActionTradeRequestDto = {
   investorId: string
   tickerId: string
   quantity: number
+  expectedTurn: number
 }
 
 export type ActionWaitRequestDto = {
   investorId: string
+  expectedTurn: number
 }
 
 export type ActionResultDto = {
   success: boolean
   message: string
   portfolio: PortfolioDto
+  currentTurn: number
 }

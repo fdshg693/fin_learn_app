@@ -42,6 +42,7 @@ public sealed class PortfolioMapper
         return new PortfolioDto(
             portfolio.Id.Value,
             portfolio.InvestorId.Value,
+            _store.GetCurrentTurn(portfolio.InvestorId),
             ToMoneyDto(portfolio.Cash),
             ToMoneyDto(portfolio.CalculateValuation(prices)),
             ToMoneyDto(portfolio.CalculateProfitLoss(prices)),

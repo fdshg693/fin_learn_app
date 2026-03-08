@@ -23,6 +23,7 @@ public sealed record PortfolioDto
 {
     public Guid PortfolioId { get; }
     public Guid InvestorId { get; }
+    public int CurrentTurn { get; }
     public MoneyDto Cash { get; }
     public MoneyDto Valuation { get; }
     public MoneyDto ProfitLoss { get; }
@@ -31,6 +32,7 @@ public sealed record PortfolioDto
     public PortfolioDto(
         Guid portfolioId,
         Guid investorId,
+        int currentTurn,
         MoneyDto cash,
         MoneyDto valuation,
         MoneyDto profitLoss,
@@ -38,6 +40,7 @@ public sealed record PortfolioDto
     {
         PortfolioId = portfolioId;
         InvestorId = investorId;
+        CurrentTurn = currentTurn;
         Cash = cash;
         Valuation = valuation;
         ProfitLoss = profitLoss;

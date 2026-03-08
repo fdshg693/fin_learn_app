@@ -22,6 +22,16 @@ public sealed class WaitCommandHandler : IRequestHandler<WaitCommand, ActionExec
             return Task.FromResult(ActionExecutionResult.NotFound());
         }
 
-        return Task.FromResult(ActionExecutionResult.Ok(true, "Wait を実行しました。", portfolio));
+        var currentTurn = _store.GetCurrentTurn(portfolio.InvestorId);
+        if (command.ExpectedTurn != currentTurn)
+        {
+            return Task.FromResult(ActionExecutionResult.Conflict(
+                $"ExpectedTurn mismatch. expected={command.ExpectedTurn}, current={currentTurn}.",
+                currentTurn));
+        }
+
+        var advancedTurn = _store.AdvanceTurn(portfolio.InvestorId);
+
+        return Task.FromResult(ActionExecutionResult.Ok(true, "Wait を実行しました。", portfolio, advancedTurn));
     }
 }

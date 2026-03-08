@@ -27,6 +27,20 @@ public static class ApiProblemFactory
         return controller.NotFound(problem);
     }
 
+    public static ObjectResult Conflict(ControllerBase controller, string detail, string code)
+    {
+        var problem = CreateProblemDetails(
+            status: StatusCodes.Status409Conflict,
+            title: "Conflict",
+            detail: detail,
+            code: code);
+
+        return new ObjectResult(problem)
+        {
+            StatusCode = StatusCodes.Status409Conflict,
+        };
+    }
+
     private static ProblemDetails CreateProblemDetails(int status, string title, string detail, string code)
     {
         var problem = new ProblemDetails

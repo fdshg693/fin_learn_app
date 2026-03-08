@@ -38,13 +38,14 @@ public sealed class ActionsController : ControllerBase
     public async Task<ActionResult<ActionResultDto>> BuyNow(ActionTradeRequestDto request)
     {
         _logger.LogInformation(
-            "Execute action={Action} investorId={InvestorId} tickerId={TickerId} quantity={Quantity}",
+            "Execute action={Action} investorId={InvestorId} tickerId={TickerId} quantity={Quantity} expectedTurn={ExpectedTurn}",
             "BuyNow",
             request.InvestorId,
             request.TickerId,
-            request.Quantity);
+            request.Quantity,
+            request.ExpectedTurn);
 
-        var command = new BuyNowCommand(request.InvestorId, request.TickerId, request.Quantity);
+        var command = new BuyNowCommand(request.InvestorId, request.TickerId, request.Quantity, request.ExpectedTurn);
         var response = await _mediator.Send(command);
 
         LogActionResult("BuyNow", request.InvestorId, request.TickerId, request.Quantity, response);
@@ -62,13 +63,14 @@ public sealed class ActionsController : ControllerBase
     public async Task<ActionResult<ActionResultDto>> SellNow(ActionTradeRequestDto request)
     {
         _logger.LogInformation(
-            "Execute action={Action} investorId={InvestorId} tickerId={TickerId} quantity={Quantity}",
+            "Execute action={Action} investorId={InvestorId} tickerId={TickerId} quantity={Quantity} expectedTurn={ExpectedTurn}",
             "SellNow",
             request.InvestorId,
             request.TickerId,
-            request.Quantity);
+            request.Quantity,
+            request.ExpectedTurn);
 
-        var command = new SellNowCommand(request.InvestorId, request.TickerId, request.Quantity);
+        var command = new SellNowCommand(request.InvestorId, request.TickerId, request.Quantity, request.ExpectedTurn);
         var response = await _mediator.Send(command);
 
         LogActionResult("SellNow", request.InvestorId, request.TickerId, request.Quantity, response);
@@ -85,11 +87,12 @@ public sealed class ActionsController : ControllerBase
     public async Task<ActionResult<ActionResultDto>> Wait(ActionWaitRequestDto request)
     {
         _logger.LogInformation(
-            "Execute action={Action} investorId={InvestorId}",
+            "Execute action={Action} investorId={InvestorId} expectedTurn={ExpectedTurn}",
             "Wait",
-            request.InvestorId);
+            request.InvestorId,
+            request.ExpectedTurn);
 
-        var command = new WaitCommand(request.InvestorId);
+        var command = new WaitCommand(request.InvestorId, request.ExpectedTurn);
         var response = await _mediator.Send(command);
 
         LogActionResult("Wait", request.InvestorId, null, null, response);
@@ -146,6 +149,14 @@ public sealed class ActionsController : ControllerBase
                 "actions.not_found");
         }
 
+        if (response.Status == ActionExecutionStatus.Conflict)
+        {
+            return ApiProblemFactory.Conflict(
+                this,
+                response.Message ?? "Turn conflict occurred.",
+                "actions.turn_conflict");
+        }
+
         if (response.Portfolio is null || response.Message is null)
         {
             return ApiProblemFactory.NotFound(
@@ -157,7 +168,8 @@ public sealed class ActionsController : ControllerBase
         var result = new ActionResultDto(
             response.Success,
             response.Message,
-            _portfolioMapper.ToDto(response.Portfolio));
+            _portfolioMapper.ToDto(response.Portfolio),
+            response.CurrentTurn ?? 0);
 
         return Ok(result);
     }

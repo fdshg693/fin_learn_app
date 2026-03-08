@@ -8,11 +8,13 @@ public sealed record SellNowCommand : IRequest<ActionExecutionResult>
     public Guid InvestorId { get; }
     public Guid TickerId { get; }
     public int Quantity { get; }
+    public int ExpectedTurn { get; }
 
-    public SellNowCommand(Guid investorId, Guid tickerId, int quantity)
+    public SellNowCommand(Guid investorId, Guid tickerId, int quantity, int expectedTurn)
     {
         InvestorId = investorId;
         TickerId = tickerId;
         Quantity = quantity;
+        ExpectedTurn = expectedTurn;
     }
 }
