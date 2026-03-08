@@ -1,5 +1,6 @@
-import { memo, useCallback } from "react";
+import { memo } from "react";
 import type { InstrumentDto } from "~/types/game";
+import { formatJPY } from "~/utils/format";
 
 type Props = {
   instruments: InstrumentDto[];
@@ -28,7 +29,7 @@ export const MarketBoard = memo(function MarketBoard({ instruments, selectedId, 
               }`}
             >
               <td className="py-2">{inst.id}</td>
-              <td className="py-2 text-right">¥{inst.price.toLocaleString()}</td>
+              <td className="py-2 text-right">{formatJPY(inst.price)}</td>
             </tr>
           ))}
         </tbody>

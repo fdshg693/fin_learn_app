@@ -1,5 +1,6 @@
 import { memo } from "react";
 import type { PositionDto } from "~/types/game";
+import { formatJPY } from "~/utils/format";
 
 type Props = {
   positions: PositionDto[];
@@ -26,8 +27,8 @@ export const PositionList = memo(function PositionList({ positions }: Props) {
               <tr key={pos.instrumentId} className="border-b">
                 <td className="py-2">{pos.instrumentId}</td>
                 <td className="py-2 text-right">{pos.quantity}</td>
-                <td className="py-2 text-right">¥{pos.currentPrice.toLocaleString()}</td>
-                <td className="py-2 text-right">¥{pos.amount.toLocaleString()}</td>
+                <td className="py-2 text-right">{formatJPY(pos.currentPrice)}</td>
+                <td className="py-2 text-right">{formatJPY(pos.amount)}</td>
               </tr>
             ))}
           </tbody>

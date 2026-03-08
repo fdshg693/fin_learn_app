@@ -1,12 +1,40 @@
 import { memo, useState, useCallback } from "react";
 import { Form, useNavigation } from "react-router";
 import type { InstrumentDto } from "~/types/game";
+import { formatJPY } from "~/utils/format";
 
 type Props = {
   instruments: InstrumentDto[];
   selectedInstrumentId: number | null;
   onInstrumentChange: (id: number) => void;
 };
+
+type TradeButtonProps = {
+  intent: string;
+  label: string;
+  color: string;
+  disabled: boolean;
+  hiddenFields?: Record<string, string | number>;
+};
+
+function TradeButton({ intent, label, color, disabled, hiddenFields }: TradeButtonProps) {
+  return (
+    <Form method="post" className="flex-1">
+      <input type="hidden" name="intent" value={intent} />
+      {hiddenFields &&
+        Object.entries(hiddenFields).map(([name, value]) => (
+          <input key={name} type="hidden" name={name} value={value} />
+        ))}
+      <button
+        type="submit"
+        disabled={disabled}
+        className={`w-full ${color} text-white font-bold py-2 rounded disabled:opacity-50`}
+      >
+        {label}
+      </button>
+    </Form>
+  );
+}
 
 export const TradeForm = memo(function TradeForm({ instruments, selectedInstrumentId, onInstrumentChange }: Props) {
   const [quantity, setQuantity] = useState(1);
@@ -29,6 +57,8 @@ export const TradeForm = memo(function TradeForm({ instruments, selectedInstrume
     [],
   );
 
+  const orderFields = { instrumentId, quantity, price };
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
       <h2 className="text-sm font-semibold text-gray-500 mb-3">注文</h2>
@@ -43,7 +73,7 @@ export const TradeForm = memo(function TradeForm({ instruments, selectedInstrume
           >
             {instruments.map((inst) => (
               <option key={inst.id} value={inst.id}>
-                銘柄 {inst.id} (¥{inst.price.toLocaleString()})
+                銘柄 {inst.id} ({formatJPY(inst.price)})
               </option>
             ))}
           </select>
@@ -74,44 +104,9 @@ export const TradeForm = memo(function TradeForm({ instruments, selectedInstrume
       </div>
 
       <div className="flex gap-2 mt-4">
-        <Form method="post" className="flex-1">
-          <input type="hidden" name="intent" value="buy" />
-          <input type="hidden" name="instrumentId" value={instrumentId} />
-          <input type="hidden" name="quantity" value={quantity} />
-          <input type="hidden" name="price" value={price} />
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 rounded disabled:opacity-50"
-          >
-            買う
-          </button>
-        </Form>
-
-        <Form method="post" className="flex-1">
-          <input type="hidden" name="intent" value="sell" />
-          <input type="hidden" name="instrumentId" value={instrumentId} />
-          <input type="hidden" name="quantity" value={quantity} />
-          <input type="hidden" name="price" value={price} />
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 rounded disabled:opacity-50"
-          >
-            売る
-          </button>
-        </Form>
-
-        <Form method="post" className="flex-1">
-          <input type="hidden" name="intent" value="wait" />
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 rounded disabled:opacity-50"
-          >
-            待つ
-          </button>
-        </Form>
+        <TradeButton intent="buy" label="買う" color="bg-red-500 hover:bg-red-600" disabled={isSubmitting} hiddenFields={orderFields} />
+        <TradeButton intent="sell" label="売る" color="bg-blue-500 hover:bg-blue-600" disabled={isSubmitting} hiddenFields={orderFields} />
+        <TradeButton intent="wait" label="待つ" color="bg-gray-400 hover:bg-gray-500" disabled={isSubmitting} />
       </div>
     </div>
   );

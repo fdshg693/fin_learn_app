@@ -22,11 +22,16 @@ export async function clientAction({ params, request }: ClientActionFunctionArgs
     return wait(id);
   }
 
-  const order: OrderRequest = {
-    instrumentId: Number(formData.get("instrumentId")),
-    quantity: Number(formData.get("quantity")),
-    price: formData.get("price") ? Number(formData.get("price")) : null,
-  };
+  const instrumentId = Number(formData.get("instrumentId"));
+  const quantity = Number(formData.get("quantity"));
+  const priceRaw = formData.get("price");
+  const price = priceRaw ? Number(priceRaw) : null;
+
+  if (Number.isNaN(instrumentId) || Number.isNaN(quantity) || (price !== null && Number.isNaN(price))) {
+    throw new Error("入力値が不正です。数値を入力してください。");
+  }
+
+  const order: OrderRequest = { instrumentId, quantity, price };
 
   if (intent === "buy") {
     return buy(id, order);
