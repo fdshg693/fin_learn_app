@@ -1,24 +1,29 @@
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
 using FinLearnApp.Domain.ValueObjects;
+using MediatR;
 
 namespace FinLearnApp.Application.Actions;
 
-public sealed class BuyNowCommandHandler : IRequestHandler<BuyNowCommand, ActionExecutionResult>
+public sealed class BuyLimitCommandHandler : IRequestHandler<BuyLimitCommand, ActionExecutionResult>
 {
     private readonly IActionExecutionStore _store;
 
-    public BuyNowCommandHandler(IActionExecutionStore store)
+    public BuyLimitCommandHandler(IActionExecutionStore store)
     {
         _store = store;
     }
 
-    public Task<ActionExecutionResult> Handle(BuyNowCommand command, CancellationToken cancellationToken)
+    public Task<ActionExecutionResult> Handle(BuyLimitCommand command, CancellationToken cancellationToken)
     {
         if (command.Quantity <= 0)
         {
             return Task.FromResult(ActionExecutionResult.BadRequest("Quantity must be greater than 0."));
+        }
+
+        if (command.LimitPriceAmount <= 0m)
+        {
+            return Task.FromResult(ActionExecutionResult.BadRequest("Limit price must be greater than 0."));
         }
 
         var portfolio = _store.FindPortfolioByInvestor(new InvestorId(command.InvestorId));
@@ -41,11 +46,19 @@ public sealed class BuyNowCommandHandler : IRequestHandler<BuyNowCommand, Action
             return Task.FromResult(ActionExecutionResult.NotFound());
         }
 
-        var matchResult = _store.ExecuteBuyNow(ticker.Id, command.Quantity, portfolio.Cash);
+        var limitPrice = Money.Jpy(command.LimitPriceAmount);
+        var maxCost = limitPrice.Multiply(command.Quantity);
+        if (portfolio.Cash.Amount < maxCost.Amount)
+        {
+            var nextTurn = _store.AdvanceTurn(portfolio.InvestorId);
+            return Task.FromResult(ActionExecutionResult.Ok(false, "指値注文に必要な現金が不足しています。", portfolio, nextTurn));
+        }
+
+        var matchResult = _store.ExecuteBuyLimit(ticker.Id, command.Quantity, limitPrice, portfolio.Cash);
         if (matchResult.ExecutedQuantity <= 0)
         {
             var nextTurn = _store.AdvanceTurn(portfolio.InvestorId);
-            return Task.FromResult(ActionExecutionResult.Ok(false, "約定する売り注文がありませんでした。", portfolio, nextTurn));
+            return Task.FromResult(ActionExecutionResult.Ok(false, "条件に合う売り注文がありませんでした。", portfolio, nextTurn));
         }
 
         portfolio.Withdraw(matchResult.TotalAmount);
@@ -56,11 +69,11 @@ public sealed class BuyNowCommandHandler : IRequestHandler<BuyNowCommand, Action
         {
             return Task.FromResult(ActionExecutionResult.Ok(
                 true,
-                $"{matchResult.ExecutedQuantity}株を約定しました（未約定 {matchResult.RemainingQuantity}株）。",
+                $"指値買いで {matchResult.ExecutedQuantity}株を約定（未約定 {matchResult.RemainingQuantity}株）。",
                 portfolio,
                 advancedTurn));
         }
 
-        return Task.FromResult(ActionExecutionResult.Ok(true, "BuyNow を実行しました。", portfolio, advancedTurn));
+        return Task.FromResult(ActionExecutionResult.Ok(true, "BuyLimit を実行しました。", portfolio, advancedTurn));
     }
 }

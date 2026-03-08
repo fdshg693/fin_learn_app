@@ -78,6 +78,56 @@ public sealed class ActionsController : ControllerBase
         return ToHttpResult(response);
     }
 
+    [HttpPost("buy-limit")]
+    public async Task<ActionResult<ActionResultDto>> BuyLimit(ActionLimitRequestDto request)
+    {
+        _logger.LogInformation(
+            "Execute action={Action} investorId={InvestorId} tickerId={TickerId} quantity={Quantity} limitPrice={LimitPrice} expectedTurn={ExpectedTurn}",
+            "BuyLimit",
+            request.InvestorId,
+            request.TickerId,
+            request.Quantity,
+            request.LimitPriceAmount,
+            request.ExpectedTurn);
+
+        var command = new BuyLimitCommand(
+            request.InvestorId,
+            request.TickerId,
+            request.Quantity,
+            request.LimitPriceAmount,
+            request.ExpectedTurn);
+        var response = await _mediator.Send(command);
+
+        LogActionResult("BuyLimit", request.InvestorId, request.TickerId, request.Quantity, response);
+
+        return ToHttpResult(response);
+    }
+
+    [HttpPost("sell-limit")]
+    public async Task<ActionResult<ActionResultDto>> SellLimit(ActionLimitRequestDto request)
+    {
+        _logger.LogInformation(
+            "Execute action={Action} investorId={InvestorId} tickerId={TickerId} quantity={Quantity} limitPrice={LimitPrice} expectedTurn={ExpectedTurn}",
+            "SellLimit",
+            request.InvestorId,
+            request.TickerId,
+            request.Quantity,
+            request.LimitPriceAmount,
+            request.ExpectedTurn);
+
+        var command = new SellLimitCommand(
+            request.InvestorId,
+            request.TickerId,
+            request.Quantity,
+            request.LimitPriceAmount,
+            request.ExpectedTurn);
+        var response = await _mediator.Send(command);
+
+        LogActionResult("SellLimit", request.InvestorId, request.TickerId, request.Quantity, response);
+
+        return ToHttpResult(response);
+    }
+
     /// <summary>
     /// 売買を行わず、最新ポートフォリオを返す（見送り）。
     /// </summary>

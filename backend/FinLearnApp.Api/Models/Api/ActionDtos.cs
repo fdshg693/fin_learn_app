@@ -29,6 +29,27 @@ public sealed record ActionTradeRequestDto
 }
 
 /// <summary>
+/// 指値売買アクション（BuyLimit/SellLimit）用のリクエスト。
+/// </summary>
+public sealed record ActionLimitRequestDto
+{
+    public Guid InvestorId { get; }
+    public Guid TickerId { get; }
+    public int Quantity { get; }
+    public decimal LimitPriceAmount { get; }
+    public int ExpectedTurn { get; }
+
+    public ActionLimitRequestDto(Guid investorId, Guid tickerId, int quantity, decimal limitPriceAmount, int expectedTurn)
+    {
+        InvestorId = investorId;
+        TickerId = tickerId;
+        Quantity = quantity;
+        LimitPriceAmount = limitPriceAmount;
+        ExpectedTurn = expectedTurn;
+    }
+}
+
+/// <summary>
 /// Waitアクション（見送り）用のリクエスト。
 /// </summary>
 public sealed record ActionWaitRequestDto

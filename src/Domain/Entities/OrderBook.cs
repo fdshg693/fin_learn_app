@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FinLearnApp.Domain.Enums;
+using FinLearnApp.Domain.ValueObjects;
 
 namespace FinLearnApp.Domain.Entities;
 
@@ -26,5 +28,42 @@ public sealed class OrderBook
         }
 
         _sellOrders.Add(order);
+    }
+
+    public IReadOnlyList<Order> FindByTickerAndSide(TickerId tickerId, OrderSide side)
+    {
+        return side == OrderSide.Buy
+            ? _buyOrders.Where(order => order.TickerId == tickerId).ToList()
+            : _sellOrders.Where(order => order.TickerId == tickerId).ToList();
+    }
+
+    public void Remove(Order order)
+    {
+        if (order.Side == OrderSide.Buy)
+        {
+            _buyOrders.Remove(order);
+            return;
+        }
+
+        _sellOrders.Remove(order);
+    }
+
+    public void ReplaceWithRemaining(Order original, int remainingQuantity)
+    {
+        Remove(original);
+
+        if (remainingQuantity <= 0)
+        {
+            return;
+        }
+
+        Add(new Order(
+            original.Id,
+            original.TickerId,
+            original.Side,
+            original.Price,
+            remainingQuantity,
+            original.Origin,
+            original.CreatedAt));
     }
 }

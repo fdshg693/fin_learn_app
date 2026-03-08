@@ -48,6 +48,9 @@ src/Domain (Portfolio, Holding, Money などのルール)
 - `backend/FinLearnApp.Api/Controllers/PortfoliosController.cs`
   - 投資家のポートフォリオ取得（読み取り）
 
+- `backend/FinLearnApp.Api/Controllers/MarketController.cs`
+  - 注文票と約定履歴のスナップショット取得（`GET /api/market/snapshot`）
+
 ### 2. DTOとレスポンス整形
 - `backend/FinLearnApp.Api/Models/Api/ActionDtos.cs`
   - リクエスト: `expectedTurn` を受ける
@@ -68,8 +71,10 @@ src/Domain (Portfolio, Holding, Money などのルール)
   - Application層から見たときのデータ窓口
 
 - `backend/FinLearnApp.Api/Data/InMemoryStore.cs`
-  - 実データ本体（Companies/Tickers/Portfolios/Turn）
+  - 実データ本体（Companies/Tickers/Portfolios/Turn/OrderBook/Trades）
   - `GetCurrentTurn` / `AdvanceTurn` を提供
+  - ターン進行時の株価変動とシステム注文生成
+  - BuyNow/SellNow の即時マッチング実行
 
 - `backend/FinLearnApp.Api/Data/SeedData.cs`
   - 起動時の初期データ作成
@@ -135,6 +140,9 @@ src/Domain (Portfolio, Holding, Money などのルール)
 - `frontend/src/api/types.ts`
   - Request/Response DTO型（`expectedTurn`/`currentTurn` を含む）
 
+- `frontend/src/api/market.ts`
+  - `GET /api/market/snapshot` 呼び出し
+
 ## データフロー（クライアント起点）
 
 ## A. Actions画面の初期表示
@@ -184,6 +192,65 @@ src/Domain (Portfolio, Holding, Money などのルール)
 - `setPortfolio(result.portfolio)`
 - `setCurrentTurn(result.currentTurn)`
 
+## B-2. 約定ルール（価格優先/時間優先）
+
+現在の `BuyNow` / `SellNow` は、注文票にあるコンピューター注文と即時マッチングします。
+
+- BuyNow
+  - 対象: 同一銘柄の `SellOrders`
+  - 条件: `order.Price <= ticker.CurrentPrice`
+  - 優先順: 価格の安い順 -> 同価格なら古い順
+
+- SellNow
+  - 対象: 同一銘柄の `BuyOrders`
+  - 条件: `order.Price >= ticker.CurrentPrice`
+  - 優先順: 価格の高い順 -> 同価格なら古い順
+
+- 共通
+  - 部分約定あり（注文数量が足りない場合）
+  - 約定した分だけ `OrderBook` から減算
+  - 残量があれば注文票に残る
+  - 約定履歴は `Trades` に記録される
+
+ファイル参照:
+- `backend/FinLearnApp.Api/Data/InMemoryStore.cs`
+- `src/Domain/Entities/OrderBook.cs`
+- `src/Application/Actions/BuyNowCommandHandler.cs`
+- `src/Application/Actions/SellNowCommandHandler.cs`
+
+## B-3. 約定処理フロー（図）
+
+```text
+Actions.tsx
+  -> POST /api/actions/buy-now (expectedTurn付き)
+ActionsController
+  -> IMediator.Send(BuyNowCommand)
+BuyNowCommandHandler
+  -> IActionExecutionStore.ExecuteBuyNow(...)
+InMemoryActionExecutionStore
+  -> InMemoryStore.ExecuteBuyNow(...)
+InMemoryStore
+  -> OrderBook(Sell) から候補抽出
+  -> 価格/時間優先で約定計算
+  -> Trade記録
+  -> OrderBook残量更新
+  -> OrderMatchResult返却
+BuyNowCommandHandler
+  -> Portfolio(現金/保有)更新
+  -> AdvanceTurn(株価変動 + システム注文生成)
+ActionsController
+  -> ActionResultDto(currentTurn付き)
+Actions.tsx
+  -> 画面反映 + /api/market/snapshot再取得
+```
+
+## D. 市場スナップショット表示フロー
+
+1. `Actions.tsx` が `fetchMarketSnapshot()` を呼ぶ
+2. `GET /api/market/snapshot` を実行
+3. `MarketController` が `OrderBook` と `Trades` を DTO化して返す
+4. フロントで「注文票（買い/売り）」と「約定履歴」を表示
+
 ## C. ターン不一致時（競合）
 
 1. 送信時の `expectedTurn` が古い
@@ -211,5 +278,5 @@ src/Domain (Portfolio, Holding, Money などのルール)
 
 - 永続DB実装（現在はInMemoryのみ）
 - 409時のフロント自動リトライ/再同期
-- ターンに応じた価格変動やフェーズ進行ルール
+- 注文の失効/キャンセル、注文票の上限管理
 - FluentValidation/Zodによる入力バリデーション統合

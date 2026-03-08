@@ -42,6 +42,14 @@ export type ActionTradeRequestDto = {
   expectedTurn: number
 }
 
+export type ActionLimitRequestDto = {
+  investorId: string
+  tickerId: string
+  quantity: number
+  limitPriceAmount: number
+  expectedTurn: number
+}
+
 export type ActionWaitRequestDto = {
   investorId: string
   expectedTurn: number
@@ -52,4 +60,31 @@ export type ActionResultDto = {
   message: string
   portfolio: PortfolioDto
   currentTurn: number
+}
+
+export type MarketOrderDto = {
+  orderId: string
+  tickerId: string
+  symbol: string
+  side: string
+  origin: string
+  price: MoneyDto
+  quantity: number
+  createdAt: string
+}
+
+export type MarketTradeDto = {
+  tradeId: string
+  tickerId: string
+  symbol: string
+  quantity: number
+  price: MoneyDto
+  fee: MoneyDto
+  executedAt: string
+}
+
+export type MarketSnapshotDto = {
+  buyOrders: MarketOrderDto[]
+  sellOrders: MarketOrderDto[]
+  trades: MarketTradeDto[]
 }

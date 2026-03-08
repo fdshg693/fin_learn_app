@@ -1,25 +1,30 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
 using FinLearnApp.Domain.ValueObjects;
+using MediatR;
 
 namespace FinLearnApp.Application.Actions;
 
-public sealed class SellNowCommandHandler : IRequestHandler<SellNowCommand, ActionExecutionResult>
+public sealed class SellLimitCommandHandler : IRequestHandler<SellLimitCommand, ActionExecutionResult>
 {
     private readonly IActionExecutionStore _store;
 
-    public SellNowCommandHandler(IActionExecutionStore store)
+    public SellLimitCommandHandler(IActionExecutionStore store)
     {
         _store = store;
     }
 
-    public Task<ActionExecutionResult> Handle(SellNowCommand command, CancellationToken cancellationToken)
+    public Task<ActionExecutionResult> Handle(SellLimitCommand command, CancellationToken cancellationToken)
     {
         if (command.Quantity <= 0)
         {
             return Task.FromResult(ActionExecutionResult.BadRequest("Quantity must be greater than 0."));
+        }
+
+        if (command.LimitPriceAmount <= 0m)
+        {
+            return Task.FromResult(ActionExecutionResult.BadRequest("Limit price must be greater than 0."));
         }
 
         var portfolio = _store.FindPortfolioByInvestor(new InvestorId(command.InvestorId));
@@ -55,11 +60,12 @@ public sealed class SellNowCommandHandler : IRequestHandler<SellNowCommand, Acti
             return Task.FromResult(ActionExecutionResult.Ok(false, "保有数量が不足しています。", portfolio, nextTurn));
         }
 
-        var matchResult = _store.ExecuteSellNow(ticker.Id, command.Quantity);
+        var limitPrice = Money.Jpy(command.LimitPriceAmount);
+        var matchResult = _store.ExecuteSellLimit(ticker.Id, command.Quantity, limitPrice);
         if (matchResult.ExecutedQuantity <= 0)
         {
             var nextTurn = _store.AdvanceTurn(portfolio.InvestorId);
-            return Task.FromResult(ActionExecutionResult.Ok(false, "約定する買い注文がありませんでした。", portfolio, nextTurn));
+            return Task.FromResult(ActionExecutionResult.Ok(false, "条件に合う買い注文がありませんでした。", portfolio, nextTurn));
         }
 
         portfolio.ReduceHolding(ticker.Id, matchResult.ExecutedQuantity);
@@ -70,11 +76,11 @@ public sealed class SellNowCommandHandler : IRequestHandler<SellNowCommand, Acti
         {
             return Task.FromResult(ActionExecutionResult.Ok(
                 true,
-                $"{matchResult.ExecutedQuantity}株を約定しました（未約定 {matchResult.RemainingQuantity}株）。",
+                $"指値売りで {matchResult.ExecutedQuantity}株を約定（未約定 {matchResult.RemainingQuantity}株）。",
                 portfolio,
                 advancedTurn));
         }
 
-        return Task.FromResult(ActionExecutionResult.Ok(true, "SellNow を実行しました。", portfolio, advancedTurn));
+        return Task.FromResult(ActionExecutionResult.Ok(true, "SellLimit を実行しました。", portfolio, advancedTurn));
     }
 }

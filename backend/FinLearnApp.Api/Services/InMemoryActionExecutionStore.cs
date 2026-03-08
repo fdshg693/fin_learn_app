@@ -36,4 +36,24 @@ public sealed class InMemoryActionExecutionStore : IActionExecutionStore
     {
         return _store.AdvanceTurn(investorId);
     }
+
+    public OrderMatchResult ExecuteBuyNow(TickerId tickerId, int quantity, Money availableCash)
+    {
+        return _store.ExecuteBuyNow(tickerId, quantity, availableCash);
+    }
+
+    public OrderMatchResult ExecuteSellNow(TickerId tickerId, int quantity)
+    {
+        return _store.ExecuteSellNow(tickerId, quantity);
+    }
+
+    public OrderMatchResult ExecuteBuyLimit(TickerId tickerId, int quantity, Money limitPrice, Money availableCash)
+    {
+        return _store.ExecuteBuyLimit(tickerId, quantity, limitPrice, availableCash);
+    }
+
+    public OrderMatchResult ExecuteSellLimit(TickerId tickerId, int quantity, Money limitPrice)
+    {
+        return _store.ExecuteSellLimit(tickerId, quantity, limitPrice);
+    }
 }
