@@ -1,6 +1,6 @@
 ## Frontend
 
-React 19 + React Router v7（フレームワークモード、SSR 有効）+ Tailwind CSS v4 のアプリケーション。
+React 19 + React Router v7（フレームワークモード、SPA モード）+ Tailwind CSS v4 のアプリケーション。
 バックエンド（.NET Minimal API、デフォルト: `http://localhost:5088`）とは CORS で接続。
 
 ### Commands
@@ -22,7 +22,7 @@ npm run typecheck  # TypeScript type check + route type generation
 
 - `app/routes.ts` — ルート定義
 - `app/root.tsx` — 共通レイアウト・ErrorBoundary
-- `react-router.config.ts` — SSR 有効（デフォルト）
+- `react-router.config.ts` — SPA モード（`ssr: false`）
 
 ### Screen Design
 

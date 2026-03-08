@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { useLoaderData, useActionData, useNavigation, type ClientLoaderFunctionArgs, type ClientActionFunctionArgs } from "react-router";
+import { useLoaderData, useActionData, isRouteErrorResponse, type ClientLoaderFunctionArgs, type ClientActionFunctionArgs } from "react-router";
 import { getGame, buy, sell, wait } from "~/api/gameApi";
+import type { Route } from "./+types/games.$id";
 import type { GameResponse, OrderRequest } from "~/types/game";
 import { GameHeader } from "~/components/GameHeader";
 import { PlayerPanel } from "~/components/PlayerPanel";
@@ -54,13 +55,10 @@ export default function GamePage() {
   const loaderData = useLoaderData<GameResponse>();
   const actionData = useActionData<GameResponse>();
   const game = actionData ?? loaderData;
-  const navigation = useNavigation();
-  const isSubmitting = navigation.state === "submitting" || navigation.state === "loading";
-
   const [selectedInstrumentId, setSelectedInstrumentId] = useState<number | null>(null);
 
   return (
-    <main className={`max-w-2xl mx-auto p-4 space-y-4 ${isSubmitting ? "opacity-60 pointer-events-none" : ""}`}>
+    <main className="max-w-2xl mx-auto p-4 space-y-4">
       <GameHeader turn={game.turn} playerName={game.player.name} />
       <WarningMessage warning={game.warning} />
       <PlayerPanel
@@ -81,6 +79,29 @@ export default function GamePage() {
         selectedInstrumentId={selectedInstrumentId}
         onInstrumentChange={setSelectedInstrumentId}
       />
+    </main>
+  );
+}
+
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  let message: string;
+  if (isRouteErrorResponse(error)) {
+    message = error.status === 404 ? "ゲームが見つかりません。" : (error.statusText || "エラーが発生しました。");
+  } else if (error instanceof Error) {
+    message = error.message;
+  } else {
+    message = "予期しないエラーが発生しました。";
+  }
+
+  return (
+    <main className="max-w-2xl mx-auto p-4 space-y-4">
+      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center">
+        <h2 className="text-lg font-bold text-red-700 dark:text-red-400 mb-2">エラー</h2>
+        <p className="text-red-600 dark:text-red-300 mb-4">{message}</p>
+        <a href="/" className="inline-block bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">
+          トップに戻る
+        </a>
+      </div>
     </main>
   );
 }

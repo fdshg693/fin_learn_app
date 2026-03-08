@@ -2,16 +2,28 @@ import type { GameResponse, OrderRequest } from "~/types/game";
 
 const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:5088";
 
+const ERROR_MESSAGES: Record<number, string> = {
+  400: "リクエストが不正です。入力内容を確認してください。",
+  404: "ゲームが見つかりません。",
+  500: "サーバーでエラーが発生しました。しばらく待ってから再試行してください。",
+};
+
+async function handleResponse<T>(res: Response): Promise<T> {
+  if (!res.ok) {
+    const message = ERROR_MESSAGES[res.status] ?? `エラーが発生しました（${res.status}）`;
+    throw new Error(message);
+  }
+  return res.json();
+}
+
 export async function createGame(): Promise<GameResponse> {
   const res = await fetch(`${BASE}/api/games`, { method: "POST" });
-  if (!res.ok) throw new Error(`createGame failed: ${res.status}`);
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function getGame(id: string): Promise<GameResponse> {
   const res = await fetch(`${BASE}/api/games/${id}`);
-  if (!res.ok) throw new Error(`getGame failed: ${res.status}`);
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function buy(id: string, order: OrderRequest): Promise<GameResponse> {
@@ -20,8 +32,7 @@ export async function buy(id: string, order: OrderRequest): Promise<GameResponse
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(order),
   });
-  if (!res.ok) throw new Error(`buy failed: ${res.status}`);
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function sell(id: string, order: OrderRequest): Promise<GameResponse> {
@@ -30,12 +41,10 @@ export async function sell(id: string, order: OrderRequest): Promise<GameRespons
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(order),
   });
-  if (!res.ok) throw new Error(`sell failed: ${res.status}`);
-  return res.json();
+  return handleResponse(res);
 }
 
 export async function wait(id: string): Promise<GameResponse> {
   const res = await fetch(`${BASE}/api/games/${id}/wait`, { method: "POST" });
-  if (!res.ok) throw new Error(`wait failed: ${res.status}`);
-  return res.json();
+  return handleResponse(res);
 }
