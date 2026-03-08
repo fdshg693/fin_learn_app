@@ -13,7 +13,7 @@
 
 All domain objects are **immutable** (sealed classes). Operations return new instances rather than mutating state. Trading operations return `(T Result, string? Warning)` tuples for error handling without exceptions.
 
-Key models (see `docs/DDD.md` for full domain glossary):
+Key models (see `docs/DDD/MAIN.md` for full domain glossary):
 - **Instrument (銘柄)** — Stock identifier
 - **Position (ポジション)** — Holding of an instrument with quantity
 - **PositionSet (ポジション集合)** — Immutable collection that normalizes duplicate instruments by aggregating quantities
