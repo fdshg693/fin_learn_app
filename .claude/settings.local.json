@@ -11,7 +11,8 @@
       "Bash(az provider show:*)",
       "Bash(az account show:*)",
       "Bash(npm run typecheck)",
-      "Bash(ls -la /c/CodeRoot/fin_learn_app/frontend/*.json /c/CodeRoot/fin_learn_app/frontend/*.config.*)"
+      "Bash(ls -la /c/CodeRoot/fin_learn_app/frontend/*.json /c/CodeRoot/fin_learn_app/frontend/*.config.*)",
+      "Bash(echo \"exit:$?\")"
     ]
   }
 }

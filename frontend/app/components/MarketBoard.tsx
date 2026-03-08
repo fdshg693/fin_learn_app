@@ -1,3 +1,4 @@
+import { memo, useCallback } from "react";
 import type { InstrumentDto } from "~/types/game";
 
 type Props = {
@@ -6,7 +7,7 @@ type Props = {
   onSelect: (id: number) => void;
 };
 
-export function MarketBoard({ instruments, selectedId, onSelect }: Props) {
+export const MarketBoard = memo(function MarketBoard({ instruments, selectedId, onSelect }: Props) {
   return (
     <div>
       <h2 className="text-sm font-semibold text-gray-500 mb-2">銘柄一覧</h2>
@@ -34,4 +35,4 @@ export function MarketBoard({ instruments, selectedId, onSelect }: Props) {
       </table>
     </div>
   );
-}
+});

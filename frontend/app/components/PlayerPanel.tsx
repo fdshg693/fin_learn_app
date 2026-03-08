@@ -1,10 +1,12 @@
+import { memo } from "react";
+
 type Props = {
   cash: number;
   totalAssets: number;
   profitLoss: number;
 };
 
-export function PlayerPanel({ cash, totalAssets, profitLoss }: Props) {
+export const PlayerPanel = memo(function PlayerPanel({ cash, totalAssets, profitLoss }: Props) {
   const plColor = profitLoss >= 0 ? "text-green-600" : "text-red-600";
   const plSign = profitLoss >= 0 ? "+" : "";
 
@@ -26,4 +28,4 @@ export function PlayerPanel({ cash, totalAssets, profitLoss }: Props) {
       </div>
     </div>
   );
-}
+});

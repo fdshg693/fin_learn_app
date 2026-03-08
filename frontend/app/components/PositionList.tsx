@@ -1,10 +1,11 @@
+import { memo } from "react";
 import type { PositionDto } from "~/types/game";
 
 type Props = {
   positions: PositionDto[];
 };
 
-export function PositionList({ positions }: Props) {
+export const PositionList = memo(function PositionList({ positions }: Props) {
   return (
     <div>
       <h2 className="text-sm font-semibold text-gray-500 mb-2">保有ポジション</h2>
@@ -34,4 +35,4 @@ export function PositionList({ positions }: Props) {
       )}
     </div>
   );
-}
+});

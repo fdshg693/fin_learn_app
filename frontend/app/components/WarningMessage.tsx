@@ -1,8 +1,10 @@
+import { memo } from "react";
+
 type Props = {
   warning: string | null;
 };
 
-export function WarningMessage({ warning }: Props) {
+export const WarningMessage = memo(function WarningMessage({ warning }: Props) {
   if (!warning) return null;
 
   return (
@@ -10,4 +12,4 @@ export function WarningMessage({ warning }: Props) {
       {warning}
     </div>
   );
-}
+});
