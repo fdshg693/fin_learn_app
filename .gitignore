@@ -1,5 +1,5 @@
 .github/agents
-.vscode\mcp.json
+.vscode/mcp.json
 node_modules/
 
 .DS_Store
