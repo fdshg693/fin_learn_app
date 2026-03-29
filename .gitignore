@@ -1,4 +1,8 @@
 .github/agents
+node_modules/
+
+.DS_Store
+.env
 
 ## A streamlined .gitignore for modern .NET projects
 ## including temporary files, build results, and
