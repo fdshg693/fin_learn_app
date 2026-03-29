@@ -1,46 +1,62 @@
 import { useState } from "react";
 import { useLoaderData, useActionData, isRouteErrorResponse, type ClientLoaderFunctionArgs, type ClientActionFunctionArgs } from "react-router";
-import { getGame, buy, sell, wait } from "~/api/gameApi";
+import { getGame, getOrderBook, buy, sell, wait } from "~/api/gameApi";
 import type { Route } from "./+types/games.$id";
-import type { GameResponse, OrderRequest } from "~/types/game";
+import type { GameResponse, OrderRequest, OrderBookResponse } from "~/types/game";
 import { GameHeader } from "~/components/GameHeader";
 import { PlayerPanel } from "~/components/PlayerPanel";
 import { MarketBoard } from "~/components/MarketBoard";
 import { PositionList } from "~/components/PositionList";
 import { TradeForm } from "~/components/TradeForm";
 import { WarningMessage } from "~/components/WarningMessage";
+import { OrderBookPanel } from "~/components/OrderBookPanel";
 
-export async function clientLoader({ params }: ClientLoaderFunctionArgs): Promise<GameResponse> {
-  return getGame(params.id!);
+type LoaderData = {
+  game: GameResponse;
+  orderBook: OrderBookResponse;
+};
+
+export async function clientLoader({ params }: ClientLoaderFunctionArgs): Promise<LoaderData> {
+  const id = params.id!;
+  const [game, orderBook] = await Promise.all([
+    getGame(id),
+    getOrderBook(id),
+  ]);
+  return { game, orderBook };
 }
 
-export async function clientAction({ params, request }: ClientActionFunctionArgs): Promise<GameResponse> {
+export async function clientAction({ params, request }: ClientActionFunctionArgs): Promise<LoaderData> {
   const formData = await request.formData();
   const intent = formData.get("intent") as string;
   const id = params.id!;
 
+  let game: GameResponse;
+
   if (intent === "wait") {
-    return wait(id);
+    game = await wait(id);
+  } else {
+    const instrumentId = Number(formData.get("instrumentId"));
+    const quantity = Number(formData.get("quantity"));
+    const priceRaw = formData.get("price");
+    const price = priceRaw ? Number(priceRaw) : null;
+
+    if (Number.isNaN(instrumentId) || Number.isNaN(quantity) || (price !== null && Number.isNaN(price))) {
+      throw new Error("入力値が不正です。数値を入力してください。");
+    }
+
+    const order: OrderRequest = { instrumentId, quantity, price };
+
+    if (intent === "buy") {
+      game = await buy(id, order);
+    } else if (intent === "sell") {
+      game = await sell(id, order);
+    } else {
+      throw new Error(`Invalid intent: ${intent}`);
+    }
   }
 
-  const instrumentId = Number(formData.get("instrumentId"));
-  const quantity = Number(formData.get("quantity"));
-  const priceRaw = formData.get("price");
-  const price = priceRaw ? Number(priceRaw) : null;
-
-  if (Number.isNaN(instrumentId) || Number.isNaN(quantity) || (price !== null && Number.isNaN(price))) {
-    throw new Error("入力値が不正です。数値を入力してください。");
-  }
-
-  const order: OrderRequest = { instrumentId, quantity, price };
-
-  if (intent === "buy") {
-    return buy(id, order);
-  }
-  if (intent === "sell") {
-    return sell(id, order);
-  }
-  throw new Error(`Invalid intent: ${intent}`);
+  const orderBook = await getOrderBook(id);
+  return { game, orderBook };
 }
 
 export function HydrateFallback() {
@@ -52,9 +68,9 @@ export function HydrateFallback() {
 }
 
 export default function GamePage() {
-  const loaderData = useLoaderData<GameResponse>();
-  const actionData = useActionData<GameResponse>();
-  const game = actionData ?? loaderData;
+  const loaderData = useLoaderData<LoaderData>();
+  const actionData = useActionData<LoaderData>();
+  const { game, orderBook } = actionData ?? loaderData;
   const [selectedInstrumentId, setSelectedInstrumentId] = useState<number | null>(null);
 
   return (
@@ -79,6 +95,7 @@ export default function GamePage() {
         selectedInstrumentId={selectedInstrumentId}
         onInstrumentChange={setSelectedInstrumentId}
       />
+      <OrderBookPanel orders={orderBook.orders} />
     </main>
   );
 }

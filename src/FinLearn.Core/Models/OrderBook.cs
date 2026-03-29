@@ -19,6 +19,8 @@ public sealed class OrderBook
         _ids = ids;
     }
 
+    public IReadOnlyList<Order> Orders => _orders;
+
     public OrderBook Add(Order order)
     {
         if (_ids.Contains(order.Id))

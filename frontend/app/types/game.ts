@@ -31,3 +31,19 @@ export type OrderRequest = {
   quantity: number;
   price: number | null;
 };
+
+export type OrderBookResponse = {
+  orders: OrderDto[];
+};
+
+export type OrderDto = {
+  id: number;
+  traderId: string;
+  instrumentId: number;
+  side: string;
+  type: string;
+  quantity: number;
+  price: number | null;
+  stopPrice: number | null;
+  createdAtTurn: number;
+};

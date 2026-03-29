@@ -179,6 +179,44 @@ public class GameApiTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Contains(created.Instruments, i => i.Id == 3);
     }
 
+    [Fact]
+    public async Task GET_admin_orderbook_注文実行後に未約定注文が返る()
+    {
+        var created = await CreateGame();
+
+        // 指値買い注文（約定しにくい低価格）で板に注文を残す
+        await _client.PostAsJsonAsync(
+            $"/api/games/{created.GameId}/buy",
+            new OrderRequest(InstrumentId: 1, Quantity: 1, Price: 1));
+
+        var response = await _client.GetAsync($"/api/admin/games/{created.GameId}/orderbook");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var orderBook = await response.Content.ReadFromJsonAsync<OrderBookResponse>();
+        Assert.NotNull(orderBook);
+        Assert.NotEmpty(orderBook.Orders);
+    }
+
+    [Fact]
+    public async Task GET_admin_orderbook_存在しないゲームは404()
+    {
+        var response = await _client.GetAsync("/api/admin/games/nonexistent/orderbook");
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GET_admin_orderbook_新規ゲームでは空リスト()
+    {
+        var created = await CreateGame();
+
+        var response = await _client.GetAsync($"/api/admin/games/{created.GameId}/orderbook");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var orderBook = await response.Content.ReadFromJsonAsync<OrderBookResponse>();
+        Assert.NotNull(orderBook);
+        Assert.Empty(orderBook.Orders);
+    }
+
     private async Task<GameResponse> CreateGame()
     {
         var response = await _client.PostAsync("/api/games", null);

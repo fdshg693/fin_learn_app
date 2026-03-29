@@ -31,6 +31,7 @@ var app = builder.Build();
 
 app.UseCors();
 app.MapGameEndpoints();
+app.MapAdminEndpoints();
 
 app.Run();
 

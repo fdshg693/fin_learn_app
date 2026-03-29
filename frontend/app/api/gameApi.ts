@@ -1,4 +1,4 @@
-import type { GameResponse, OrderRequest } from "~/types/game";
+import type { GameResponse, OrderRequest, OrderBookResponse } from "~/types/game";
 
 const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:5088";
 
@@ -46,5 +46,10 @@ export async function sell(id: string, order: OrderRequest): Promise<GameRespons
 
 export async function wait(id: string): Promise<GameResponse> {
   const res = await fetch(`${BASE}/api/games/${id}/wait`, { method: "POST" });
+  return handleResponse(res);
+}
+
+export async function getOrderBook(id: string): Promise<OrderBookResponse> {
+  const res = await fetch(`${BASE}/api/admin/games/${id}/orderbook`);
   return handleResponse(res);
 }
