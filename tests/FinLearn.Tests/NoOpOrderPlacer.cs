@@ -9,7 +9,7 @@ public sealed class NoOpOrderPlacer : IOrderPlacer
 {
     public (OrderBook UpdatedBook, int NextOrderId) PlaceOrders(
         OrderBook book, IExchange exchange,
-        IReadOnlyList<Instrument> instruments, int startOrderId)
+        IReadOnlyList<Instrument> instruments, int startOrderId, int currentTurn)
     {
         return (book, startOrderId);
     }

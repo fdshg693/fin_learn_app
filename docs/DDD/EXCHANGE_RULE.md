@@ -39,12 +39,26 @@
 |---|---|---|
 | 件数 | 10件 | 10件 |
 | 数量 | 各1株 | 各1株 |
-| 価格 | `Max(1, 市場価格 * 95 / 100)` | 市場価格（100%） |
+| 価格 | `Max(1, 市場価格 * [85..105] / 100)` | `Max(1, 市場価格 * [95..115] / 100)` |
 | 銘柄 | ランダム分散 | ランダム分散 |
 | 注文者ID | `"computer"` | `"computer"` |
 
+- 買い注文の価格帯（85〜105%）と売り注文の価格帯（95〜115%）が重なるため、コンピューター同士でも約定が発生する
 - `IExchange.TryGetPrice` が `false` の銘柄はスキップ（価格不明・価格0以下）
 - `Random` インスタンスを外部注入（シード固定でテスト決定性を確保）
+
+## 注文の有効期限
+
+注文には `CreatedAtTurn`（作成ターン）が記録され、一定ターン経過後に自動的に板から除去される。
+
+| 項目 | 変数名 | デフォルト値 |
+|---|---|---|
+| コンピューター注文の有効期限 | `ComputerTtl` | `int.MaxValue`（実質無期限） |
+| プレイヤー注文の有効期限 | `PlayerTtl` | `int.MaxValue`（実質無期限） |
+
+- **期限切れ判定**: `currentTurn - createdAtTurn >= ttl` で期限切れ
+- **実行タイミング**: ターン進行時（`TurnProcessor.AdvanceTurn`）に `OrderBook.ExpireOrders` を呼び出す
+- TTL は `TurnProcessor` のコンストラクタで設定
 
 ## 約定ロジック（`OrderBook.Match`）
 
@@ -98,7 +112,8 @@
 5. Portfolio.ApplyTrade(trade)             — ポートフォリオ更新
 6. AddRemainingLimitOrder(...)             — 指値未約定分を板に追加
 7. IPriceFluctuator.Fluctuate(prices)      — 株価変動（±5%）
-8. Turn + 1                                — ターン番号インクリメント
+8. OrderBook.ExpireOrders(...)             — 期限切れ注文を除去
+9. Turn + 1                                — ターン番号インクリメント
 ```
 
 - **Wait**: コンピューター注文生成 + 株価変動のみ（プレイヤー注文なし）

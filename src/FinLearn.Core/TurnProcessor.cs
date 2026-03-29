@@ -10,19 +10,25 @@ public sealed class TurnProcessor
     public IMarket Market { get; }
     public IPriceFluctuator Fluctuator { get; }
     public IExchangeFactory ExchangeFactory { get; }
+    public int ComputerTtl { get; }
+    public int PlayerTtl { get; }
 
-    public TurnProcessor(IOrderPlacer orderPlacer, IPriceFluctuator fluctuator)
-        : this(orderPlacer, new Market(), fluctuator, new SimpleExchangeFactory())
+    public TurnProcessor(IOrderPlacer orderPlacer, IPriceFluctuator fluctuator,
+        int computerTtl = int.MaxValue, int playerTtl = int.MaxValue)
+        : this(orderPlacer, new Market(), fluctuator, new SimpleExchangeFactory(), computerTtl, playerTtl)
     {
     }
 
     public TurnProcessor(IOrderPlacer orderPlacer, IMarket market,
-        IPriceFluctuator fluctuator, IExchangeFactory exchangeFactory)
+        IPriceFluctuator fluctuator, IExchangeFactory exchangeFactory,
+        int computerTtl = int.MaxValue, int playerTtl = int.MaxValue)
     {
         OrderPlacer = orderPlacer;
         Market = market;
         Fluctuator = fluctuator;
         ExchangeFactory = exchangeFactory;
+        ComputerTtl = computerTtl;
+        PlayerTtl = playerTtl;
     }
 
     public (Game Result, string? Warning) Buy(Game game, int fee, int instrumentId, int quantity, int? price = null, int? stopPrice = null)
@@ -50,9 +56,8 @@ public sealed class TurnProcessor
     public (Game Result, string? Warning) Wait(Game game, int fee)
     {
         var exchange = ExchangeFactory.Create(game.Prices, fee);
-        var (bookWithOrders, nextId) = OrderPlacer.PlaceOrders(game.OrderBook, exchange, game.Instruments, game.NextOrderId);
-        var newPrices = Fluctuator.Fluctuate(game.Prices);
-        return (new Game(game.Player, game.Turn + 1, bookWithOrders, nextId, game.Instruments, newPrices), null);
+        var (bookWithOrders, nextId) = OrderPlacer.PlaceOrders(game.OrderBook, exchange, game.Instruments, game.NextOrderId, game.Turn);
+        return (AdvanceTurn(game, game.Player, bookWithOrders, nextId), null);
     }
 
     private (Game Result, string? Warning) PlaceOrder(
@@ -62,8 +67,8 @@ public sealed class TurnProcessor
         var exchange = ExchangeFactory.Create(game.Prices, fee);
 
         // 1. コンピューター注文を生成 → プレイヤー注文を生成 → 市場で約定
-        var (bookWithOrders, nextId) = OrderPlacer.PlaceOrders(game.OrderBook, exchange, game.Instruments, game.NextOrderId);
-        var order = game.Player.CreateOrder(nextId, instrument, side, quantity, price, stopPrice);
+        var (bookWithOrders, nextId) = OrderPlacer.PlaceOrders(game.OrderBook, exchange, game.Instruments, game.NextOrderId, game.Turn);
+        var order = game.Player.CreateOrder(nextId, instrument, side, quantity, price, stopPrice, game.Turn);
         var matchResult = Market.Execute(bookWithOrders, order, exchange);
 
         // 2. 成行注文で約定ゼロ → コンピューター注文は板に残し、Waitと同じ挙動でターンを進める
@@ -109,6 +114,7 @@ public sealed class TurnProcessor
     private Game AdvanceTurn(Game game, Player player, OrderBook book, int nextOrderId)
     {
         var newPrices = Fluctuator.Fluctuate(game.Prices);
-        return new Game(player, game.Turn + 1, book, nextOrderId, game.Instruments, newPrices);
+        var expiredBook = book.ExpireOrders(game.Turn + 1, ComputerTtl, PlayerTtl);
+        return new Game(player, game.Turn + 1, expiredBook, nextOrderId, game.Instruments, newPrices);
     }
 }

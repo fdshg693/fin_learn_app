@@ -609,4 +609,70 @@ public class OrderBookTests
         Assert.Equal(0, incomingFill.TotalAmount);
         Assert.Single(result.UpdatedBook.SellOrders(instrumentId: 1));
     }
+
+    // --- 注文の有効期限 ---
+
+    [Fact]
+    public void コンピューター注文がTTL超過で除去される()
+    {
+        var book = new OrderBook()
+            .Add(new Order(1, "computer", new Instrument(1), OrderSide.Buy, 5, 100, createdAtTurn: 1))
+            .Add(new Order(2, "computer", new Instrument(1), OrderSide.Sell, 3, 110, createdAtTurn: 1));
+
+        var expired = book.ExpireOrders(currentTurn: 5, computerTtl: 3, playerTtl: 10);
+
+        Assert.Empty(expired.BuyOrders(1));
+        Assert.Empty(expired.SellOrders(1));
+    }
+
+    [Fact]
+    public void プレイヤー注文がTTL超過で除去される()
+    {
+        var book = new OrderBook()
+            .Add(new Order(1, "player", new Instrument(1), OrderSide.Buy, 5, 100, createdAtTurn: 1));
+
+        var expired = book.ExpireOrders(currentTurn: 12, computerTtl: 3, playerTtl: 10);
+
+        Assert.Empty(expired.BuyOrders(1));
+    }
+
+    [Fact]
+    public void TTL内の注文は残る()
+    {
+        var book = new OrderBook()
+            .Add(new Order(1, "computer", new Instrument(1), OrderSide.Buy, 5, 100, createdAtTurn: 3))
+            .Add(new Order(2, "player", new Instrument(1), OrderSide.Sell, 3, 110, createdAtTurn: 2));
+
+        var expired = book.ExpireOrders(currentTurn: 5, computerTtl: 3, playerTtl: 10);
+
+        Assert.Single(expired.BuyOrders(1));
+        Assert.Single(expired.SellOrders(1));
+    }
+
+    [Fact]
+    public void コンピューターとプレイヤーで異なるTTLが適用される()
+    {
+        var book = new OrderBook()
+            .Add(new Order(1, "computer", new Instrument(1), OrderSide.Buy, 5, 100, createdAtTurn: 1))
+            .Add(new Order(2, "player", new Instrument(1), OrderSide.Buy, 3, 100, createdAtTurn: 1));
+
+        // currentTurn=5, computerTtl=3 → computer注文(turn1)は期限切れ (5 - 1 >= 3)
+        // currentTurn=5, playerTtl=10 → player注文(turn1)はまだ有効 (5 - 1 < 10)
+        var expired = book.ExpireOrders(currentTurn: 5, computerTtl: 3, playerTtl: 10);
+
+        var buyOrders = expired.BuyOrders(1);
+        Assert.Single(buyOrders);
+        Assert.Equal("player", buyOrders[0].TraderId);
+    }
+
+    [Fact]
+    public void ExpireOrdersは元のOrderBookを変更しない()
+    {
+        var book = new OrderBook()
+            .Add(new Order(1, "computer", new Instrument(1), OrderSide.Buy, 5, 100, createdAtTurn: 1));
+
+        book.ExpireOrders(currentTurn: 10, computerTtl: 3, playerTtl: 10);
+
+        Assert.Single(book.BuyOrders(1));
+    }
 }

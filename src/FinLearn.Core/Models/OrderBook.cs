@@ -40,6 +40,25 @@ public sealed class OrderBook
             .ToList();
 
     /// <summary>
+    /// 有効期限を超過した注文を除去する。
+    /// コンピューター注文とプレイヤー注文で異なるTTLを適用する。
+    /// </summary>
+    public OrderBook ExpireOrders(int currentTurn, int computerTtl, int playerTtl)
+    {
+        var remaining = _orders.Where(o =>
+        {
+            var ttl = o.TraderId == "computer" ? computerTtl : playerTtl;
+            return currentTurn - o.CreatedAtTurn < ttl;
+        }).ToImmutableList();
+
+        if (remaining.Count == _orders.Count)
+            return this;
+
+        var remainingIds = remaining.Select(o => o.Id).ToImmutableHashSet();
+        return new OrderBook(remaining, remainingIds);
+    }
+
+    /// <summary>
     /// 対称的マッチング — 受注注文を板の反対側注文とマッチングする。
     /// 約定価格は常に待機注文（板にいた注文）の価格。
     /// </summary>

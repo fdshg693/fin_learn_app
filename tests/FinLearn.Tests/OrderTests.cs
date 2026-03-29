@@ -64,4 +64,38 @@ public class OrderTests
         Assert.Throws<ArgumentException>(() =>
             Order.CreateMarket(1, "player", new Instrument(1), OrderSide.Buy, 3, stopPrice: 0));
     }
+
+    // --- 作成ターン ---
+
+    [Fact]
+    public void 指値注文に作成ターンを設定できる()
+    {
+        var order = new Order(1, "player", new Instrument(1), OrderSide.Buy, 5, 100, createdAtTurn: 3);
+
+        Assert.Equal(3, order.CreatedAtTurn);
+    }
+
+    [Fact]
+    public void 指値注文の作成ターンのデフォルトは0()
+    {
+        var order = new Order(1, "player", new Instrument(1), OrderSide.Buy, 5, 100);
+
+        Assert.Equal(0, order.CreatedAtTurn);
+    }
+
+    [Fact]
+    public void 成行注文に作成ターンを設定できる()
+    {
+        var order = Order.CreateMarket(1, "player", new Instrument(1), OrderSide.Buy, 3, createdAtTurn: 5);
+
+        Assert.Equal(5, order.CreatedAtTurn);
+    }
+
+    [Fact]
+    public void 成行注文の作成ターンのデフォルトは0()
+    {
+        var order = Order.CreateMarket(1, "player", new Instrument(1), OrderSide.Buy, 3);
+
+        Assert.Equal(0, order.CreatedAtTurn);
+    }
 }

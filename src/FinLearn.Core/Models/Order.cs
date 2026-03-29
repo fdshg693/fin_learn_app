@@ -13,11 +13,12 @@ public sealed record Order
     public int Quantity { get; }
     public int? Price { get; }
     public int? StopPrice { get; }
+    public int CreatedAtTurn { get; }
 
     /// <summary>
     /// 指値注文を作成する
     /// </summary>
-    public Order(int Id, string TraderId, Instrument Instrument, OrderSide Side, int Quantity, int Price)
+    public Order(int Id, string TraderId, Instrument Instrument, OrderSide Side, int Quantity, int Price, int createdAtTurn = 0)
     {
         if (Quantity <= 0)
             throw new ArgumentException("数量は1以上である必要があります", nameof(Quantity));
@@ -32,9 +33,10 @@ public sealed record Order
         this.Quantity = Quantity;
         this.Price = Price;
         this.StopPrice = null;
+        this.CreatedAtTurn = createdAtTurn;
     }
 
-    private Order(int id, string traderId, Instrument instrument, OrderSide side, OrderType type, int quantity, int? price, int? stopPrice)
+    private Order(int id, string traderId, Instrument instrument, OrderSide side, OrderType type, int quantity, int? price, int? stopPrice, int createdAtTurn)
     {
         if (quantity <= 0)
             throw new ArgumentException("数量は1以上である必要があります", nameof(quantity));
@@ -49,14 +51,15 @@ public sealed record Order
         Quantity = quantity;
         Price = price;
         StopPrice = stopPrice;
+        CreatedAtTurn = createdAtTurn;
     }
 
     /// <summary>
     /// 成行注文を作成する
     /// </summary>
-    public static Order CreateMarket(int id, string traderId, Instrument instrument, OrderSide side, int quantity, int? stopPrice = null) =>
-        new(id, traderId, instrument, side, OrderType.Market, quantity, null, stopPrice);
+    public static Order CreateMarket(int id, string traderId, Instrument instrument, OrderSide side, int quantity, int? stopPrice = null, int createdAtTurn = 0) =>
+        new(id, traderId, instrument, side, OrderType.Market, quantity, null, stopPrice, createdAtTurn);
 
     internal Order WithQuantity(int quantity) =>
-        new(Id, TraderId, Instrument, Side, Type, quantity, Price, StopPrice);
+        new(Id, TraderId, Instrument, Side, Type, quantity, Price, StopPrice, CreatedAtTurn);
 }

@@ -9,5 +9,6 @@ public interface IOrderPlacer
         OrderBook book,
         IExchange exchange,
         IReadOnlyList<Instrument> instruments,
-        int startOrderId);
+        int startOrderId,
+        int currentTurn);
 }
