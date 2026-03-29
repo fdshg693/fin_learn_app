@@ -29,6 +29,7 @@ lib/
 {
   "name": "表示名（省略時はファイル名）",
   "description": "説明文（省略可）",
+  "defaultPrompt": "my-prompt.md",           // デフォルトプロンプトファイル（省略可）
   "options": {
     "maxTurns": 10,                          // SDK に渡すターン数上限
     "tools": [],                             // 空配列 = ツールなし
@@ -39,5 +40,9 @@ lib/
 ```
 
 `options` はそのまま `query({ options })` に渡される。SDK が受け付けるフィールドをそのまま記述できる。
+
+## Prompt Resolution Order
+
+プロンプトファイルの解決優先順位: **CLI 引数 > `defaultPrompt` > `default.md`**
 
 <!-- Last updated by agent: 2026-03-29 -->

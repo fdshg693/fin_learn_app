@@ -20,6 +20,7 @@ node run.mjs [プロンプトファイル名] [--agent エージェント名]
 
 - プロンプトファイルは `prompts/` ディレクトリに `.md` で配置する
 - `--agent` を省略すると `plain` が使われる
+- プロンプトファイルを省略した場合、エージェントの `defaultPrompt` → `default.md` の順で解決される
 
 ### エージェント一覧
 
@@ -51,6 +52,7 @@ node run.mjs file-test.md --agent file
 {
   "name": "Bash Agent",          // 省略時はファイル名が表示名になる
   "description": "シェルコマンドを実行できる",
+  "defaultPrompt": "bash-task.md", // デフォルトプロンプト（省略可）
   "options": {
     "maxTurns": 5,
     "allowedTools": ["Read", "Bash", "Glob"],

@@ -1,5 +1,6 @@
 {
   "name": "File Agent",
+  "defaultPrompt": "file-test.md",
   "description": "ファイルの読み書き・検索が可能。コードベースを調査・編集できる。",
   "options": {
     "maxTurns": 10,

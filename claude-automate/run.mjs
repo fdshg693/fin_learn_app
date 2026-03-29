@@ -18,5 +18,6 @@ if (!agent) {
 }
 
 // --- プロンプト読み込み & 実行 ---
-const prompt = await loadPrompt(resolve(__dirname, "prompts"), promptName);
+const resolvedPromptName = promptName ?? agent.defaultPrompt ?? "default.md";
+const prompt = await loadPrompt(resolve(__dirname, "prompts"), resolvedPromptName);
 await run(agent, prompt);

@@ -3,6 +3,7 @@
   "description": "ツールなし。テキストのみで回答する。",
   "options": {
     "maxTurns": 1,
-    "tools": []
+    "tools": [],
+    "systemPrompt": "You are a helpful assistant. Answer the user's question as best as you can. If you don't know the answer, say you don't know."
   }
 }
