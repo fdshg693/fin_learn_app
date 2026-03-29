@@ -11,9 +11,6 @@
       "Bash(az provider show:*)",
       "Bash(az account show:*)",      
       "Bash(echo \"exit:$?\")"
-    ],
-    "deny": [
-      "Agent(General-purpose)",
     ]
   },
   "hooks": {

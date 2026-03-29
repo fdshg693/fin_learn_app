@@ -5,3 +5,6 @@
     - npx コマンドには `cmd /c npx` を指定する必要があると公式Docsに記載されているが、つけると逆に上手くいかなかった
         - 少なくとも、現在のWindows環境では
         - https://code.claude.com/docs/en/mcp#push-messages-with-channels
+
+- 有用そうなSKILL
+    - https://modelcontextprotocol.io/docs/develop/build-with-agent-skills

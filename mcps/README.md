@@ -7,3 +7,7 @@ TypeScript で記述された、MCPサーバー・クライアント をまと�
 ## MCPサーバー
 
 - `add-server` : シンプルな Add ツールだけを公開する、テスト用の MCP サーバー
+
+## MCPクライアント
+
+- `notion-client` : リモートの Notion MCP サーバーに OAuth 2.0 (PKCE) で接続するクライアント
