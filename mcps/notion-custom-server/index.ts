@@ -2,10 +2,32 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { z } from "zod";
+import { readFile } from "fs/promises";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
 import {
   authenticate,
   connectWithFallback,
 } from "../notion-client/connection.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// ── ページ設定読み込み ────────────────────────────────────────────────
+
+interface PageEntry {
+  ID: number;
+  URL: string;
+  title: string;
+}
+
+async function loadPages(): Promise<PageEntry[]> {
+  const raw = await readFile(
+    join(__dirname, "config", "pages.json"),
+    "utf-8"
+  );
+  return JSON.parse(raw) as PageEntry[];
+}
 
 // ── Notion MCP クライアント接続 ────────────────────────────────────
 
@@ -24,6 +46,60 @@ const server = new McpServer({
   name: "notion-custom-server",
   version: "1.0.0",
 });
+
+// ── list-pages ───────────────────────────────────────────────────────
+
+server.registerTool(
+  "list-pages",
+  {
+    title: "List Custom Pages",
+    description:
+      "Returns the list of pre-configured Notion pages (ID and title) from config/pages.json.",
+    inputSchema: z.object({}),
+  },
+  async () => {
+    const pages = await loadPages();
+    const lines = pages.map((p) => `ID: ${p.ID}  Title: ${p.title}`);
+    return { content: [{ type: "text" as const, text: lines.join("\n") }] };
+  }
+);
+
+// ── get-page ─────────────────────────────────────────────────────────
+
+server.registerTool(
+  "get-page",
+  {
+    title: "Get Custom Page",
+    description:
+      "Fetches the content of a pre-configured Notion page by its ID (from config/pages.json) using notion-fetch.",
+    inputSchema: z.object({
+      id: z.number().int().describe("The page ID from list-pages."),
+    }),
+  },
+  async ({ id }) => {
+    const pages = await loadPages();
+    const page = pages.find((p) => p.ID === id);
+    if (!page) {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `Page ID ${id} not found. Use list-pages to see available pages.`,
+          },
+        ],
+        isError: true,
+      };
+    }
+    const client = await getNotionClient();
+    const result = await client.callTool({
+      name: "notion-fetch",
+      arguments: { id: page.URL },
+    });
+    return result as { content: Array<{ type: "text"; text: string }> };
+  }
+);
+
+// ── notion-get-users ─────────────────────────────────────────────────
 
 server.registerTool(
   "notion-get-users",

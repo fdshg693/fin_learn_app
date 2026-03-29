@@ -1,6 +1,6 @@
 {
 	"servers": {
-		"add-server": {
+		"test-server": {
 			"type": "stdio",
             "cwd": "${workspaceFolder}/mcps",
 			"command": "npx",
