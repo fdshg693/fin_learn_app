@@ -32,8 +32,6 @@
       }
     ]
   },
-  "plansDirectory": "./.claude/plans",
-  "enabledPlugins": {
-    "mcp-apps-copy@my-marketplace": true
-  }
+  "enabledPlugins": {},
+  "plansDirectory": "./.claude/plans"
 }

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simple MCP App</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: var(--font-sans, system-ui, sans-serif);
+        padding: 16px;
+        color: var(--color-text-primary, #1a1a1a);
+        background: var(--color-background-primary, #ffffff);
+      }
+      #app {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .prompt {
+        font-size: var(--font-text-md-size, 16px);
+        font-weight: var(--font-weight-medium, 500);
+      }
+      .choices {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .choice-btn {
+        padding: 10px 20px;
+        border: 1px solid var(--color-border-primary, #d0d0d0);
+        border-radius: var(--border-radius-md, 8px);
+        background: var(--color-background-secondary, #f5f5f5);
+        color: var(--color-text-primary, #1a1a1a);
+        font-size: var(--font-text-sm-size, 14px);
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s;
+      }
+      .choice-btn:hover {
+        background: var(--color-background-tertiary, #e8e8e8);
+        border-color: var(--color-border-secondary, #a0a0a0);
+      }
+      .choice-btn.selected {
+        background: var(--color-background-info, #e0f0ff);
+        border-color: var(--color-ring-info, #3b82f6);
+        font-weight: var(--font-weight-semibold, 600);
+      }
+      .choice-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .result {
+        padding: 12px;
+        border-radius: var(--border-radius-md, 8px);
+        background: var(--color-background-secondary, #f5f5f5);
+        border: 1px solid var(--color-border-primary, #d0d0d0);
+      }
+      .result.error {
+        background: var(--color-background-danger, #fee);
+        border-color: var(--color-border-danger, #f87171);
+        color: var(--color-text-danger, #dc2626);
+      }
+      .result.success {
+        background: var(--color-background-success, #f0fdf4);
+        border-color: var(--color-border-success, #4ade80);
+      }
+      .loading {
+        color: var(--color-text-secondary, #666);
+        font-style: italic;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <p class="loading">接続中...</p>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
