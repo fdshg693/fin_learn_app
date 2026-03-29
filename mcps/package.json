@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "add-server": "tsx add-server/index.ts",
-    "notion-client": "tsx notion-client/index.ts"
+    "notion-client": "tsx notion-client/index.ts",
+    "notion-custom-server": "tsx notion-custom-server/index.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.28.0",

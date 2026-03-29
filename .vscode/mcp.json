@@ -1,0 +1,14 @@
+{
+	"servers": {
+		"add-server": {
+			"type": "stdio",
+            "cwd": "${workspaceFolder}/mcps",
+			"command": "npx",
+			"args": [
+				"tsx",
+				"notion-custom-server/index.ts"
+			]
+		}
+	},
+	"inputs": []
+}
