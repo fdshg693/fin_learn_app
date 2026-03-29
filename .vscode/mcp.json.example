@@ -1,0 +1,14 @@
+{
+	"servers": {
+		"add-server": {
+			"type": "stdio",
+            "cwd": "${workspaceFolder}/mcps",
+			"command": "npx",
+			"args": [
+				"tsx",
+				"add-server/index.ts"
+			]
+		}
+	},
+	"inputs": []
+}

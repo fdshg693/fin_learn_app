@@ -11,6 +11,9 @@
       "Bash(az provider show:*)",
       "Bash(az account show:*)",      
       "Bash(echo \"exit:$?\")"
+    ],
+    "deny": [
+      "Agent(General-purpose)",
     ]
   },
   "hooks": {
@@ -27,6 +30,7 @@
       }
     ]
   },
+  "disabledMcpjsonServers":["mcp__dynamic-prompt__*"],
   "includeGitInstructions": false,
   "respectGitignore": true,
   "plansDirectory": "./.claude/plans"

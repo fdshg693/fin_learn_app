@@ -1,0 +1,13 @@
+{
+  "enabledMcpjsonServers": [
+    "add-server"
+  ],
+  "disabledMcpjsonServers": [
+    "mcp__dynamic-prompt__*"
+  ],
+  "permissions": {
+    "allow": [
+      "mcp__add-server__*"
+    ]
+  }
+}
