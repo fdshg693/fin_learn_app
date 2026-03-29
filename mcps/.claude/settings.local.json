@@ -3,7 +3,7 @@
     "add-server"
   ],
   "disabledMcpjsonServers": [
-    "mcp__dynamic-prompt__*"
+    "dynamic-prompt"
   ],
   "permissions": {
     "allow": [

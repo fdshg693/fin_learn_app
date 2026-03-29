@@ -17,8 +17,18 @@ https://code.claude.com/docs/en/sub-agents#built-in-subagents
         - Inherits 
     - Claude Code Guide
         - Haiku
-        - Claude Code に関する質問に答えてくれる
+        - Claude Code に関する質問に答えてくれる/p
 - その他のエージェント
     - General-purpose
         - Inherits
         - All tools
+
+## Plugin
+
+- Mcp Apps
+    - https://modelcontextprotocol.io/extensions/apps/build
+
+```
+/plugin marketplace add modelcontextprotocol/ext-apps
+/plugin install mcp-apps@modelcontextprotocol-ext-apps
+```

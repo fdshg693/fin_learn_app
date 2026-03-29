@@ -1,4 +1,6 @@
 {
+  "respectGitignore": true,
+  "includeGitInstructions": false,
   "permissions": {
     "allow": [
       "Bash(dotnet test:*)",
@@ -9,10 +11,13 @@
       "Bash(az appservice list-locations:*)",
       "Bash(az vm list-usage:*)",
       "Bash(az provider show:*)",
-      "Bash(az account show:*)",      
+      "Bash(az account show:*)",
       "Bash(echo \"exit:$?\")"
     ]
   },
+  "disabledMcpjsonServers": [
+    "dynamic-prompt"
+  ],
   "hooks": {
     "Stop": [
       {
@@ -20,15 +25,15 @@
           {
             "type": "agent",
             "prompt": "`update-docs`スキルを使って、今回の変更の関連ドキュメントを更新の状態に保ってください。",
-            "model": "sonnet",
-            "timeout": 600
+            "timeout": 600,
+            "model": "sonnet"
           }
         ]
       }
     ]
   },
-  "disabledMcpjsonServers":["mcp__dynamic-prompt__*"],
-  "includeGitInstructions": false,
-  "respectGitignore": true,
-  "plansDirectory": "./.claude/plans"
+  "plansDirectory": "./.claude/plans",
+  "enabledPlugins": {
+    "mcp-apps-copy@my-marketplace": true
+  }
 }
