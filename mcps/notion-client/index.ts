@@ -199,9 +199,70 @@ async function authenticate(): Promise<{
 
 // ── Demo: ツール一覧表示 & 呼び出し ─────────────────────────────────
 
+const TOOLS_FILE = path.join(__dirname, "demo-tools.md");
+const SEARCH_FILE = path.join(__dirname, "demo-search.md");
+
+function formatToolsMarkdown(
+  tools: Array<{
+    name: string;
+    description?: string;
+    inputSchema?: Record<string, unknown>;
+  }>
+): string {
+  const lines: string[] = [];
+  lines.push("# 利用可能なツール一覧");
+  lines.push("");
+  lines.push(`> 合計 **${tools.length}** 個のツール`);
+  lines.push("");
+
+  // サマリーテーブル
+  lines.push("| # | ツール名 | 説明 |");
+  lines.push("|--:|----------|------|");
+  tools.forEach((tool, i) => {
+    const desc = (tool.description ?? "(説明なし)")
+      .replace(/\n/g, " ")
+      .replace(/\|/g, "\\|");
+    lines.push(`| ${i + 1} | \`${tool.name}\` | ${desc} |`);
+  });
+  lines.push("");
+
+  // 各ツール詳細
+  lines.push("## 各ツール詳細");
+  lines.push("");
+  for (const tool of tools) {
+    lines.push(`### \`${tool.name}\``);
+    lines.push("");
+    lines.push(tool.description ?? "(説明なし)");
+    lines.push("");
+
+    const schema = tool.inputSchema as Record<string, unknown> | undefined;
+    const properties = schema?.properties as
+      | Record<string, Record<string, unknown>>
+      | undefined;
+    const required = (schema?.required as string[]) ?? [];
+
+    if (properties && Object.keys(properties).length > 0) {
+      lines.push("| パラメータ | 型 | 必須 | 説明 |");
+      lines.push("|------------|------|:----:|------|");
+      for (const [name, prop] of Object.entries(properties)) {
+        const type = String(prop.type ?? "unknown");
+        const req = required.includes(name) ? "✓" : "";
+        const desc = String(prop.description ?? "")
+          .replace(/\n/g, " ")
+          .replace(/\|/g, "\\|");
+        lines.push(`| \`${name}\` | ${type} | ${req} | ${desc} |`);
+      }
+      lines.push("");
+    }
+
+    lines.push("---");
+    lines.push("");
+  }
+
+  return lines.join("\n");
+}
+
 async function demo(client: Client): Promise<void> {
-  // ツール一覧
-  console.log("\n=== 利用可能なツール ===\n");
   const { tools } = await client.listTools();
 
   if (tools.length === 0) {
@@ -209,20 +270,39 @@ async function demo(client: Client): Promise<void> {
     return;
   }
 
-  for (const tool of tools) {
-    console.log(`  - ${tool.name}: ${tool.description ?? "(説明なし)"}`);
-  }
-  console.log(`\n合計 ${tools.length} 個のツール\n`);
+  // ツール一覧をマークダウンファイルに出力
+  const toolsMd = formatToolsMarkdown(tools);
+  fs.writeFileSync(TOOLS_FILE, toolsMd, "utf-8");
+  console.log(`ツール一覧を出力: ${TOOLS_FILE}`);
 
-  // notion_search ツールがあればデモ実行
-  const searchTool = tools.find((t) => t.name === "notion_search");
+  // notion-search ツールがあればデモ実行 → 別ファイルに出力
+  const searchTool = tools.find((t) => t.name === "notion-search");
   if (searchTool) {
-    console.log("=== デモ: notion_search を実行 ===\n");
+    console.log("notion-search デモを実行中...");
     const result = await client.callTool({
-      name: "notion_search",
+      name: "notion-search",
       arguments: { query: "test", page_size: 3 },
     });
-    console.log("結果:", JSON.stringify(result, null, 2));
+
+    const searchMd = [
+      "# notion-search デモ結果",
+      "",
+      "## リクエスト",
+      "",
+      "```json",
+      JSON.stringify({ query: "test", page_size: 3 }, null, 2),
+      "```",
+      "",
+      "## レスポンス",
+      "",
+      "```json",
+      JSON.stringify(result, null, 2),
+      "```",
+      "",
+    ].join("\n");
+
+    fs.writeFileSync(SEARCH_FILE, searchMd, "utf-8");
+    console.log(`検索デモ結果を出力: ${SEARCH_FILE}`);
   }
 }
 
