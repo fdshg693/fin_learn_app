@@ -1,0 +1,22 @@
+// claude_desktop_config.json の例
+// Claude Codeの環境で npx tsx が解決される必要があるため、　node 環境は当然として、tsx をグローバルインストールしておく必要があります。
+{
+  "mcpServers": {
+    "test-server": {
+			"command": "tsx",
+			"args": [
+				"C:/CodeRoot/fin_learn_app/mcps/simple-mcp-app/index.ts"
+			]
+		}
+  },
+  "preferences": {
+    "chromeExtensionEnabled": false,
+    "localAgentModeTrustedFolders": [
+      "C://Users//xingw//Downloads"
+    ],
+    "coworkScheduledTasksEnabled": true,
+    "ccdScheduledTasksEnabled": true,
+    "sidebarMode": "chat",
+    "coworkWebSearchEnabled": true
+  }
+}
