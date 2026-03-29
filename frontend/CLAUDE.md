@@ -10,7 +10,19 @@ npm run dev        # React Router dev server (localhost:5173)
 npm run build      # Production build (server + client)
 npm run start      # react-router-serve ./build/server/index.js
 npm run typecheck  # react-router typegen && tsc
+npm test           # vitest run（全テスト実行）
+npm run test:watch # vitest（ウォッチモード）
 ```
+
+### Testing
+
+- **Vitest** + **@testing-library/react** + **jsdom** 環境
+- テストファイルはソースと同じディレクトリに `*.test.tsx` で配置（例: `app/components/GameHeader.test.tsx`）
+- 設定: `vitest.config.ts`（`vite.config.ts` とは独立、`tsconfigPaths` のみ使用）
+- セットアップ: `test/setup.ts`（jest-dom マッチャー + cleanup）
+- ルートコンポーネントのテストは `createRoutesStub`（react-router）で loader/action をスタブ化
+- `createRoutesStub` 使用時は `@ts-expect-error` で Route 型の不一致を抑制
+- `within(main)` でスコープを絞り、hydration による重複レンダリングを回避
 
 ### Architecture
 
