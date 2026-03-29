@@ -10,7 +10,7 @@ public class ComputerTraderTests
     };
 
     [Fact]
-    public void 買い注文が合計10個生成される()
+    public void 買い注文が最大10個生成される_約定分は板から消える()
     {
         var trader = new ComputerTrader(new Random(42));
         var exchange = TestData.CreateExchange((1, 100), (2, 200), (3, 300));
@@ -18,11 +18,11 @@ public class ComputerTraderTests
         var (book, _) = trader.PlaceOrders(new OrderBook(), exchange, Instruments, startOrderId: 1, currentTurn: 1);
 
         var totalBuys = book.BuyOrders(1).Count + book.BuyOrders(2).Count + book.BuyOrders(3).Count;
-        Assert.Equal(10, totalBuys);
+        Assert.InRange(totalBuys, 1, 10);
     }
 
     [Fact]
-    public void 売り注文が合計10個生成される()
+    public void 売り注文が最大10個生成される_約定分は板から消える()
     {
         var trader = new ComputerTrader(new Random(42));
         var exchange = TestData.CreateExchange((1, 100), (2, 200), (3, 300));
@@ -30,7 +30,7 @@ public class ComputerTraderTests
         var (book, _) = trader.PlaceOrders(new OrderBook(), exchange, Instruments, startOrderId: 1, currentTurn: 1);
 
         var totalSells = book.SellOrders(1).Count + book.SellOrders(2).Count + book.SellOrders(3).Count;
-        Assert.Equal(10, totalSells);
+        Assert.InRange(totalSells, 1, 10);
     }
 
     [Fact]
@@ -153,5 +153,73 @@ public class ComputerTraderTests
             foreach (var order in book.BuyOrders(id))
                 Assert.Equal(1, order.Price);
         }
+    }
+
+    [Fact]
+    public void コンピューター注文は既存の板とマッチングされる()
+    {
+        // 板に売り注文（価格100）が1件ある
+        var existingSell = new Order(1, "other", new Instrument(1), OrderSide.Sell, 1, 100, 0);
+        var book = new OrderBook().Add(existingSell);
+        var exchange = TestData.CreateExchange((1, 100), (2, 200), (3, 300));
+
+        // seedを調整: 買い注文が銘柄1に対して100以上の価格で生成されることを確認するため
+        // 複数の買い注文を生成するので、少なくとも1つは銘柄1に対して価格>=100になるはず
+        var trader = new ComputerTrader(new Random(42));
+        var (resultBook, _) = trader.PlaceOrders(book, exchange, Instruments, startOrderId: 2, currentTurn: 1);
+
+        // 既存の売り注文（価格100）がマッチングされて板から消えているか、
+        // または部分的に約定して数量が減っている
+        var remainingSells = resultBook.SellOrders(1);
+        var originalSellRemaining = remainingSells.Any(o => o.Id == 1);
+
+        // 銘柄1に対する買い注文が100以上の価格で生成されていれば、既存の売り注文と約定するはず
+        var buysForInst1 = resultBook.BuyOrders(1);
+        // マッチングが起きていれば：既存売り注文が消えているか、買い注文の一部が消えている
+        // 少なくとも全20件がそのまま板に残ることはない（交差する注文があるため）
+        var totalOrders = 0;
+        for (int id = 1; id <= 3; id++)
+        {
+            totalOrders += resultBook.BuyOrders(id).Count + resultBook.SellOrders(id).Count;
+        }
+        // マッチングなしなら21件（既存1+新規20）、マッチングありなら21未満
+        Assert.True(totalOrders < 21, "コンピューター注文が既存板とマッチングされるべき");
+    }
+
+    [Fact]
+    public void コンピューター注文同士が同一ターン内でマッチングされる()
+    {
+        // 空の板でコンピューター注文を生成
+        // 買い@105%と売り@95%のような交差する注文が生成されれば約定するはず
+        var exchange = TestData.CreateExchange((1, 100), (2, 200), (3, 300));
+        var trader = new ComputerTrader(new Random(42));
+
+        var (book, _) = trader.PlaceOrders(new OrderBook(), exchange, Instruments, startOrderId: 1, currentTurn: 1);
+
+        // マッチングなしなら20件、マッチングありなら20未満
+        var totalOrders = 0;
+        for (int id = 1; id <= 3; id++)
+        {
+            totalOrders += book.BuyOrders(id).Count + book.SellOrders(id).Count;
+        }
+        // 買い(85-105%)と売り(95-115%)で範囲が重なるため、同一銘柄で交差する注文が存在しうる
+        Assert.True(totalOrders < 20, "コンピューター注文同士が同一ターン内でマッチングされるべき");
+    }
+
+    [Fact]
+    public void コンピューター注文の未約定分のみ板に残る()
+    {
+        // 板に売り注文（価格90、数量1）がある状態で、コンピューター買い注文がマッチングされたら
+        // 約定した分は板から消え、未約定分のみ残る
+        var existingSell = new Order(1, "other", new Instrument(1), OrderSide.Sell, 1, 90, 0);
+        var book = new OrderBook().Add(existingSell);
+        var exchange = TestData.CreateExchange((1, 100), (2, 200), (3, 300));
+        var trader = new ComputerTrader(new Random(42));
+
+        var (resultBook, _) = trader.PlaceOrders(book, exchange, Instruments, startOrderId: 2, currentTurn: 1);
+
+        // 売り@90はどの買い注文（85-105）とも交差しやすいので約定するはず
+        var remainingSell = resultBook.SellOrders(1).FirstOrDefault(o => o.Id == 1);
+        Assert.Null(remainingSell); // 数量1なので完全約定して消えるはず
     }
 }

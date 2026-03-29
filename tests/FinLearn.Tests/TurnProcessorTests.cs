@@ -66,7 +66,7 @@ public class TurnProcessorTests
     }
 
     [Fact]
-    public void 待つとOrderBookにコンピューター注文が追加される()
+    public void 待つとOrderBookにコンピューター注文が追加される_約定分は消える()
     {
         var game = CreateGame();
         var processor = CreateProcessor();
@@ -79,8 +79,10 @@ public class TurnProcessorTests
         var totalSells = result.OrderBook.SellOrders(1).Count
             + result.OrderBook.SellOrders(2).Count
             + result.OrderBook.SellOrders(3).Count;
-        Assert.Equal(10, totalBuys);
-        Assert.Equal(10, totalSells);
+        // コンピューター注文同士がマッチングされるため、約定分は板から消える
+        Assert.InRange(totalBuys, 1, 10);
+        Assert.InRange(totalSells, 1, 10);
+        Assert.True(totalBuys + totalSells > 0);
     }
 
     [Fact]
@@ -179,7 +181,8 @@ public class TurnProcessorTests
         var game = CreateGame();
         var processor = CreateProcessor();
 
-        var (result, warning) = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 1, price: 100);
+        // 高い指値で確実にマッチさせる（コンピューター売り注文は95-115%の範囲）
+        var (result, warning) = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 1, price: 115);
 
         Assert.Null(warning);
         Assert.Equal(2, result.Turn);
@@ -225,18 +228,18 @@ public class TurnProcessorTests
         var game = CreateGame();
         var processor = CreateProcessor();
 
-        // コンピューターの売り注文数より多い数量で指値買い → 部分約定
-        var (result, warning) = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 100, price: 100);
+        // 高い指値 + 大量の数量で部分約定を確認
+        var (result, warning) = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 100, price: 115);
 
         Assert.Null(warning);
         Assert.Equal(2, result.Turn);
         // 何かしら約定している
         Assert.True(result.Player.Portfolio.QuantityOf(instrumentId: 1) > 0);
-        // 全量は約定していない
+        // 全量は約定していない（コンピューター売り注文は最大10件で各1株）
         Assert.True(result.Player.Portfolio.QuantityOf(instrumentId: 1) < 100);
         // 未約定分が板に残っている
         var buyOrders = result.OrderBook.BuyOrders(1);
-        Assert.Contains(buyOrders, o => o.TraderId == "player" && o.Price == 100);
+        Assert.Contains(buyOrders, o => o.TraderId == "player" && o.Price == 115);
     }
 
     [Fact]
@@ -335,15 +338,14 @@ public class TurnProcessorTests
         var (result, warning) = processor.Sell(game, fee: 0, instrumentId: 1, quantity: 1);
 
         Assert.NotNull(warning);
-        // コンピューター注文は板に残っている
+        // コンピューター注文は板に残っている（約定分は消える）
         var totalBuys = result.OrderBook.BuyOrders(1).Count
             + result.OrderBook.BuyOrders(2).Count
             + result.OrderBook.BuyOrders(3).Count;
         var totalSells = result.OrderBook.SellOrders(1).Count
             + result.OrderBook.SellOrders(2).Count
             + result.OrderBook.SellOrders(3).Count;
-        Assert.Equal(10, totalBuys);
-        Assert.Equal(10, totalSells);
+        Assert.True(totalBuys + totalSells > 0, "コンピューター注文が板に残っているべき");
     }
 
     [Fact]

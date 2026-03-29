@@ -33,7 +33,9 @@
 
 ## コンピューター注文生成（`ComputerTrader`）
 
-毎ターン、プレイヤー注文の**前**に自動生成される:
+毎ターン、プレイヤー注文の**前**に自動生成される。注文は1件ずつ `OrderBook.Match` を通し、約定しなかった残りだけ板に追加する。
+
+> 詳細: [docs/FEATURES/COMPUTER_ORDER/CURRENT.md](../FEATURES/COMPUTER_ORDER/CURRENT.md)
 
 | 項目 | 買い注文 | 売り注文 |
 |---|---|---|
@@ -43,7 +45,7 @@
 | 銘柄 | ランダム分散 | ランダム分散 |
 | 注文者ID | `"computer"` | `"computer"` |
 
-- 買い注文の価格帯（85〜105%）と売り注文の価格帯（95〜115%）が重なるため、コンピューター同士でも約定が発生する
+- 買い価格帯（85〜105%）と売り価格帯（95〜115%）が重なるため、コンピューター同士でも約定が発生する
 - `IExchange.TryGetPrice` が `false` の銘柄はスキップ（価格不明・価格0以下）
 - `Random` インスタンスを外部注入（シード固定でテスト決定性を確保）
 
@@ -106,7 +108,7 @@
 
 ```
 1. IExchangeFactory.Create(Prices, fee)    — 取引所生成
-2. IOrderPlacer.PlaceOrders(...)           — コンピューター注文20件を板に追加
+2. IOrderPlacer.PlaceOrders(...)           — コンピューター注文20件を1件ずつMatch＋残りAdd
 3. Player.CreateOrder(nextId, ...)         — プレイヤー注文を生成
 4. IMarket.Execute(book, order, exchange)  — 板でマッチング → MatchResult
 5. Portfolio.ApplyTrade(trade)             — ポートフォリオ更新

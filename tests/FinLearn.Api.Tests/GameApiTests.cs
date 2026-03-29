@@ -57,13 +57,14 @@ public class GameApiTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task POST_buy_成行買い注文でターンが進む()
+    public async Task POST_buy_買い注文でターンが進む()
     {
         var created = await CreateGame();
 
+        // 高い指値で確実に約定させる（コンピューター注文同士のマッチングで売り注文が減る可能性があるため）
         var response = await _client.PostAsJsonAsync(
             $"/api/games/{created.GameId}/buy",
-            new OrderRequest(InstrumentId: 1, Quantity: 1));
+            new OrderRequest(InstrumentId: 1, Quantity: 1, Price: 150));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var game = await response.Content.ReadFromJsonAsync<GameResponse>();

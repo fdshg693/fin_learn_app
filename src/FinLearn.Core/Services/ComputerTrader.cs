@@ -38,8 +38,8 @@ public sealed class ComputerTrader : IOrderPlacer
                 continue;
             var percent = _random.Next(85, 106); // 85〜105
             var price = Math.Max(1, marketPrice * percent / 100);
-            updatedBook = updatedBook.Add(
-                new Order(currentId++, TraderId, instrument, OrderSide.Buy, 1, price, currentTurn));
+            var order = new Order(currentId++, TraderId, instrument, OrderSide.Buy, 1, price, currentTurn);
+            updatedBook = PlaceWithMatching(updatedBook, order);
         }
 
         // 売り注文: 株価の95〜115%
@@ -50,10 +50,27 @@ public sealed class ComputerTrader : IOrderPlacer
                 continue;
             var percent = _random.Next(95, 116); // 95〜115
             var price = Math.Max(1, marketPrice * percent / 100);
-            updatedBook = updatedBook.Add(
-                new Order(currentId++, TraderId, instrument, OrderSide.Sell, 1, price, currentTurn));
+            var order = new Order(currentId++, TraderId, instrument, OrderSide.Sell, 1, price, currentTurn);
+            updatedBook = PlaceWithMatching(updatedBook, order);
         }
 
         return (updatedBook, currentId);
+    }
+
+    /// <summary>
+    /// 注文をマッチングし、未約定分のみ板に追加する。
+    /// </summary>
+    private static OrderBook PlaceWithMatching(OrderBook book, Order order)
+    {
+        var fillResult = book.Match(order);
+        var updatedBook = fillResult.UpdatedBook;
+
+        var fill = fillResult.GetFill(order.Id);
+        var filledQty = fill?.FilledQuantity ?? 0;
+        var remainingQty = order.Quantity - filledQty;
+        if (remainingQty > 0)
+            updatedBook = updatedBook.Add(order.WithQuantity(remainingQty));
+
+        return updatedBook;
     }
 }
