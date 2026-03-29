@@ -43,18 +43,36 @@ node run.mjs file-test.md --agent file
 
 ### エージェントの追加
 
-`run.mjs` 内の `agents` オブジェクトにエントリを追加するだけで拡張できる。
+`agents/` ディレクトリに JSON ファイルを追加するだけで拡張できる。
+ファイル名（拡張子除く）が `--agent` の値になる。
 
-```js
-const agents = {
-  // 既存の plain, file に加えて...
-  bash: {
-    name: "Bash Agent",
-    options: {
-      maxTurns: 5,
-      allowedTools: ["Read", "Bash", "Glob"],
-      permissionMode: "acceptEdits",
-    },
-  },
-};
+```jsonc
+// agents/bash.json
+{
+  "name": "Bash Agent",          // 省略時はファイル名が表示名になる
+  "description": "シェルコマンドを実行できる",
+  "options": {
+    "maxTurns": 5,
+    "allowedTools": ["Read", "Bash", "Glob"],
+    "permissionMode": "acceptEdits"
+  }
+}
+```
+
+## プロジェクト構造
+
+```
+claude-automate/
+├── run.mjs              # エントリポイント
+├── lib/
+│   ├── cli.mjs          # CLI 引数パース
+│   ├── agents.mjs       # agents/ からエージェント定義を読み込み
+│   ├── prompts.mjs      # prompts/ からプロンプトを読み込み
+│   └── runner.mjs       # SDK 実行 & ストリーミング出力
+├── agents/              # エージェント定義（1ファイル = 1エージェント）
+│   ├── plain.json
+│   └── file.json
+└── prompts/             # プロンプトテンプレート
+    ├── default.md
+    └── file-test.md
 ```

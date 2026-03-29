@@ -1,0 +1,8 @@
+{
+  "name": "Plain Agent",
+  "description": "ツールなし。テキストのみで回答する。",
+  "options": {
+    "maxTurns": 1,
+    "tools": []
+  }
+}

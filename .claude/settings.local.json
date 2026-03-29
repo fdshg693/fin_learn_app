@@ -3,16 +3,31 @@
     "allow": [
       "Bash(dotnet test:*)",
       "Bash(dotnet build:*)",
-      "Bash(git mv:*)",
+      "Bash(npm run typecheck)",
       "Bash(terraform init:*)",
       "Bash(terraform validate:*)",
       "Bash(az appservice list-locations:*)",
       "Bash(az vm list-usage:*)",
       "Bash(az provider show:*)",
-      "Bash(az account show:*)",
-      "Bash(npm run typecheck)",
-      "Bash(ls -la /c/CodeRoot/fin_learn_app/frontend/*.json /c/CodeRoot/fin_learn_app/frontend/*.config.*)",
+      "Bash(az account show:*)",      
       "Bash(echo \"exit:$?\")"
     ]
-  }
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "agent",
+            "prompt": "`update-docs`スキルを使って、今回の変更の関連ドキュメントを更新の状態に保ってください。",
+            "model": "sonnet",
+            "timeout": 600
+          }
+        ]
+      }
+    ]
+  },
+  "includeGitInstructions": false,
+  "respectGitignore": true,
+  "plansDirectory": "./.claude/plans"
 }
