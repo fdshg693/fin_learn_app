@@ -1,49 +1,38 @@
-# ポートフォリオトラッカー
+# FinLearnApp
 
-株について学べるアプリケーション
-
-## 概要
-
-保有株式を登録し、現在価値や損益を可視化するアプリ。
-
-特徴: CRUDの基本を押さえつつ、リアルタイムデータ取得やグラフ描画で実用的なスキルが身につく。
+株取引シミュレーションで株の基本が学べるアプリ。ターン制でBuy/Sell/Waitを実行し、オーダーマッチングや価格変動を体験できる。
 
 ## 技術スタック
-.NET 9
-TypeScript 5
-React 19
-pnpm
 
-**技術的な実装ポイント:**
-- バックエンド: Clean Architecture、Repository Pattern、CQRS（MediatR）, .NET MVC
-- フロントエンド: 状態管理（Jotai）、React Query、TanStack Table
-- バリデーション: FluentValidation
-- ログ: Serilog
-
-## 実装概要
-- .NETがバックエンドで、Reactがフロントエンド
-    - Reactはサーバーを立てて、API経由でバックエンドと通信
+- バックエンド: .NET 9 / C#（Clean Architecture + CQRS with MediatR）
+- フロントエンド: React 19 / TypeScript 5 / Vite（pnpm）
 
 ## ローカル起動
-### バックエンド
-```
+
+**バックエンド**
+```bash
 cd backend/FinLearnApp.Api
 dotnet run
+# → http://localhost:5059
 ```
-起動後: http://localhost:5059
 
-### フロントエンド
-```
+**フロントエンド**
+```bash
 cd frontend
 pnpm install
 pnpm dev
+# → http://localhost:5173
 ```
-起動後: Viteの表示URL（通常 http://localhost:5173 ）
 
-## 動作確認（簡易）
-1. バックエンドとフロントエンドを起動
-2. ブラウザでフロントエンドを開く
-3. 画面「アクション実行」で BuyNow / SellNow / Wait を試し、
-    - 現金・評価額・損益・保有銘柄が更新されること
-    - エラーメッセージが適切に表示されること
-    を確認
+## ドキュメント
+
+| ファイル | 内容 |
+|---|---|
+| `docs/domain-design.md` | ドメインモデル・用語・ビジネスルール |
+| `docs/app-requirements.md` | 機能要件と拡張候補 |
+| `docs/project-status.md` | 実装状況とTODO |
+| `docs/current-spec.md` | 現在の仕様と制約 |
+| `docs/action-dto-flow.md` | アクションのDTO→Handlerフロー |
+| `docs/folder-structure-guide.md` | フォルダ責務・データフロー |
+| `docs/record-usage-guideline.md` | C# record の使い方指針 |
+| `docs/specs/` | 機能仕様書（TDD実装の入力） |
