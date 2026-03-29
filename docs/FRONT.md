@@ -30,6 +30,7 @@ App (root.tsx)
     ├── MarketBoard        ← 銘柄一覧と現在価格
     ├── PositionList       ← 保有ポジション一覧
     ├── TradeForm          ← 注文入力（銘柄・数量・価格）+ アクションボタン
+    ├── TradeHistory       ← 直近3件の約定結果テーブル
     └── WarningMessage     ← API からの警告表示
 ```
 
@@ -122,6 +123,19 @@ React Router の `clientLoader` / `clientAction` でデータ取得・アクシ�
 
 3 つのボタンはすべて React Router の `<Form>` を使い、hidden フィールド `intent` で区別する。
 
+### TradeHistory
+
+`GameResponse.recentTrades` が空でない場合、直近の約定結果をテーブルで表示する（新しい順）。
+約定がまだ一度もない場合はコンポーネント自体を非表示にする。
+
+| 列 | データソース | 備考 |
+|---|---|---|
+| 売買 | `trade.side` | 買=赤、売=青 |
+| 銘柄 ID | `trade.instrumentId` | |
+| 約定数量 | `trade.filledQuantity` | |
+| 約定金額 | `trade.totalAmount` | JPY 表記 |
+| 手数料 | `trade.fee` | JPY 表記 |
+
 ### WarningMessage
 
 - `GameResponse.warning` が non-null のとき表示
@@ -145,48 +159,6 @@ wait(id)                 → POST /api/games/:id/wait
 
 ---
 
-## 型定義
-
-`app/types/game.ts` — API の DTO をそのままミラー。
-
-```ts
-type GameResponse = {
-  gameId: string;
-  turn: number;
-  player: PlayerDto;
-  instruments: InstrumentDto[];
-  warning: string | null;
-};
-
-type PlayerDto = {
-  name: string;
-  cash: number;
-  positions: PositionDto[];
-  totalAssets: number;
-  profitLoss: number;
-};
-
-type PositionDto = {
-  instrumentId: number;
-  quantity: number;
-  currentPrice: number;
-  amount: number;
-};
-
-type InstrumentDto = {
-  id: number;
-  price: number;
-};
-
-type OrderRequest = {
-  instrumentId: number;
-  quantity: number;
-  price: number | null;
-};
-```
-
----
-
 ## ファイル構成
 
 ```
@@ -202,6 +174,7 @@ frontend/app/
 │   ├── MarketBoard.tsx
 │   ├── PositionList.tsx
 │   ├── TradeForm.tsx
+│   ├── TradeHistory.tsx
 │   └── WarningMessage.tsx
 ├── api/
 │   └── gameApi.ts              # API クライアント

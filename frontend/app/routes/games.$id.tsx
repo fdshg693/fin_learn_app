@@ -9,6 +9,7 @@ import { MarketBoard } from "~/components/MarketBoard";
 import { PositionList } from "~/components/PositionList";
 import { TradeForm } from "~/components/TradeForm";
 import { WarningMessage } from "~/components/WarningMessage";
+import { TradeHistory } from "~/components/TradeHistory";
 import { OrderBookPanel } from "~/components/OrderBookPanel";
 
 type LoaderData = {
@@ -95,6 +96,7 @@ export default function GamePage() {
         selectedInstrumentId={selectedInstrumentId}
         onInstrumentChange={setSelectedInstrumentId}
       />
+      <TradeHistory trades={game.recentTrades} />
       <OrderBookPanel orders={orderBook.orders} />
     </main>
   );

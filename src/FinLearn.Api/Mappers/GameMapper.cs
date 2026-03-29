@@ -5,7 +5,8 @@ namespace FinLearn.Api.Mappers;
 
 public static class GameMapper
 {
-    public static GameResponse ToResponse(string gameId, Game game, IExchange exchange, string? warning = null)
+    public static GameResponse ToResponse(string gameId, Game game, IExchange exchange,
+        string? warning = null, IReadOnlyList<TradeResult>? recentTrades = null)
     {
         var positions = game.Instruments
             .Select(i =>
@@ -34,6 +35,10 @@ public static class GameMapper
             })
             .ToList();
 
-        return new GameResponse(gameId, game.Turn, playerDto, instruments, warning);
+        var tradeDtos = (recentTrades ?? Array.Empty<TradeResult>())
+            .Select(t => new TradeResultDto(t.InstrumentId, t.Side.ToString(), t.FilledQuantity, t.TotalAmount, t.Fee))
+            .ToList();
+
+        return new GameResponse(gameId, game.Turn, playerDto, instruments, tradeDtos, warning);
     }
 }

@@ -3,7 +3,16 @@ export type GameResponse = {
   turn: number;
   player: PlayerDto;
   instruments: InstrumentDto[];
+  recentTrades: TradeResultDto[];
   warning: string | null;
+};
+
+export type TradeResultDto = {
+  instrumentId: number;
+  side: string;
+  filledQuantity: number;
+  totalAmount: number;
+  fee: number;
 };
 
 export type PlayerDto = {

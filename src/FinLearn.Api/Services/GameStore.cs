@@ -6,8 +6,10 @@ namespace FinLearn.Api.Services;
 public sealed class GameStore
 {
     private readonly ConcurrentDictionary<string, Game> _games = new();
+    private readonly ConcurrentDictionary<string, List<TradeResult>> _tradeHistories = new();
     private readonly ConcurrentDictionary<string, object> _locks = new();
     private readonly GameConfig _config;
+    private const int MaxRecentTrades = 3;
 
     public GameStore(GameConfig config)
     {
@@ -35,6 +37,27 @@ public sealed class GameStore
     public void UpdateGame(string gameId, Game game)
     {
         _games[gameId] = game;
+    }
+
+    public void AddTrade(string gameId, TradeResult trade)
+    {
+        var history = _tradeHistories.GetOrAdd(gameId, _ => new List<TradeResult>());
+        lock (history)
+        {
+            history.Add(trade);
+            if (history.Count > MaxRecentTrades)
+                history.RemoveAt(0);
+        }
+    }
+
+    public IReadOnlyList<TradeResult> GetRecentTrades(string gameId)
+    {
+        if (!_tradeHistories.TryGetValue(gameId, out var history))
+            return Array.Empty<TradeResult>();
+        lock (history)
+        {
+            return history.ToList().AsReadOnly();
+        }
     }
 
     /// <summary>

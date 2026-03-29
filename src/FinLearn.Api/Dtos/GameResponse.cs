@@ -5,7 +5,15 @@ public sealed record GameResponse(
     int Turn,
     PlayerDto Player,
     IReadOnlyList<InstrumentDto> Instruments,
+    IReadOnlyList<TradeResultDto> RecentTrades,
     string? Warning = null);
+
+public sealed record TradeResultDto(
+    int InstrumentId,
+    string Side,
+    int FilledQuantity,
+    int TotalAmount,
+    int Fee);
 
 public sealed record PlayerDto(
     string Name,

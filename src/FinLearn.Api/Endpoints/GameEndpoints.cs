@@ -52,23 +52,29 @@ public static class GameEndpoints
         var game = store.GetGame(id);
         if (game is null) return Results.NotFound();
 
-        var (result, _) = processor.Wait(game, config.Fee);
+        var (result, _, _) = processor.Wait(game, config.Fee);
         store.UpdateGame(id, result);
         var exchange = exchangeFactory.Create(result.Prices, config.Fee);
-        return Results.Ok(GameMapper.ToResponse(id, result, exchange));
+        var recentTrades = store.GetRecentTrades(id);
+        return Results.Ok(GameMapper.ToResponse(id, result, exchange, recentTrades: recentTrades));
     }
 
     private static IResult ProcessOrder(
         string id, OrderRequest request, GameStore store, TurnProcessor processor,
         IExchangeFactory exchangeFactory, GameConfig config,
-        Func<Game, int, OrderRequest, (Game Result, string? Warning)> action)
+        Func<Game, int, OrderRequest, (Game Result, TradeResult? Trade, string? Warning)> action)
     {
         var game = store.GetGame(id);
         if (game is null) return Results.NotFound();
 
-        var (result, warning) = action(game, config.Fee, request);
-        if (warning is null) store.UpdateGame(id, result);
+        var (result, trade, warning) = action(game, config.Fee, request);
+        if (warning is null)
+        {
+            store.UpdateGame(id, result);
+            if (trade is not null) store.AddTrade(id, trade);
+        }
         var exchange = exchangeFactory.Create(result.Prices, config.Fee);
-        return Results.Ok(GameMapper.ToResponse(id, result, exchange, warning));
+        var recentTrades = store.GetRecentTrades(id);
+        return Results.Ok(GameMapper.ToResponse(id, result, exchange, warning, recentTrades));
     }
 }
