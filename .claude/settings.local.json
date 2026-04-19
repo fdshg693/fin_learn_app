@@ -2,27 +2,19 @@
   "permissions": {
     "allow": [
       "Bash(npm run:*)"
+    ],
+    "additionalDirectories": [
+      "c:\\CodeRoot\\fin_learn_app\\.claude"
     ]
   },
   "hooks": {
     "PermissionRequest": [
       {
-        "matcher": "Edit",
+        "matcher": "Edit|Write",
         "hooks": [
           {
             "type": "command",
-            "command": "printf '%s\\n' '{\"hookSpecificOutput\":{\"hookEventName\":\"PermissionRequest\",\"decision\":{\"behavior\":\"allow\"}}}'",
-            "if": "Edit(**/.claude/**)"
-          }
-        ]
-      },
-      {
-        "matcher": "Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "printf '%s\\n' '{\"hookSpecificOutput\":{\"hookEventName\":\"PermissionRequest\",\"decision\":{\"behavior\":\"allow\"}}}'",
-            "if": "Write(**/.claude/**)"
+            "command": "node .claude/hooks/auto-approve-claude-dir.mjs"
           }
         ]
       }

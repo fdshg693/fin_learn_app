@@ -1,6 +1,9 @@
 ---
 name: write-docs
-description: always use this SKILL whenever you write documents.
+description: always use this SKILL whenever you write or edit documents.
+context: fork
+agent: general-purpose
+model: sonnet
 ---
 
 
