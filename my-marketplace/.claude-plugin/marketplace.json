@@ -2,6 +2,10 @@
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "my-marketplace",
   "description": "A marketplace for my Claude plugins",
+  "owner": {
+    "name": "My Name",
+    "email": "myemail@example.com"
+  },
   "plugins": [
     {
       "name": "mcp-apps-custom",
@@ -20,7 +24,7 @@
     },
     {
       "name": "superpowers-custom",
-      "description": "customized and extracted from original superpowers plugin",
+      "description": "customize and extracted from original superpowers plugin",
       "source": "./superpowers-custom"
     }
   ]

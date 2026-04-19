@@ -10,7 +10,7 @@
 - **プロジェクト名:** `FinLearn.Api`
 - **状態管理:** インメモリ（`ConcurrentDictionary<string, Game>`）— 学習用アプリのため DB は不要
 
-## ゲーム設定
+## ゲーム設定（`GameConfig`）
 
 | パラメータ | デフォルト値 | 備考 |
 |---|---|---|
@@ -30,6 +30,9 @@
 | POST | `/api/games/{id}/buy` | 買い注文 |
 | POST | `/api/games/{id}/sell` | 売り注文 |
 | POST | `/api/games/{id}/wait` | 待機（ターンスキップ） |
+| GET | `/api/admin/games/{id}/orderbook` | 板（注文帳）状態取得（管理用） |
+
+ゲーム系エンドポイントは [src/FinLearn.Api/Endpoints/GameEndpoints.cs](../src/FinLearn.Api/Endpoints/GameEndpoints.cs) 、管理用エンドポイントは [src/FinLearn.Api/Endpoints/AdminEndpoints.cs](../src/FinLearn.Api/Endpoints/AdminEndpoints.cs) に定義されている。
 
 ---
 
@@ -56,7 +59,9 @@
     { "id": 1, "price": 100 },
     { "id": 2, "price": 100 },
     { "id": 3, "price": 100 }
-  ]
+  ],
+  "recentTrades": [],
+  "warning": null
 }
 ```
 
@@ -78,7 +83,8 @@
 {
   "instrumentId": 1,
   "quantity": 5,
-  "price": null
+  "price": null,
+  "stopPrice": null
 }
 ```
 
@@ -87,6 +93,7 @@
 | instrumentId | int | YES | 銘柄ID |
 | quantity | int | YES | 数量（1以上） |
 | price | int? | NO | 指値価格（null = 成行） |
+| stopPrice | int? | NO | 逆指値価格（null = 通常注文） |
 
 **レスポンス:** `200 OK`
 
@@ -96,13 +103,16 @@
   "turn": 2,
   "player": { ... },
   "instruments": [ ... ],
+  "recentTrades": [
+    { "instrumentId": 1, "side": "Buy", "filledQuantity": 5, "totalAmount": 500, "fee": 10 }
+  ],
   "warning": null
 }
 ```
 
 **警告付きレスポンス（ターン不変）:** `200 OK`
 
-約定失敗や残高不足の場合、`warning` にメッセージが入り、ゲーム状態は変化しない。
+約定失敗や残高不足など、ドメインが `(Game, TradeResult?, string? Warning)` で `Warning != null` を返した場合、`warning` にメッセージが入り、`GameStore` は更新されない（`turn` は進まず、取引履歴も追加されない）。
 
 ```json
 {
@@ -110,6 +120,7 @@
   "turn": 1,
   "player": { ... },
   "instruments": [ ... ],
+  "recentTrades": [ ... ],
   "warning": "現金が不足して購入できません"
 }
 ```
@@ -122,11 +133,39 @@
 
 ターンをスキップする。リクエストボディなし。
 
-**レスポンス:** `200 OK`（ゲーム状態のみ、`warning` は常に `null`）
+**レスポンス:** `200 OK`（ゲーム状態、`warning` は常に `null`。`trade` / `warning` は破棄される）
+
+### GET /api/admin/games/{id}/orderbook
+
+ゲームの注文帳（`OrderBook`）状態を取得する。デバッグ・管理用途。
+
+**レスポンス:** `200 OK`
+
+```json
+{
+  "orders": [
+    {
+      "id": 1,
+      "traderId": "player",
+      "instrumentId": 1,
+      "side": "Buy",
+      "type": "Limit",
+      "quantity": 5,
+      "price": 100,
+      "stopPrice": null,
+      "createdAtTurn": 1
+    }
+  ]
+}
+```
+
+**エラー:** `404 Not Found`（ゲームが存在しない場合）
 
 ---
 
 ## レスポンスDTO
+
+DTO 定義: [src/FinLearn.Api/Dtos/GameResponse.cs](../src/FinLearn.Api/Dtos/GameResponse.cs) / [src/FinLearn.Api/Dtos/OrderBookResponse.cs](../src/FinLearn.Api/Dtos/OrderBookResponse.cs)
 
 ### GameResponse（共通レスポンス）
 
@@ -135,7 +174,8 @@ gameId        : string
 turn          : int
 player        : PlayerDto
 instruments   : InstrumentDto[]
-warning       : string?         # アクション失敗時のみ
+recentTrades  : TradeResultDto[]  # 直近最大3件（GameStore.MaxRecentTrades）
+warning       : string?           # アクション失敗時のみ
 ```
 
 ### PlayerDto
@@ -164,6 +204,33 @@ id            : int
 price         : int             # 現在の市場価格
 ```
 
+### TradeResultDto
+
+```
+instrumentId    : int
+side            : string        # "Buy" | "Sell"
+filledQuantity  : int
+totalAmount     : int           # 約定金額（手数料抜き）
+fee             : int
+```
+
+### OrderBookResponse / OrderDto
+
+```
+orders : OrderDto[]
+
+OrderDto:
+  id             : int
+  traderId       : string
+  instrumentId   : int
+  side           : string       # "Buy" | "Sell"
+  type           : string       # "Market" | "Limit" | "Stop" | "StopLimit"
+  quantity       : int
+  price          : int?
+  stopPrice      : int?
+  createdAtTurn  : int
+```
+
 ---
 
 ## プロジェクト構成
@@ -171,25 +238,39 @@ price         : int             # 現在の市場価格
 ```
 src/
   FinLearn.Api/
-    Program.cs              # Minimal API エンドポイント定義 + DI
+    Program.cs                        # DI 登録 + CORS + エンドポイントマップ
+    Endpoints/
+      GameEndpoints.cs                # /api/games/*（Create/Get/Buy/Sell/Wait）
+      AdminEndpoints.cs               # /api/admin/games/{id}/orderbook
     Dtos/
-      GameResponse.cs       # レスポンスDTO
-      OrderRequest.cs       # リクエストDTO
+      GameResponse.cs                 # GameResponse, PlayerDto, PositionDto, InstrumentDto, TradeResultDto
+      OrderRequest.cs                 # OrderRequest (instrumentId, quantity, price?, stopPrice?)
+      OrderBookResponse.cs            # OrderBookResponse, OrderDto
+    Mappers/
+      GameMapper.cs                   # Game → GameResponse 変換
+      OrderBookMapper.cs              # OrderBook → OrderBookResponse 変換
     Services/
-      GameStore.cs          # ConcurrentDictionary によるゲーム状態管理
+      GameConfig.cs                   # 銘柄数・初期株価・手数料
+      GameStore.cs                    # ゲーム状態 + 直近取引履歴（最大3件）
 ```
 
-## DI 構成（Program.cs）
+## DI 構成（[Program.cs](../src/FinLearn.Api/Program.cs)）
 
 ```
-GameStore           → Singleton（インメモリ状態管理）
-TurnProcessor       → Transient（ComputerTrader + RandomPriceFluctuator）
-Random              → Singleton（シード固定可能）
+GameConfig          → Singleton
+GameStore           → Singleton（ConcurrentDictionary + 取引履歴）
+IExchangeFactory    → Singleton（SimpleExchangeFactory）
+TurnProcessor       → Transient（ComputerTrader + Market + RandomPriceFluctuator + IExchangeFactory）
+Random              → Random.Shared を直接利用
 ```
 
 ## 設計判断
 
 - **Minimal API を採用**: Controller ベースではなく Minimal API。エンドポイント数が少なく、シンプルな構造に適合
-- **警告は 200 で返す**: ドメインが例外ではなく `(Result, Warning)` タプルで結果を返す設計のため、HTTP ステータスではなく `warning` フィールドで表現。ターンが進まないことでフロントエンドが状態変化の有無を判断できる
-- **ゲームIDは GUID**: `Guid.NewGuid().ToString("N")` で生成。URL フレンドリーな短い文字列
-- **CORS**: React 開発サーバー（`localhost:5173`）を許可
+- **警告は 200 で返す**: ドメインが例外ではなく `(Game, TradeResult?, string? Warning)` タプルで結果を返す設計のため、HTTP ステータスではなく `warning` フィールドで表現。`warning != null` の場合は `GameStore` が更新されず、`turn` も進まないため、フロントエンドが状態変化の有無を判断できる
+- **取引履歴は API 側で保持**: ドメインの `Game` は取引履歴を持たない。`GameStore` が直近の `TradeResult` を最大 `MaxRecentTrades`（=3）件キャッシュし、レスポンスに同梱する
+- **DTO マッピング**: `GameMapper.ToResponse` で `Game` + `IExchange` → `GameResponse` 変換。`IExchangeFactory` 経由で `game.Prices` から評価用の `IExchange` を生成
+- **ゲームIDは GUID**: `Guid.NewGuid().ToString("N")` で生成。URL フレンドリーな 32 文字 hex
+- **CORS**: 環境変数 `CORS_ALLOWED_ORIGINS`（カンマ区切り）で設定可能。デフォルトは React 開発サーバー（`http://localhost:5173`）
+- **Admin エンドポイント**: 板の状態確認用。本番用途ではなくデバッグ・テスト支援のため `/api/admin` 配下に配置
+- **`public partial class Program { }`**: `WebApplicationFactory<Program>` による統合テストを可能にする

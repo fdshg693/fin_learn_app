@@ -1,4 +1,9 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)"
+    ]
+  },
   "hooks": {
     "PermissionRequest": [
       {
@@ -6,8 +11,8 @@
         "hooks": [
           {
             "type": "command",
-            "if": "Edit(**/.claude/**)",
-            "command": "printf '%s\\n' '{\"hookSpecificOutput\":{\"hookEventName\":\"PermissionRequest\",\"decision\":{\"behavior\":\"allow\"}}}'"
+            "command": "printf '%s\\n' '{\"hookSpecificOutput\":{\"hookEventName\":\"PermissionRequest\",\"decision\":{\"behavior\":\"allow\"}}}'",
+            "if": "Edit(**/.claude/**)"
           }
         ]
       },
@@ -16,20 +21,16 @@
         "hooks": [
           {
             "type": "command",
-            "if": "Write(**/.claude/**)",
-            "command": "printf '%s\\n' '{\"hookSpecificOutput\":{\"hookEventName\":\"PermissionRequest\",\"decision\":{\"behavior\":\"allow\"}}}'"
+            "command": "printf '%s\\n' '{\"hookSpecificOutput\":{\"hookEventName\":\"PermissionRequest\",\"decision\":{\"behavior\":\"allow\"}}}'",
+            "if": "Write(**/.claude/**)"
           }
         ]
       }
     ]
   },
-  "permissions": {
-    "allow": [
-      "Bash(npm run:*)"
-    ]
-  },
   "enabledPlugins": {
     "mcp-apps-custom@my-marketplace": false,
-    "superpowers-developing-for-claude-code@superpowers-developing-for-claude-code-dev": true
+    "meta@my-marketplace": true,
+    "superpowers-developing-for-claude-code@superpowers-developing-for-claude-code-dev": false
   }
 }
