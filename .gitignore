@@ -1,3 +1,4 @@
+.claude/settings.local.json
 .github/agents
 .vscode/mcp.json
 node_modules/

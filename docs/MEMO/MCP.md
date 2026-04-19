@@ -7,4 +7,7 @@
         - https://code.claude.com/docs/en/mcp#push-messages-with-channels
 
 - 有用そうなSKILL
-    - https://modelcontextprotocol.io/docs/develop/build-with-agent-skills
+    - MCP
+        - https://modelcontextprotocol.io/docs/develop/build-with-agent-skills
+        - https://github.com/modelcontextprotocol/ext-apps/tree/main/plugins/mcp-apps
+        - https://github.com/anthropics/claude-plugins-official/tree/main/plugins/mcp-server-dev/skills

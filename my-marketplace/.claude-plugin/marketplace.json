@@ -1,0 +1,27 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "my-marketplace",
+  "description": "A marketplace for my Claude plugins",
+  "plugins": [
+    {
+      "name": "mcp-apps-custom",
+      "description": "For Mcp Apps",
+      "source": "./mcp-apps-custom"
+    },
+    {
+      "name": "meta",
+      "description": "For Meta skills",
+      "source": "./meta"
+    },
+    {
+      "name": "subagents",
+      "description": "For Using Subagents",
+      "source": "./subagents"
+    },
+    {
+      "name": "superpowers-custom",
+      "description": "customized and extracted from original superpowers plugin",
+      "source": "./superpowers-custom"
+    }
+  ]
+}
