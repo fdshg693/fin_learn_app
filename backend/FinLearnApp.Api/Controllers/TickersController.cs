@@ -56,6 +56,26 @@ public sealed class TickersController : ControllerBase
         return Ok(dto);
     }
 
+    [HttpGet("{tickerId:guid}/price-history")]
+    public ActionResult<IReadOnlyList<PriceRecordDto>> GetPriceHistory(
+        Guid tickerId,
+        [FromQuery] int limit = 20)
+    {
+        var ticker = _store.FindTicker(new TickerId(tickerId));
+        if (ticker is null)
+        {
+            return ApiProblemFactory.NotFound(this, "Ticker was not found.", "tickers.not_found");
+        }
+
+        var clampedLimit = Math.Clamp(limit, 1, 100);
+        var history = ticker.PriceHistory
+            .TakeLast(clampedLimit)
+            .Select(r => new PriceRecordDto(r.Turn, ToMoneyDto(r.Price)))
+            .ToList();
+
+        return Ok(history);
+    }
+
     private static MoneyDto ToMoneyDto(Money money)
     {
         return new MoneyDto(money.Amount, money.Currency.ToString());

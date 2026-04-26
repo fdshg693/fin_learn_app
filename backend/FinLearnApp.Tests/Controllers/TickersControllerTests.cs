@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FinLearnApp.Api.Controllers;
 using FinLearnApp.Api.Data;
 using FinLearnApp.Api.Models.Api;
@@ -11,10 +12,12 @@ public class TickersControllerTests
 {
     private static readonly Guid AokiTickerGuid = Guid.Parse("4e6b3f5a-3d5a-4b9c-8e4d-4d5a3f7b4c04");
 
+    private static InMemoryStore CreateStore() => SeedData.Create();
+
     [Fact]
     public void GetTickers_ReturnsAllTickers()
     {
-        var controller = new TickersController(SeedData.Create());
+        var controller = new TickersController(CreateStore());
 
         var result = controller.GetTickers();
 
@@ -30,7 +33,7 @@ public class TickersControllerTests
     [Fact]
     public void GetTicker_ExistingTicker_ReturnsDetail()
     {
-        var controller = new TickersController(SeedData.Create());
+        var controller = new TickersController(CreateStore());
 
         var result = controller.GetTicker(AokiTickerGuid);
 
@@ -48,7 +51,7 @@ public class TickersControllerTests
     [Fact]
     public void GetTicker_UnknownTicker_ReturnsNotFound()
     {
-        var controller = new TickersController(SeedData.Create());
+        var controller = new TickersController(CreateStore());
         var unknownTickerId = Guid.Parse("99999999-0000-0000-0000-000000000000");
 
         var result = controller.GetTicker(unknownTickerId);
@@ -59,5 +62,57 @@ public class TickersControllerTests
         Assert.Equal("Not Found", problem.Title);
         Assert.Equal("Ticker was not found.", problem.Detail);
         Assert.Equal("tickers.not_found", problem.Extensions["code"]);
+    }
+
+    [Fact]
+    public void GetPriceHistory_ExistingTicker_ReturnsHistory()
+    {
+        // Arrange
+        var store = CreateStore();
+        var controller = new TickersController(store);
+        var ticker = store.Tickers.First();
+
+        // Act
+        var result = controller.GetPriceHistory(ticker.Id.Value, limit: 20);
+
+        // Assert
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var history = Assert.IsAssignableFrom<IReadOnlyList<PriceRecordDto>>(ok.Value);
+        Assert.NotEmpty(history);
+    }
+
+    [Fact]
+    public void GetPriceHistory_UnknownTicker_Returns404()
+    {
+        // Arrange
+        var store = CreateStore();
+        var controller = new TickersController(store);
+
+        // Act
+        var result = controller.GetPriceHistory(Guid.NewGuid(), limit: 20);
+
+        // Assert
+        var notFound = Assert.IsType<NotFoundObjectResult>(result.Result);
+        Assert.Equal(404, notFound.StatusCode);
+    }
+
+    [Fact]
+    public void GetPriceHistory_LimitApplied_ReturnsAtMostLimitRecords()
+    {
+        // Arrange
+        var store = CreateStore();
+        var investorId = store.Portfolios.First().InvestorId;
+        for (int i = 0; i < 5; i++) store.AdvanceTurn(investorId);
+
+        var controller = new TickersController(store);
+        var ticker = store.Tickers.First();
+
+        // Act
+        var result = controller.GetPriceHistory(ticker.Id.Value, limit: 3);
+
+        // Assert
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var history = Assert.IsAssignableFrom<IReadOnlyList<PriceRecordDto>>(ok.Value);
+        Assert.Equal(3, history.Count);
     }
 }
