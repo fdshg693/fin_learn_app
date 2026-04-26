@@ -1,7 +1,10 @@
 namespace FinLearn.Api.Dtos;
 
 public sealed record OrderBookResponse(
-    IReadOnlyList<OrderDto> Orders);
+    IReadOnlyList<OrderDto> Orders,
+    int TotalCount,
+    int Page,
+    int PageSize);
 
 public sealed record OrderDto(
     int Id,

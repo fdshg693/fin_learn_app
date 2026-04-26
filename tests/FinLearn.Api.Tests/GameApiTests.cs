@@ -218,6 +218,89 @@ public class GameApiTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Empty(orderBook.Orders);
     }
 
+    [Fact]
+    public async Task GET_admin_orderbook_ページングパラメータ無指定ではdefaultが返る()
+    {
+        var created = await CreateGame();
+
+        var response = await _client.GetAsync($"/api/admin/games/{created.GameId}/orderbook");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var orderBook = await response.Content.ReadFromJsonAsync<OrderBookResponse>();
+        Assert.NotNull(orderBook);
+        Assert.Equal(1, orderBook.Page);
+        Assert.Equal(50, orderBook.PageSize);
+        Assert.Equal(0, orderBook.TotalCount);
+    }
+
+    [Fact]
+    public async Task GET_admin_orderbook_pageSize1でorderが1件ずつ取得できる()
+    {
+        var created = await CreateGame();
+
+        for (int i = 0; i < 3; i++)
+        {
+            await _client.PostAsJsonAsync(
+                $"/api/games/{created.GameId}/buy",
+                new OrderRequest(InstrumentId: 1, Quantity: 1, Price: 1));
+        }
+
+        var response = await _client.GetAsync($"/api/admin/games/{created.GameId}/orderbook?page=1&pageSize=1");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var orderBook = await response.Content.ReadFromJsonAsync<OrderBookResponse>();
+        Assert.NotNull(orderBook);
+        Assert.Single(orderBook.Orders);
+        Assert.Equal(1, orderBook.Page);
+        Assert.Equal(1, orderBook.PageSize);
+        Assert.True(orderBook.TotalCount >= 1);
+    }
+
+    [Fact]
+    public async Task GET_admin_orderbook_range超えのpageは空配列を返す()
+    {
+        var created = await CreateGame();
+
+        var response = await _client.GetAsync($"/api/admin/games/{created.GameId}/orderbook?page=999&pageSize=10");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var orderBook = await response.Content.ReadFromJsonAsync<OrderBookResponse>();
+        Assert.NotNull(orderBook);
+        Assert.Empty(orderBook.Orders);
+        Assert.Equal(999, orderBook.Page);
+        Assert.Equal(10, orderBook.PageSize);
+    }
+
+    [Fact]
+    public async Task GET_admin_orderbook_page0は400()
+    {
+        var created = await CreateGame();
+
+        var response = await _client.GetAsync($"/api/admin/games/{created.GameId}/orderbook?page=0&pageSize=10");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GET_admin_orderbook_pageSize0は400()
+    {
+        var created = await CreateGame();
+
+        var response = await _client.GetAsync($"/api/admin/games/{created.GameId}/orderbook?page=1&pageSize=0");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GET_admin_orderbook_pageSize201は400()
+    {
+        var created = await CreateGame();
+
+        var response = await _client.GetAsync($"/api/admin/games/{created.GameId}/orderbook?page=1&pageSize=201");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
     private async Task<GameResponse> CreateGame()
     {
         var response = await _client.PostAsync("/api/games", null);
