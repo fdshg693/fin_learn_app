@@ -17,6 +17,6 @@ public sealed class Market : IMarket
             TotalAmount: incomingFill?.TotalAmount ?? 0,
             Fee: exchange.Fee);
 
-        return new MatchResult(trade, fillResult.UpdatedBook);
+        return new MatchResult(trade, fillResult.UpdatedBook, fillResult.Fills);
     }
 }

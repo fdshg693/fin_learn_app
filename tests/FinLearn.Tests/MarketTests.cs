@@ -51,4 +51,21 @@ public class MarketTests
         Assert.Single(remaining);
         Assert.Equal(2, remaining[0].Quantity);
     }
+
+    [Fact]
+    public void Execute_は約定明細をMatchResultのFillsに含める()
+    {
+        var instrument = TestData.Instrument1;
+        var exchange = TestData.CreateExchange(fee: 0, (1, 100));
+        var book = new OrderBook()
+            .Add(new Order(1, "computer", instrument, OrderSide.Sell, 1, 100, createdAtTurn: 1));
+        var incoming = new Order(2, "player", instrument, OrderSide.Buy, 1, 100, createdAtTurn: 1);
+
+        var result = new Market().Execute(book, incoming, exchange);
+
+        // 双方の注文（incoming + resting）が Fills に含まれる
+        Assert.Equal(2, result.Fills.Count);
+        Assert.Contains(result.Fills, f => f.OrderId == 1 && f.FilledQuantity == 1);
+        Assert.Contains(result.Fills, f => f.OrderId == 2 && f.FilledQuantity == 1);
+    }
 }
