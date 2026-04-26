@@ -31,6 +31,7 @@ App (root.tsx)
     ├── PositionList       ← 保有ポジション一覧
     ├── TradeForm          ← 注文入力（銘柄・数量・価格）+ アクションボタン
     ├── TradeHistory       ← 直近3件の約定結果テーブル
+    ├── OrderBookPanel     ← 注文板（ページング対応、初期はloaderの1ページ目）
     └── WarningMessage     ← API からの警告表示
 ```
 
@@ -136,6 +137,22 @@ React Router の `clientLoader` / `clientAction` でデータ取得・アクシ�
 | 約定金額 | `trade.totalAmount` | JPY 表記 |
 | 手数料 | `trade.fee` | JPY 表記 |
 
+### OrderBookPanel
+
+`/api/admin/games/:id/orderbook` の内容を表示するデバッグ用パネル。ページング UI 付き。
+
+| 要素 | データソース | 備考 |
+|---|---|---|
+| 注文行 | `orderBook.orders` | 空なら「注文なし」 |
+| ページ情報 | `orderBook.totalCount` / `page` / `pageSize` | 「1–20 / N」形式 |
+| 前へ / 次へ | — | 範囲外は disabled、fetch 中も disabled |
+
+- ページサイズは固定 20（panel の `pageSize` prop で上書き可）
+- 初期表示は loader が取得した 1 ページ目をそのまま利用
+- 「前へ」「次へ」押下時のみ `getOrderBook(gameId, page, pageSize)` を再取得
+- clientAction 後は props が差し替わるため自動的にページ 1 にリセット
+- 取得失敗時はパネル内にインラインでエラー表示（ルートエラーバウンダリは発火させない）
+
 ### WarningMessage
 
 - `GameResponse.warning` が non-null のとき表示
@@ -155,6 +172,7 @@ getGame(id)              → GET  /api/games/:id
 buy(id, order)           → POST /api/games/:id/buy
 sell(id, order)          → POST /api/games/:id/sell
 wait(id)                 → POST /api/games/:id/wait
+getOrderBook(id, page?, pageSize?)  → GET  /api/admin/games/:id/orderbook
 ```
 
 ---
