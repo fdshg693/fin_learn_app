@@ -45,6 +45,7 @@ digraph process {
 
     subgraph cluster_per_task {
         label="Per Task";
+        "Triage: lightweight or full?" [shape=diamond];
         "Dispatch implementer subagent (./implementer-prompt.md)" [shape=box];
         "Implementer subagent asks questions?" [shape=diamond];
         "Answer questions, provide context" [shape=box];
@@ -63,12 +64,14 @@ digraph process {
     "Dispatch final code reviewer subagent for entire implementation" [shape=box];
     "Use superpowers:finishing-a-development-branch" [shape=box style=filled fillcolor=lightgreen];
 
-    "Read plan, extract all tasks with full text, note context, create TodoWrite" -> "Dispatch implementer subagent (./implementer-prompt.md)";
+    "Read plan, extract all tasks with full text, note context, create TodoWrite" -> "Triage: lightweight or full?";
+    "Triage: lightweight or full?" -> "Dispatch implementer subagent (./implementer-prompt.md)";
     "Dispatch implementer subagent (./implementer-prompt.md)" -> "Implementer subagent asks questions?";
     "Implementer subagent asks questions?" -> "Answer questions, provide context" [label="yes"];
     "Answer questions, provide context" -> "Dispatch implementer subagent (./implementer-prompt.md)";
     "Implementer subagent asks questions?" -> "Implementer subagent implements, tests, commits, self-reviews" [label="no"];
-    "Implementer subagent implements, tests, commits, self-reviews" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)";
+    "Implementer subagent implements, tests, commits, self-reviews" -> "Mark task complete in TodoWrite" [label="lightweight: skip both reviews"];
+    "Implementer subagent implements, tests, commits, self-reviews" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" [label="full"];
     "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" -> "Spec reviewer subagent confirms code matches spec?";
     "Spec reviewer subagent confirms code matches spec?" -> "Implementer subagent fixes spec gaps" [label="no"];
     "Implementer subagent fixes spec gaps" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" [label="re-review"];
@@ -78,11 +81,32 @@ digraph process {
     "Implementer subagent fixes quality issues" -> "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [label="re-review"];
     "Code quality reviewer subagent approves?" -> "Mark task complete in TodoWrite" [label="yes"];
     "Mark task complete in TodoWrite" -> "More tasks remain?";
-    "More tasks remain?" -> "Dispatch implementer subagent (./implementer-prompt.md)" [label="yes"];
+    "More tasks remain?" -> "Triage: lightweight or full?" [label="yes"];
     "More tasks remain?" -> "Dispatch final code reviewer subagent for entire implementation" [label="no"];
     "Dispatch final code reviewer subagent for entire implementation" -> "Use superpowers:finishing-a-development-branch";
 }
 ```
+
+## Task Triage: Lightweight vs. Full
+
+Reviews are expensive. For trivial tasks they cost more than they catch. Before dispatching the implementer, classify each task.
+
+**Lightweight task — skip BOTH spec compliance and code quality reviews. Implementer self-review only:**
+- Documentation-only changes (Markdown / comments / READMEs, no code logic)
+- Trivial one-liners with no behavior change (typo fixes, version bumps, import reordering, renaming a local variable)
+- Mechanical edits with verbatim replacement text from the plan and no judgment required
+- Config/dependency tweaks where the spec uniquely determines the answer
+
+**Full flow — both reviews required (the default):**
+- Any change that touches behavior, state, or control flow
+- New features, bug fixes, refactors
+- Anything where the implementer has to make judgment calls
+- Tests covering new behavior (the test logic itself can be wrong)
+- Cross-file integration work
+
+**When uncertain, choose full.** The cost of a missed review on real code dwarfs the cost of a redundant review on a trivial change. But running both reviews on a docs-only commit just burns tokens and time — the spec reviewer reads the plan against the file, and the code-quality reviewer has nothing to flag. Skip them.
+
+For lightweight tasks, the implementer's own self-review (completeness / quality / discipline) plus the final whole-implementation review at the end remain the quality gates. Do not skip the final review.
 
 ## Model Selection
 
@@ -235,7 +259,8 @@ Done!
 
 **Never:**
 - Start implementation on main/master branch without explicit user consent
-- Skip reviews (spec compliance OR code quality)
+- Skip reviews on full-flow tasks (lightweight tasks per the triage section are the only exception — and only both-reviews-or-neither, never just one)
+- Skip the final whole-implementation review, even if every task was lightweight
 - Proceed with unfixed issues
 - Dispatch multiple implementation subagents in parallel (conflicts)
 - Make subagent read plan file (provide full text instead)
@@ -243,9 +268,10 @@ Done!
 - Ignore subagent questions (answer before letting them proceed)
 - Accept "close enough" on spec compliance (spec reviewer found issues = not done)
 - Skip review loops (reviewer found issues = implementer fixes = review again)
-- Let implementer self-review replace actual review (both are needed)
+- Let implementer self-review replace actual review on full-flow tasks (both are needed)
 - **Start code quality review before spec compliance is ✅** (wrong order)
 - Move to next task while either review has open issues
+- Run only one of the two reviews on a full-flow task — it's both or neither (use lightweight triage to skip both, never split)
 
 **If subagent asks questions:**
 - Answer clearly and completely
