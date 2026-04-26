@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   LineChart,
   Line,
@@ -20,23 +20,33 @@ export default function Chart() {
   const [limit, setLimit] = useState<number>(20)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const isInitialLoad = useRef(true)
 
   useEffect(() => {
     fetchTickers()
-      .then((data) => {
+      .then(async (data) => {
         setTickers(data)
-        if (data.length > 0) setSelectedTickerId(data[0].tickerId)
+        if (data.length > 0) {
+          const firstId = data[0].tickerId
+          setSelectedTickerId(firstId)
+          const h = await fetchPriceHistory(firstId, 20)
+          setHistory(h)
+        }
       })
-      .catch((e) => setError(String(e)))
-      .finally(() => setIsLoading(false))
+      .catch((e) => setError((e as Error).message ?? String(e)))
+      .finally(() => {
+        setIsLoading(false)
+        isInitialLoad.current = false
+      })
   }, [])
 
   useEffect(() => {
-    if (!selectedTickerId) return
+    if (isInitialLoad.current || !selectedTickerId) return
     setIsLoading(true)
+    setError(null)
     fetchPriceHistory(selectedTickerId, limit)
       .then(setHistory)
-      .catch((e) => setError(String(e)))
+      .catch((e) => setError((e as Error).message ?? String(e)))
       .finally(() => setIsLoading(false))
   }, [selectedTickerId, limit])
 
