@@ -79,6 +79,12 @@ public class TickersControllerTests
         var ok = Assert.IsType<OkObjectResult>(result.Result);
         var history = Assert.IsAssignableFrom<IReadOnlyList<PriceRecordDto>>(ok.Value);
         Assert.NotEmpty(history);
+        // 最初のレコードがターン0であること
+        var firstRecord = history.First();
+        Assert.Equal(0, firstRecord.Turn);
+        // 価格が正の値であること（SeedDataの初期価格）
+        Assert.True(firstRecord.Price.Amount > 0);
+        Assert.Equal(ticker.CurrentPrice.Amount, firstRecord.Price.Amount);
     }
 
     [Fact]
@@ -93,7 +99,9 @@ public class TickersControllerTests
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result.Result);
-        Assert.Equal(404, notFound.StatusCode);
+        var problem = Assert.IsType<ProblemDetails>(notFound.Value);
+        Assert.Equal(404, problem.Status);
+        Assert.Equal("tickers.not_found", problem.Extensions["code"]);
     }
 
     [Fact]
