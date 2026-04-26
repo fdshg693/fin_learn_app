@@ -10,7 +10,7 @@ import { PositionList } from "~/components/PositionList";
 import { TradeForm } from "~/components/TradeForm";
 import { WarningMessage } from "~/components/WarningMessage";
 import { TradeHistory } from "~/components/TradeHistory";
-import { OrderBookPanel } from "~/components/OrderBookPanel";
+import { OrderBookPanel, ORDERBOOK_PAGE_SIZE } from "~/components/OrderBookPanel";
 
 type LoaderData = {
   game: GameResponse;
@@ -21,7 +21,7 @@ export async function clientLoader({ params }: ClientLoaderFunctionArgs): Promis
   const id = params.id!;
   const [game, orderBook] = await Promise.all([
     getGame(id),
-    getOrderBook(id),
+    getOrderBook(id, 1, ORDERBOOK_PAGE_SIZE),
   ]);
   return { game, orderBook };
 }
@@ -56,7 +56,7 @@ export async function clientAction({ params, request }: ClientActionFunctionArgs
     }
   }
 
-  const orderBook = await getOrderBook(id);
+  const orderBook = await getOrderBook(id, 1, ORDERBOOK_PAGE_SIZE);
   return { game, orderBook };
 }
 
@@ -97,7 +97,7 @@ export default function GamePage() {
         onInstrumentChange={setSelectedInstrumentId}
       />
       <TradeHistory trades={game.recentTrades} />
-      <OrderBookPanel orders={orderBook.orders} />
+      <OrderBookPanel gameId={game.gameId} orderBook={orderBook} />
     </main>
   );
 }

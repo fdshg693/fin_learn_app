@@ -38,6 +38,9 @@ const mockOrderBook: OrderBookResponse = {
       createdAtTurn: 4,
     },
   ],
+  totalCount: 1,
+  page: 1,
+  pageSize: 20,
 };
 
 async function renderGamePage(game: GameResponse, orderBook: OrderBookResponse, action?: () => unknown) {

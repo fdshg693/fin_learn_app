@@ -49,7 +49,16 @@ export async function wait(id: string): Promise<GameResponse> {
   return handleResponse(res);
 }
 
-export async function getOrderBook(id: string): Promise<OrderBookResponse> {
-  const res = await fetch(`${BASE}/api/admin/games/${id}/orderbook`);
+export async function getOrderBook(
+  id: string,
+  page?: number,
+  pageSize?: number,
+): Promise<OrderBookResponse> {
+  const params = new URLSearchParams();
+  if (page !== undefined) params.set("page", String(page));
+  if (pageSize !== undefined) params.set("pageSize", String(pageSize));
+  const query = params.toString();
+  const url = `${BASE}/api/admin/games/${id}/orderbook${query ? `?${query}` : ""}`;
+  const res = await fetch(url);
   return handleResponse(res);
 }

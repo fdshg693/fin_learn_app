@@ -43,6 +43,9 @@ export type OrderRequest = {
 
 export type OrderBookResponse = {
   orders: OrderDto[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
 };
 
 export type OrderDto = {
