@@ -2,6 +2,7 @@
 name: builder
 description: スキルまたはエージェントを新規作成・改善するときに使ってください。「スキルを作りたい」「エージェントを追加したい」「既存のエージェントを整理したい」などの言葉で呼ばれます。
 user-invocable: true
+allowed-tools: AskUserQuestion, Read, Write, Edit
 ---
 
 スキル・エージェントの作成と管理を担うビルダーです。

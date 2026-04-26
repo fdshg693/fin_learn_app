@@ -13,9 +13,8 @@ tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'AskUserQuestion']
 | プロジェクト概要 | `CLAUDE.md` | Claude Code 向けアーキテクチャガイド |
 
 > **対象外（他エージェントの担当）**
-> - エージェント・スキルの作成・管理 → `agent-builder`
+> - エージェント・スキルの作成・管理 → `builder` スキル
 > - 仕様書（`docs/specs/`）の作成 → `finlearn.spec-writer`
-> - スキル（`.claude/skills/`）の作成 → `finlearn.skill-builder`
 
 ---
 
