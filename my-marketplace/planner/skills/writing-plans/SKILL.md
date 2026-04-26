@@ -11,7 +11,28 @@ Write comprehensive implementation plans assuming the engineer has zero context 
 
 Assume they are a skilled developer, but know almost nothing about our toolset or problem domain. Assume they don't know good test design very well.
 
-**Save plans to:** `docs/writing-plans/<feature-name>.md`
+## File Layout
+
+Plans are split across multiple files: a thin entry-point file plus one file per task.
+
+- **Entry point:** `docs/writing-plans/<feature-name>.md`
+  - Thin overview only: header (Goal / Architecture / Tech Stack), File Structure section, and a table of contents linking to each task file. No task bodies inline.
+- **Task files:** `docs/writing-plans/<feature-name>/<task-slug>.md`
+  - One file per task. Contains the full Task block (Files / Steps / code / commands / commit).
+  - `<task-slug>` is a kebab-case short name describing the task (e.g. `trade-result-logging.md`, `order-book-matching.md`). Prefix with the task number when ordering matters: `01-trade-result-logging.md`.
+
+Example:
+
+```
+docs/writing-plans/
+  trade-history.md                     ← entry point (overview + TOC)
+  trade-history/
+    01-trade-result-logging.md         ← Task 1 full content
+    02-history-view-component.md       ← Task 2 full content
+    03-persistence-layer.md            ← Task 3 full content
+```
+
+The entry point and the task files together are the plan. Neither stands alone.
 
 ## Scope Check
 
@@ -38,9 +59,11 @@ This structure informs the task decomposition. Each task should produce self-con
 - "Run the tests and make sure they pass" - step
 - "Commit" - step
 
-## Plan Document Header
+## Entry Point File Structure
 
-**Every plan MUST start with this header:**
+The entry point file (`docs/writing-plans/<feature-name>.md`) is a thin overview. It MUST contain only:
+
+1. **Header** (required):
 
 ```markdown
 # [Feature Name] Implementation Plan
@@ -54,10 +77,28 @@ This structure informs the task decomposition. Each task should produce self-con
 ---
 ```
 
-## Task Structure
+2. **File Structure section** — the cross-task map of files to create/modify (see "File Structure" above).
+
+3. **Tasks (Table of Contents)** — a numbered list linking to each task file. One line per task, with a one-sentence summary:
+
+```markdown
+## Tasks
+
+1. [Trade Result Logging](trade-history/01-trade-result-logging.md) — Capture buy/sell results into a structured log entry.
+2. [History View Component](trade-history/02-history-view-component.md) — Render the log as a sortable table in the React UI.
+3. [Persistence Layer](trade-history/03-persistence-layer.md) — Save/load history via the existing repository interface.
+```
+
+**Do NOT inline task bodies, code blocks, or step lists in the entry point.** Those live in the task files.
+
+## Task File Structure
+
+Each task file (`docs/writing-plans/<feature-name>/<task-slug>.md`) contains the full task block. Use this template:
 
 ````markdown
-### Task N: [Component Name]
+# Task N: [Component Name]
+
+[← Back to plan](../<feature-name>.md)
 
 **Files:**
 - Create: `exact/path/to/file.py`
@@ -112,6 +153,8 @@ Every step must contain the actual content an engineer needs. These are **plan f
 - Complete code in every step — if a step changes code, show the code
 - Exact commands with expected output
 - DRY, YAGNI, TDD, frequent commits
+- Entry point stays thin: header + File Structure + TOC. Task bodies live in their own files.
+- Every TOC link in the entry point must resolve to an existing task file, and every task file must be linked from the TOC.
 
 ## Review
 
@@ -123,7 +166,9 @@ After writing the complete plan, look at the spec with fresh eyes and check the 
 
 **2. Placeholder scan:** Search your plan for red flags — any of the patterns from the "No Placeholders" section above. Fix them.
 
-**3. Type consistency:** Do the types, method signatures, and property names you used in later tasks match what you defined in earlier tasks? A function called `clearLayers()` in Task 3 but `clearFullLayers()` in Task 7 is a bug.
+**3. Type consistency:** Do the types, method signatures, and property names you used in later tasks match what you defined in earlier tasks? A function called `clearLayers()` in Task 3 but `clearFullLayers()` in Task 7 is a bug. Open each task file and cross-check — names defined in one file must match the names referenced from another.
+
+**4. Link integrity:** Every entry-point TOC link points to a task file that exists. Every task file is reachable from the TOC. Each task file's "Back to plan" link resolves.
 
 If you find issues, fix them inline. No need to re-review — just fix and move on. If you find a spec requirement with no task, add the task.
 
@@ -141,8 +186,12 @@ Task tool (general-purpose):
   prompt: |
     You are a plan document reviewer. Verify this plan is complete and ready for implementation.
 
-    **Plan to review:** [PLAN_FILE_PATH]
+    **Plan entry point:** [ENTRY_POINT_FILE_PATH] (e.g. docs/writing-plans/<feature-name>.md)
+    **Task files directory:** [TASK_DIR_PATH] (e.g. docs/writing-plans/<feature-name>/)
     **Spec for reference:** [SPEC_FILE_PATH] or [TEXT_OF_SPEC]
+
+    Read the entry point first to get the TOC, then read every linked task file.
+    The plan is the entry point + all task files together.
 
     ## What to Check
 
@@ -152,6 +201,7 @@ Task tool (general-purpose):
     | Spec Alignment | Plan covers spec requirements, no major scope creep |
     | Task Decomposition | Tasks have clear boundaries, steps are actionable |
     | Buildability | Could an engineer follow this plan without getting stuck? |
+    | File Layout | Entry point is thin (no inlined task bodies). Every TOC link resolves. Every task file is linked from the TOC. Names used across task files are consistent. |
 
     ## Calibration
 
