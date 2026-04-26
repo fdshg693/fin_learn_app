@@ -6,6 +6,7 @@ import TickerDetail from './pages/TickerDetail'
 import Portfolios from './pages/Portfolios'
 import PortfolioDetail from './pages/PortfolioDetail'
 import Actions from './pages/Actions'
+import Chart from './pages/Chart'
 import NotFound from './pages/NotFound'
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
           <NavLink to="/tickers">銘柄</NavLink>
           <NavLink to="/portfolios">ポートフォリオ</NavLink>
           <NavLink to="/actions">アクション</NavLink>
+          <NavLink to="/chart">チャート</NavLink>
         </nav>
       </header>
       <main className="app-main">
@@ -30,6 +32,7 @@ function App() {
           <Route path="/portfolios" element={<Portfolios />} />
           <Route path="/portfolios/:investorId" element={<PortfolioDetail />} />
           <Route path="/actions" element={<Actions />} />
+          <Route path="/chart" element={<Chart />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
