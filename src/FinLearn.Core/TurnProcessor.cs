@@ -31,6 +31,11 @@ public sealed class TurnProcessor
         PlayerTtl = playerTtl;
     }
 
+    /// <summary>
+    /// 買い注文を発行してターンを進める。
+    /// 引数バリデーション失敗時は SubmittedOrders / Fills が空、Warning が設定される。
+    /// 詳細は <see cref="TurnResult"/> を参照。
+    /// </summary>
     public TurnResult Buy(Game game, int fee, int instrumentId, int quantity, int? price = null, int? stopPrice = null)
     {
         if (quantity <= 0)
@@ -42,6 +47,11 @@ public sealed class TurnProcessor
         return PlaceOrder(game, fee, instrument, OrderSide.Buy, quantity, price, stopPrice, Messages.NoMatchingSellOrders);
     }
 
+    /// <summary>
+    /// 売り注文を発行してターンを進める。
+    /// 引数バリデーション失敗時は SubmittedOrders / Fills が空、Warning が設定される。
+    /// 詳細は <see cref="TurnResult"/> を参照。
+    /// </summary>
     public TurnResult Sell(Game game, int fee, int instrumentId, int quantity, int? price = null, int? stopPrice = null)
     {
         if (quantity <= 0)
@@ -53,6 +63,11 @@ public sealed class TurnProcessor
         return PlaceOrder(game, fee, instrument, OrderSide.Sell, quantity, price, stopPrice, Messages.NoMatchingBuyOrders);
     }
 
+    /// <summary>
+    /// プレイヤー注文を発行せずに 1 ターン待機する。
+    /// SubmittedOrders はコンピューター注文のみ、Fills は空、Warning は常に null。
+    /// 詳細は <see cref="TurnResult"/> を参照。
+    /// </summary>
     public TurnResult Wait(Game game, int fee)
     {
         var exchange = ExchangeFactory.Create(game.Prices, fee);

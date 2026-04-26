@@ -30,14 +30,12 @@ public class TurnProcessorTests
         var game = CreateGame();
         var processor = CreateProcessor();
 
-        var r = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 1);
-        var result = r.Game;
-        var warning = r.Warning;
+        var turn = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 1);
 
-        Assert.Null(warning);
-        Assert.Equal(2, result.Turn);
-        Assert.Equal(1, result.Player.Portfolio.QuantityOf(instrumentId: 1));
-        Assert.True(result.Player.Portfolio.Cash < 10000);
+        Assert.Null(turn.Warning);
+        Assert.Equal(2, turn.Game.Turn);
+        Assert.Equal(1, turn.Game.Player.Portfolio.QuantityOf(instrumentId: 1));
+        Assert.True(turn.Game.Player.Portfolio.Cash < 10000);
     }
 
     [Fact]
@@ -46,16 +44,14 @@ public class TurnProcessorTests
         var game = CreateGame();
         var processor = CreateProcessor();
 
-        var r = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 1);
-        var trade = r.Trade;
-        var warning = r.Warning;
+        var turn = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 1);
 
-        Assert.Null(warning);
-        Assert.NotNull(trade);
-        Assert.Equal(1, trade.InstrumentId);
-        Assert.Equal(OrderSide.Buy, trade.Side);
-        Assert.True(trade.FilledQuantity > 0);
-        Assert.True(trade.TotalAmount > 0);
+        Assert.Null(turn.Warning);
+        Assert.NotNull(turn.Trade);
+        Assert.Equal(1, turn.Trade.InstrumentId);
+        Assert.Equal(OrderSide.Buy, turn.Trade.Side);
+        Assert.True(turn.Trade.FilledQuantity > 0);
+        Assert.True(turn.Trade.TotalAmount > 0);
     }
 
     [Fact]
@@ -65,15 +61,13 @@ public class TurnProcessorTests
         var processor = CreateProcessor();
 
         var bought = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 1).Game;
-        var r = processor.Sell(bought, fee: 0, instrumentId: 1, quantity: 1);
-        var trade = r.Trade;
-        var warning = r.Warning;
+        var turn = processor.Sell(bought, fee: 0, instrumentId: 1, quantity: 1);
 
-        Assert.Null(warning);
-        Assert.NotNull(trade);
-        Assert.Equal(1, trade.InstrumentId);
-        Assert.Equal(OrderSide.Sell, trade.Side);
-        Assert.True(trade.FilledQuantity > 0);
+        Assert.Null(turn.Warning);
+        Assert.NotNull(turn.Trade);
+        Assert.Equal(1, turn.Trade.InstrumentId);
+        Assert.Equal(OrderSide.Sell, turn.Trade.Side);
+        Assert.True(turn.Trade.FilledQuantity > 0);
     }
 
     [Fact]
@@ -82,12 +76,10 @@ public class TurnProcessorTests
         var game = CreateGame();
         var processor = CreateProcessor();
 
-        var r = processor.Wait(game, fee: 0);
-        var trade = r.Trade;
-        var warning = r.Warning;
+        var turn = processor.Wait(game, fee: 0);
 
-        Assert.Null(warning);
-        Assert.Null(trade);
+        Assert.Null(turn.Warning);
+        Assert.Null(turn.Trade);
     }
 
     [Fact]
@@ -96,12 +88,10 @@ public class TurnProcessorTests
         var game = CreateGame();
         var processor = CreateProcessor();
 
-        var r = processor.Sell(game, fee: 0, instrumentId: 1, quantity: 1);
-        var trade = r.Trade;
-        var warning = r.Warning;
+        var turn = processor.Sell(game, fee: 0, instrumentId: 1, quantity: 1);
 
-        Assert.NotNull(warning);
-        Assert.Null(trade);
+        Assert.NotNull(turn.Warning);
+        Assert.Null(turn.Trade);
     }
 
     [Fact]
@@ -111,13 +101,11 @@ public class TurnProcessorTests
         var processor = CreateProcessor();
 
         var bought = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 1).Game;
-        var r = processor.Sell(bought, fee: 0, instrumentId: 1, quantity: 1);
-        var result = r.Game;
-        var warning = r.Warning;
+        var turn = processor.Sell(bought, fee: 0, instrumentId: 1, quantity: 1);
 
-        Assert.Null(warning);
-        Assert.Equal(3, result.Turn);
-        Assert.Equal(0, result.Player.Portfolio.QuantityOf(instrumentId: 1));
+        Assert.Null(turn.Warning);
+        Assert.Equal(3, turn.Game.Turn);
+        Assert.Equal(0, turn.Game.Player.Portfolio.QuantityOf(instrumentId: 1));
     }
 
     [Fact]
@@ -126,13 +114,11 @@ public class TurnProcessorTests
         var game = CreateGame();
         var processor = CreateProcessor();
 
-        var r = processor.Wait(game, fee: 0);
-        var result = r.Game;
-        var warning = r.Warning;
+        var turn = processor.Wait(game, fee: 0);
 
-        Assert.Null(warning);
-        Assert.Equal(2, result.Turn);
-        Assert.Equal(10000, result.Player.Portfolio.Cash);
+        Assert.Null(turn.Warning);
+        Assert.Equal(2, turn.Game.Turn);
+        Assert.Equal(10000, turn.Game.Player.Portfolio.Cash);
     }
 
     [Fact]
@@ -161,15 +147,13 @@ public class TurnProcessorTests
         var game = CreateGame();
         var processor = CreateProcessor();
 
-        var r = processor.Sell(game, fee: 0, instrumentId: 1, quantity: 1);
-        var result = r.Game;
-        var warning = r.Warning;
+        var turn = processor.Sell(game, fee: 0, instrumentId: 1, quantity: 1);
 
-        Assert.NotNull(warning);
+        Assert.NotNull(turn.Warning);
         // コンピューター注文は生成済みなのでターンは進む（Waitと同じ挙動）
-        Assert.Equal(2, result.Turn);
+        Assert.Equal(2, turn.Game.Turn);
         // ポートフォリオは変わらない
-        Assert.Equal(10000, result.Player.Portfolio.Cash);
+        Assert.Equal(10000, turn.Game.Player.Portfolio.Cash);
     }
 
     [Fact]
@@ -180,14 +164,12 @@ public class TurnProcessorTests
         var game = CreateGame(expensivePrices);
         var processor = CreateProcessor();
 
-        var r = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 1);
-        var result = r.Game;
-        var warning = r.Warning;
+        var turn = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 1);
 
-        Assert.Equal(Messages.InsufficientCashToBuy, warning);
+        Assert.Equal(Messages.InsufficientCashToBuy, turn.Warning);
         // コンピューター注文は生成済みなのでターンは進む（Waitと同じ挙動）
-        Assert.Equal(2, result.Turn);
-        Assert.Equal(10000, result.Player.Portfolio.Cash);
+        Assert.Equal(2, turn.Game.Turn);
+        Assert.Equal(10000, turn.Game.Player.Portfolio.Cash);
     }
 
     [Fact]
@@ -196,12 +178,10 @@ public class TurnProcessorTests
         var game = CreateGame();
         var processor = CreateProcessor();
 
-        var r = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 0);
-        var result = r.Game;
-        var warning = r.Warning;
+        var turn = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 0);
 
-        Assert.Equal(Messages.QuantityMustBePositive, warning);
-        Assert.Equal(1, result.Turn);
+        Assert.Equal(Messages.QuantityMustBePositive, turn.Warning);
+        Assert.Equal(1, turn.Game.Turn);
     }
 
     [Fact]
@@ -243,12 +223,10 @@ public class TurnProcessorTests
         // 手数料なしで購入した場合の残高を基準にする
         var resultNoFee = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 1).Game;
         var processor2 = CreateProcessor();
-        var rWithFee = processor2.Buy(game, fee: 50, instrumentId: 1, quantity: 1);
-        var resultWithFee = rWithFee.Game;
-        var warning = rWithFee.Warning;
+        var turnWithFee = processor2.Buy(game, fee: 50, instrumentId: 1, quantity: 1);
 
-        Assert.Null(warning);
-        Assert.Equal(resultNoFee.Player.Portfolio.Cash - 50, resultWithFee.Player.Portfolio.Cash);
+        Assert.Null(turnWithFee.Warning);
+        Assert.Equal(resultNoFee.Player.Portfolio.Cash - 50, turnWithFee.Game.Player.Portfolio.Cash);
     }
 
     // --- 指値注文 ---
@@ -260,13 +238,11 @@ public class TurnProcessorTests
         var processor = CreateProcessor();
 
         // 高い指値で確実にマッチさせる（コンピューター売り注文は95-115%の範囲）
-        var r = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 1, price: 115);
-        var result = r.Game;
-        var warning = r.Warning;
+        var turn = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 1, price: 115);
 
-        Assert.Null(warning);
-        Assert.Equal(2, result.Turn);
-        Assert.Equal(1, result.Player.Portfolio.QuantityOf(instrumentId: 1));
+        Assert.Null(turn.Warning);
+        Assert.Equal(2, turn.Game.Turn);
+        Assert.Equal(1, turn.Game.Player.Portfolio.QuantityOf(instrumentId: 1));
     }
 
     [Fact]
@@ -276,13 +252,11 @@ public class TurnProcessorTests
         var processor = CreateProcessor();
 
         var bought = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 1).Game;
-        var r = processor.Sell(bought, fee: 0, instrumentId: 1, quantity: 1, price: 90);
-        var result = r.Game;
-        var warning = r.Warning;
+        var turn = processor.Sell(bought, fee: 0, instrumentId: 1, quantity: 1, price: 90);
 
-        Assert.Null(warning);
-        Assert.Equal(3, result.Turn);
-        Assert.Equal(0, result.Player.Portfolio.QuantityOf(instrumentId: 1));
+        Assert.Null(turn.Warning);
+        Assert.Equal(3, turn.Game.Turn);
+        Assert.Equal(0, turn.Game.Player.Portfolio.QuantityOf(instrumentId: 1));
     }
 
     [Fact]
@@ -292,17 +266,15 @@ public class TurnProcessorTests
         var processor = CreateProcessor();
 
         // 非常に低い価格で指値買い → 板の売り注文とマッチしない
-        var r = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 2, price: 1);
-        var result = r.Game;
-        var warning = r.Warning;
+        var turn = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 2, price: 1);
 
-        Assert.Null(warning);
-        Assert.Equal(2, result.Turn);
+        Assert.Null(turn.Warning);
+        Assert.Equal(2, turn.Game.Turn);
         // ポートフォリオは変わらない
-        Assert.Equal(10000, result.Player.Portfolio.Cash);
-        Assert.Equal(0, result.Player.Portfolio.QuantityOf(instrumentId: 1));
+        Assert.Equal(10000, turn.Game.Player.Portfolio.Cash);
+        Assert.Equal(0, turn.Game.Player.Portfolio.QuantityOf(instrumentId: 1));
         // 指値注文が板に残っている
-        var buyOrders = result.OrderBook.BuyOrders(1);
+        var buyOrders = turn.Game.OrderBook.BuyOrders(1);
         Assert.Contains(buyOrders, o => o.TraderId == "player" && o.Price == 1 && o.Quantity == 2);
     }
 
@@ -313,18 +285,16 @@ public class TurnProcessorTests
         var processor = CreateProcessor();
 
         // 高い指値 + 大量の数量で部分約定を確認
-        var r = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 100, price: 115);
-        var result = r.Game;
-        var warning = r.Warning;
+        var turn = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 100, price: 115);
 
-        Assert.Null(warning);
-        Assert.Equal(2, result.Turn);
+        Assert.Null(turn.Warning);
+        Assert.Equal(2, turn.Game.Turn);
         // 何かしら約定している
-        Assert.True(result.Player.Portfolio.QuantityOf(instrumentId: 1) > 0);
+        Assert.True(turn.Game.Player.Portfolio.QuantityOf(instrumentId: 1) > 0);
         // 全量は約定していない（コンピューター売り注文は最大10件で各1株）
-        Assert.True(result.Player.Portfolio.QuantityOf(instrumentId: 1) < 100);
+        Assert.True(turn.Game.Player.Portfolio.QuantityOf(instrumentId: 1) < 100);
         // 未約定分が板に残っている
-        var buyOrders = result.OrderBook.BuyOrders(1);
+        var buyOrders = turn.Game.OrderBook.BuyOrders(1);
         Assert.Contains(buyOrders, o => o.TraderId == "player" && o.Price == 115);
     }
 
@@ -334,12 +304,10 @@ public class TurnProcessorTests
         var game = CreateGame();
         var processor = CreateProcessor();
 
-        var r = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 1, price: 0);
-        var result = r.Game;
-        var warning = r.Warning;
+        var turn = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 1, price: 0);
 
-        Assert.Equal(Messages.PriceMustBePositive, warning);
-        Assert.Equal(1, result.Turn);
+        Assert.Equal(Messages.PriceMustBePositive, turn.Warning);
+        Assert.Equal(1, turn.Game.Turn);
     }
 
     // --- 株価変動 ---
@@ -364,12 +332,10 @@ public class TurnProcessorTests
         var fluctuator = new RandomPriceFluctuator(new Random(42));
         var processor = CreateProcessor(fluctuator: fluctuator);
 
-        var r = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 1);
-        var result = r.Game;
-        var warning = r.Warning;
+        var turn = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 1);
 
-        Assert.Null(warning);
-        Assert.NotEqual(game.Prices, result.Prices);
+        Assert.Null(turn.Warning);
+        Assert.NotEqual(game.Prices, turn.Game.Prices);
     }
 
     [Fact]
@@ -384,12 +350,10 @@ public class TurnProcessorTests
         // 売却時は変動あり
         var fluctuator = new RandomPriceFluctuator(new Random(42));
         var sellProcessor = CreateProcessor(fluctuator: fluctuator);
-        var r = sellProcessor.Sell(bought, fee: 0, instrumentId: 1, quantity: 1);
-        var result = r.Game;
-        var warning = r.Warning;
+        var turn = sellProcessor.Sell(bought, fee: 0, instrumentId: 1, quantity: 1);
 
-        Assert.Null(warning);
-        Assert.NotEqual(bought.Prices, result.Prices);
+        Assert.Null(turn.Warning);
+        Assert.NotEqual(bought.Prices, turn.Game.Prices);
     }
 
     [Fact]
@@ -414,12 +378,10 @@ public class TurnProcessorTests
         var processor = CreateProcessor(fluctuator: fluctuator);
 
         // 保有なしで売却 → 失敗だがターンは進む（Waitと同じ挙動）
-        var r = processor.Sell(game, fee: 0, instrumentId: 1, quantity: 1);
-        var result = r.Game;
-        var warning = r.Warning;
+        var turn = processor.Sell(game, fee: 0, instrumentId: 1, quantity: 1);
 
-        Assert.NotNull(warning);
-        Assert.NotEqual(game.Prices, result.Prices);
+        Assert.NotNull(turn.Warning);
+        Assert.NotEqual(game.Prices, turn.Game.Prices);
     }
 
     [Fact]
@@ -429,18 +391,16 @@ public class TurnProcessorTests
         var processor = CreateProcessor();
 
         // 保有なしで売却 → 失敗
-        var r = processor.Sell(game, fee: 0, instrumentId: 1, quantity: 1);
-        var result = r.Game;
-        var warning = r.Warning;
+        var turn = processor.Sell(game, fee: 0, instrumentId: 1, quantity: 1);
 
-        Assert.NotNull(warning);
+        Assert.NotNull(turn.Warning);
         // コンピューター注文は板に残っている（約定分は消える）
-        var totalBuys = result.OrderBook.BuyOrders(1).Count
-            + result.OrderBook.BuyOrders(2).Count
-            + result.OrderBook.BuyOrders(3).Count;
-        var totalSells = result.OrderBook.SellOrders(1).Count
-            + result.OrderBook.SellOrders(2).Count
-            + result.OrderBook.SellOrders(3).Count;
+        var totalBuys = turn.Game.OrderBook.BuyOrders(1).Count
+            + turn.Game.OrderBook.BuyOrders(2).Count
+            + turn.Game.OrderBook.BuyOrders(3).Count;
+        var totalSells = turn.Game.OrderBook.SellOrders(1).Count
+            + turn.Game.OrderBook.SellOrders(2).Count
+            + turn.Game.OrderBook.SellOrders(3).Count;
         Assert.True(totalBuys + totalSells > 0, "コンピューター注文が板に残っているべき");
     }
 
@@ -453,12 +413,10 @@ public class TurnProcessorTests
         var processor = new TurnProcessor(noOpPlacer, new NoPriceFluctuator());
 
         // 板に売り注文がないので成行買いは約定しない
-        var r = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 1);
-        var result = r.Game;
-        var warning = r.Warning;
+        var turn = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 1);
 
-        Assert.NotNull(warning);
-        Assert.Equal(2, result.Turn);
+        Assert.NotNull(turn.Warning);
+        Assert.Equal(2, turn.Game.Turn);
     }
 
     // --- 注文の有効期限 ---
