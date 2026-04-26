@@ -139,6 +139,13 @@
 
 ゲームの注文帳（`OrderBook`）状態を取得する。デバッグ・管理用途。
 
+**クエリパラメータ:**
+
+| 名前 | 型 | デフォルト | 備考 |
+|---|---|---|---|
+| page | int | 1 | 1始まり。`<1` は 400 |
+| pageSize | int | 50 | 1–200。範囲外は 400 |
+
 **レスポンス:** `200 OK`
 
 ```json
@@ -155,11 +162,18 @@
       "stopPrice": null,
       "createdAtTurn": 1
     }
-  ]
+  ],
+  "totalCount": 1,
+  "page": 1,
+  "pageSize": 50
 }
 ```
 
-**エラー:** `404 Not Found`（ゲームが存在しない場合）
+`page` がデータ範囲を超えた場合、`orders` は空配列、`totalCount` には全件数が入る。
+
+**エラー:**
+- `400 Bad Request`（`page < 1` / `pageSize < 1` / `pageSize > 200`）
+- `404 Not Found`（ゲームが存在しない場合）
 
 ---
 
@@ -217,7 +231,10 @@ fee             : int
 ### OrderBookResponse / OrderDto
 
 ```
-orders : OrderDto[]
+orders      : OrderDto[]
+totalCount  : int   # 全注文件数（ページング前）
+page        : int   # 現在のページ番号（1始まり）
+pageSize    : int   # 1ページあたりの最大件数
 
 OrderDto:
   id             : int
