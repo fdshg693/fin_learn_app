@@ -1,3 +1,8 @@
+---
+paths:
+  - "frontend/**"
+---
+
 ## Frontend
 
 React 19 + React Router v7（フレームワークモード、SSR 有効）+ Tailwind CSS v4 のアプリケーション。

@@ -1,6 +1,6 @@
 ---
 name: update-docs
-description: always use this SKILL after you write code which could impact existing knowledge in `CLAUDE.md` or which add new features that should be documented. This SKILL will help you update `CLAUDE.md` files with the new knowledge.
+description: | always use this SKILL after you write code which could impact existing knowledge in `CLAUDE.md` or which add new features that should be documented. This SKILL will help you update `CLAUDE.md` files with the new knowledge.
 ---
 
 # ドキュメント更新手順
@@ -11,25 +11,17 @@ description: always use this SKILL after you write code which could impact exist
 
 変更したファイルのパスから、更新すべきドキュメントの範囲を判定する:
 
-| 変更箇所 | 更新対象 |
-|---|---|
-| `src/FinLearn.Core/` | `src/FinLearn.Core/CLAUDE.md`, `docs/DDD/MAIN.md` |
-| `src/FinLearn.Api/` | `src/FinLearn.Api/CLAUDE.md` |
-| `frontend/` | `frontend/CLAUDE.md` |
-| `tests/` | `tests/CLAUDE.md` |
-| インフラ (`gcp_terraform/`, `azure_infra/`) | 各フォルダの `CLAUDE.md` |
-| プロジェクト全体に影響する変更 | ルート `CLAUDE.md` |
+## 2. `.claude/rules/` の更新
 
-## 2. CLAUDE.md の更新
-
-1. 関連する `CLAUDE.md` を Grep で今回の変更に関するキーワードを検索、または直接読むことで、どの部分を更新すべきか特定する
+**writing-rules** スキルを使って、関連するルールファイルを更新する:
+1. 関連する `.claude/rules/` を Grep で今回の変更に関するキーワードを検索、または直接読むことで、どの部分を更新すべきか特定する
 2. 以下に該当する場合のみ更新する:
    - 新しいクラス・インターフェース・ドメインモデルを追加した
    - 既存モデルの責務・振る舞いが変わった
    - ビルド・テスト手順に変更がある
    - 設計パターンや規約が変わった・追加された
 3. 既存の記述と矛盾する内容は削除または修正する。まだ有効な記述は残す
-4. `write-docs` スキルのスタイルガイドに従うこと（簡潔・具体的・現在形）
+
 
 ## 3. DDD ドキュメントの更新 (`docs/DDD/`)
 
@@ -58,6 +50,5 @@ description: always use this SKILL after you write code which could impact exist
 
 ## 注意
 
-- ドキュメントの書き方は `write-docs` スキルに従う
-- 各 `CLAUDE.md` は 150 行以内に収める
-- 更新時は最小限の差分で済ませる。不要な並び替えやフォーマット変更はしない
+- ドキュメントの書き方は `writing-rules` スキルに従う
+- 各 `.claude/rules/` 配下のファイルは 150 行以内に収める

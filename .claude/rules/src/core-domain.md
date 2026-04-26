@@ -1,3 +1,8 @@
+---
+paths:
+  - "src/FinLearn.Core/**"
+---
+
 ## FinLearn.Core — Domain Model
 
 Pure domain layer with zero external dependencies. All types are **immutable sealed records/classes**.

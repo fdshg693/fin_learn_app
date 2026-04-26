@@ -1,3 +1,8 @@
+---
+paths:
+  - "src/FinLearn.Api/**"
+---
+
 ## FinLearn.Api — REST API (Minimal API)
 
 ASP.NET Core Minimal API layer. Translates HTTP requests into `TurnProcessor` calls and maps domain objects to JSON DTOs.

@@ -18,6 +18,11 @@
       "source": "./meta"
     },
     {
+      "name": "plans",
+      "description": "For plan-related skills",
+      "source": "./plans"
+    },
+    {
       "name": "subagents",
       "description": "For Using Subagents",
       "source": "./subagents"

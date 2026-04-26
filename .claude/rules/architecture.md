@@ -1,3 +1,8 @@
+---
+paths:
+  - "**"
+---
+
 ## Architecture
 
 - **Framework:** .NET 9, C# with nullable reference types

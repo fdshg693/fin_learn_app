@@ -1,3 +1,8 @@
+---
+paths:
+  - "claude-automate/**"
+---
+
 ## Overview
 
 Claude Agent SDK (`@anthropic-ai/claude-agent-sdk`) を使った自動化ランナー。`.claude/agents` 等の組み込み機構には依存せず、独自にエージェントとプロンプトを管理する。

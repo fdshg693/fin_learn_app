@@ -113,7 +113,9 @@ Every step must contain the actual content an engineer needs. These are **plan f
 - Exact commands with expected output
 - DRY, YAGNI, TDD, frequent commits
 
-## Self-Review
+## Review
+
+### 1.Self-Review
 
 After writing the complete plan, look at the spec with fresh eyes and check the plan against it. This is a checklist you run yourself — not a subagent dispatch.
 
@@ -125,7 +127,7 @@ After writing the complete plan, look at the spec with fresh eyes and check the 
 
 If you find issues, fix them inline. No need to re-review — just fix and move on. If you find a spec requirement with no task, add the task.
 
-## Subagent-Review
+### 2. Subagent-Review
 
 Use this template when dispatching a plan document reviewer subagent.
 
@@ -174,3 +176,7 @@ Task tool (general-purpose):
 ```
 
 **Reviewer returns:** Status, Issues (if any), Recommendations
+
+Loop until status is "Approved". 
+If issues are found, fix them and re-dispatch the review.
+If recommendations are given, always fix them, but they do not need to be re-reviewed.
