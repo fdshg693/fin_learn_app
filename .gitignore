@@ -1,7 +1,10 @@
-.claude/settings.local.json
-.github/agents
-*mcp.json
 node_modules/
+
+*.json
+!sample.json
+
+claude-automate/prompts
+!claude-automate/prompts/sample*
 
 .DS_Store
 .env

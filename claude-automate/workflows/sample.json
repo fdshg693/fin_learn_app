@@ -1,0 +1,14 @@
+{
+  "name": "Sample Workflow",
+  "description": "Sample workflow for testing and demonstration purposes.",
+  "steps": [
+    {
+      "agent": "sample",
+      "prompt": "sample.md"
+    },
+    {
+      "agent": "sample",
+      "prompt": "sample.md"
+    }
+  ]
+}
