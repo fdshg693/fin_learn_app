@@ -5,7 +5,7 @@ namespace FinLearn.Core;
 /// </summary>
 public interface IOrderPlacer
 {
-    (OrderBook UpdatedBook, int NextOrderId) PlaceOrders(
+    (OrderBook UpdatedBook, int NextOrderId, IReadOnlyList<Order> PlacedOrders) PlaceOrders(
         OrderBook book,
         IExchange exchange,
         IReadOnlyList<Instrument> instruments,

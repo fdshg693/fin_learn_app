@@ -15,7 +15,7 @@ public class ComputerTraderTests
         var trader = new ComputerTrader(new Random(42));
         var exchange = TestData.CreateExchange((1, 100), (2, 200), (3, 300));
 
-        var (book, _) = trader.PlaceOrders(new OrderBook(), exchange, Instruments, startOrderId: 1, currentTurn: 1);
+        var (book, _, _) = trader.PlaceOrders(new OrderBook(), exchange, Instruments, startOrderId: 1, currentTurn: 1);
 
         var totalBuys = book.BuyOrders(1).Count + book.BuyOrders(2).Count + book.BuyOrders(3).Count;
         Assert.InRange(totalBuys, 1, 10);
@@ -27,7 +27,7 @@ public class ComputerTraderTests
         var trader = new ComputerTrader(new Random(42));
         var exchange = TestData.CreateExchange((1, 100), (2, 200), (3, 300));
 
-        var (book, _) = trader.PlaceOrders(new OrderBook(), exchange, Instruments, startOrderId: 1, currentTurn: 1);
+        var (book, _, _) = trader.PlaceOrders(new OrderBook(), exchange, Instruments, startOrderId: 1, currentTurn: 1);
 
         var totalSells = book.SellOrders(1).Count + book.SellOrders(2).Count + book.SellOrders(3).Count;
         Assert.InRange(totalSells, 1, 10);
@@ -39,7 +39,7 @@ public class ComputerTraderTests
         var trader = new ComputerTrader(new Random(42));
         var exchange = TestData.CreateExchange((1, 100), (2, 200), (3, 300));
 
-        var (book, _) = trader.PlaceOrders(new OrderBook(), exchange, Instruments, startOrderId: 1, currentTurn: 1);
+        var (book, _, _) = trader.PlaceOrders(new OrderBook(), exchange, Instruments, startOrderId: 1, currentTurn: 1);
 
         foreach (var order in book.BuyOrders(1))
             Assert.InRange(order.Price!.Value, 85, 105);
@@ -55,7 +55,7 @@ public class ComputerTraderTests
         var trader = new ComputerTrader(new Random(42));
         var exchange = TestData.CreateExchange((1, 100), (2, 200), (3, 300));
 
-        var (book, _) = trader.PlaceOrders(new OrderBook(), exchange, Instruments, startOrderId: 1, currentTurn: 1);
+        var (book, _, _) = trader.PlaceOrders(new OrderBook(), exchange, Instruments, startOrderId: 1, currentTurn: 1);
 
         foreach (var order in book.SellOrders(1))
             Assert.InRange(order.Price!.Value, 95, 115);
@@ -71,7 +71,7 @@ public class ComputerTraderTests
         var trader = new ComputerTrader(new Random(42));
         var exchange = TestData.CreateExchange((1, 100), (2, 200), (3, 300));
 
-        var (book, _) = trader.PlaceOrders(new OrderBook(), exchange, Instruments, startOrderId: 1, currentTurn: 5);
+        var (book, _, _) = trader.PlaceOrders(new OrderBook(), exchange, Instruments, startOrderId: 1, currentTurn: 5);
 
         for (int id = 1; id <= 3; id++)
         {
@@ -88,7 +88,7 @@ public class ComputerTraderTests
         var trader = new ComputerTrader(new Random(42));
         var exchange = TestData.CreateExchange((1, 100), (2, 200), (3, 300));
 
-        var (book, _) = trader.PlaceOrders(new OrderBook(), exchange, Instruments, startOrderId: 1, currentTurn: 1);
+        var (book, _, _) = trader.PlaceOrders(new OrderBook(), exchange, Instruments, startOrderId: 1, currentTurn: 1);
 
         for (int id = 1; id <= 3; id++)
         {
@@ -105,7 +105,7 @@ public class ComputerTraderTests
         var trader = new ComputerTrader(new Random(42));
         var exchange = TestData.CreateExchange((1, 100), (2, 200), (3, 300));
 
-        var (book, _) = trader.PlaceOrders(new OrderBook(), exchange, Instruments, startOrderId: 1, currentTurn: 1);
+        var (book, _, _) = trader.PlaceOrders(new OrderBook(), exchange, Instruments, startOrderId: 1, currentTurn: 1);
 
         for (int id = 1; id <= 3; id++)
         {
@@ -122,7 +122,7 @@ public class ComputerTraderTests
         var trader = new ComputerTrader(new Random(42));
         var exchange = TestData.CreateExchange((1, 100), (2, 200), (3, 300));
 
-        var (_, nextId) = trader.PlaceOrders(new OrderBook(), exchange, Instruments, startOrderId: 100, currentTurn: 1);
+        var (_, nextId, _) = trader.PlaceOrders(new OrderBook(), exchange, Instruments, startOrderId: 100, currentTurn: 1);
 
         Assert.Equal(120, nextId);
     }
@@ -146,7 +146,7 @@ public class ComputerTraderTests
         var trader = new ComputerTrader(new Random(42));
         var exchange = TestData.CreateExchange((1, 1), (2, 1), (3, 1));
 
-        var (book, _) = trader.PlaceOrders(new OrderBook(), exchange, Instruments, startOrderId: 1, currentTurn: 1);
+        var (book, _, _) = trader.PlaceOrders(new OrderBook(), exchange, Instruments, startOrderId: 1, currentTurn: 1);
 
         for (int id = 1; id <= 3; id++)
         {
@@ -166,7 +166,7 @@ public class ComputerTraderTests
         // seedを調整: 買い注文が銘柄1に対して100以上の価格で生成されることを確認するため
         // 複数の買い注文を生成するので、少なくとも1つは銘柄1に対して価格>=100になるはず
         var trader = new ComputerTrader(new Random(42));
-        var (resultBook, _) = trader.PlaceOrders(book, exchange, Instruments, startOrderId: 2, currentTurn: 1);
+        var (resultBook, _, _) = trader.PlaceOrders(book, exchange, Instruments, startOrderId: 2, currentTurn: 1);
 
         // 既存の売り注文（価格100）がマッチングされて板から消えているか、
         // または部分的に約定して数量が減っている
@@ -194,7 +194,7 @@ public class ComputerTraderTests
         var exchange = TestData.CreateExchange((1, 100), (2, 200), (3, 300));
         var trader = new ComputerTrader(new Random(42));
 
-        var (book, _) = trader.PlaceOrders(new OrderBook(), exchange, Instruments, startOrderId: 1, currentTurn: 1);
+        var (book, _, _) = trader.PlaceOrders(new OrderBook(), exchange, Instruments, startOrderId: 1, currentTurn: 1);
 
         // マッチングなしなら20件、マッチングありなら20未満
         var totalOrders = 0;
@@ -216,10 +216,28 @@ public class ComputerTraderTests
         var exchange = TestData.CreateExchange((1, 100), (2, 200), (3, 300));
         var trader = new ComputerTrader(new Random(42));
 
-        var (resultBook, _) = trader.PlaceOrders(book, exchange, Instruments, startOrderId: 2, currentTurn: 1);
+        var (resultBook, _, _) = trader.PlaceOrders(book, exchange, Instruments, startOrderId: 2, currentTurn: 1);
 
         // 売り@90はどの買い注文（85-105）とも交差しやすいので約定するはず
         var remainingSell = resultBook.SellOrders(1).FirstOrDefault(o => o.Id == 1);
         Assert.Null(remainingSell); // 数量1なので完全約定して消えるはず
+    }
+
+    [Fact]
+    public void PlaceOrders_は実際に板に追加した注文をPlacedOrdersで返す()
+    {
+        var trader = new ComputerTrader(new Random(42));
+        var instruments = new[] { TestData.Instrument1, TestData.Instrument2 };
+        var exchange = TestData.CreateExchange(fee: 0, (1, 100), (2, 100));
+
+        var (book, nextId, placed) = trader.PlaceOrders(
+            new OrderBook(), exchange, instruments, startOrderId: 100, currentTurn: 5);
+
+        Assert.Equal(20, placed.Count);
+        Assert.All(placed, o => Assert.Equal("computer", o.TraderId));
+        Assert.All(placed, o => Assert.Equal(5, o.CreatedAtTurn));
+        Assert.Equal(100, placed[0].Id);
+        Assert.Equal(119, placed[^1].Id);
+        Assert.Equal(120, nextId);
     }
 }

@@ -20,7 +20,7 @@ public sealed class ComputerTrader : IOrderPlacer
     /// 注文を生成してOrderBookに追加する。
     /// 買い注文10個（株価の85〜105%）と売り注文10個（株価の95〜115%）を銘柄にランダム分散。
     /// </summary>
-    public (OrderBook UpdatedBook, int NextOrderId) PlaceOrders(
+    public (OrderBook UpdatedBook, int NextOrderId, IReadOnlyList<Order> PlacedOrders) PlaceOrders(
         OrderBook book,
         IExchange exchange,
         IReadOnlyList<Instrument> instruments,
@@ -29,6 +29,7 @@ public sealed class ComputerTrader : IOrderPlacer
     {
         var currentId = startOrderId;
         var updatedBook = book;
+        var placed = new List<Order>(BuyOrderCount + SellOrderCount);
 
         // 買い注文: 株価の85〜105%
         for (int i = 0; i < BuyOrderCount; i++)
@@ -39,6 +40,7 @@ public sealed class ComputerTrader : IOrderPlacer
             var percent = _random.Next(85, 106); // 85〜105
             var price = Math.Max(1, marketPrice * percent / 100);
             var order = new Order(currentId++, TraderId, instrument, OrderSide.Buy, 1, price, currentTurn);
+            placed.Add(order);
             updatedBook = PlaceWithMatching(updatedBook, order);
         }
 
@@ -51,10 +53,11 @@ public sealed class ComputerTrader : IOrderPlacer
             var percent = _random.Next(95, 116); // 95〜115
             var price = Math.Max(1, marketPrice * percent / 100);
             var order = new Order(currentId++, TraderId, instrument, OrderSide.Sell, 1, price, currentTurn);
+            placed.Add(order);
             updatedBook = PlaceWithMatching(updatedBook, order);
         }
 
-        return (updatedBook, currentId);
+        return (updatedBook, currentId, placed);
     }
 
     /// <summary>

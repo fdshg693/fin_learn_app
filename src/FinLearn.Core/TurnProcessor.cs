@@ -56,7 +56,7 @@ public sealed class TurnProcessor
     public (Game Result, TradeResult? Trade, string? Warning) Wait(Game game, int fee)
     {
         var exchange = ExchangeFactory.Create(game.Prices, fee);
-        var (bookWithOrders, nextId) = OrderPlacer.PlaceOrders(game.OrderBook, exchange, game.Instruments, game.NextOrderId, game.Turn);
+        var (bookWithOrders, nextId, _) = OrderPlacer.PlaceOrders(game.OrderBook, exchange, game.Instruments, game.NextOrderId, game.Turn);
         return (AdvanceTurn(game, game.Player, bookWithOrders, nextId), null, null);
     }
 
@@ -67,7 +67,7 @@ public sealed class TurnProcessor
         var exchange = ExchangeFactory.Create(game.Prices, fee);
 
         // 1. コンピューター注文を生成 → プレイヤー注文を生成 → 市場で約定
-        var (bookWithOrders, nextId) = OrderPlacer.PlaceOrders(game.OrderBook, exchange, game.Instruments, game.NextOrderId, game.Turn);
+        var (bookWithOrders, nextId, _) = OrderPlacer.PlaceOrders(game.OrderBook, exchange, game.Instruments, game.NextOrderId, game.Turn);
         var order = game.Player.CreateOrder(nextId, instrument, side, quantity, price, stopPrice, game.Turn);
         var matchResult = Market.Execute(bookWithOrders, order, exchange);
 
