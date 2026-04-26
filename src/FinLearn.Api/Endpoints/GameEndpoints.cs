@@ -35,25 +35,27 @@ public static class GameEndpoints
         return Results.Ok(GameMapper.ToResponse(id, game, exchange));
     }
 
-    private static IResult Buy(string id, OrderRequest request, GameStore store, TurnProcessor processor, IExchangeFactory exchangeFactory, GameConfig config)
+    private static IResult Buy(string id, OrderRequest request, GameStore store, TurnProcessor processor, IExchangeFactory exchangeFactory, GameConfig config, ILogger<Program> logger)
     {
-        return ProcessOrder(id, request, store, processor, exchangeFactory, config,
+        return ProcessOrder(id, request, store, processor, exchangeFactory, config, logger,
             (g, fee, req) => processor.Buy(g, fee, req.InstrumentId, req.Quantity, req.Price, req.StopPrice));
     }
 
-    private static IResult Sell(string id, OrderRequest request, GameStore store, TurnProcessor processor, IExchangeFactory exchangeFactory, GameConfig config)
+    private static IResult Sell(string id, OrderRequest request, GameStore store, TurnProcessor processor, IExchangeFactory exchangeFactory, GameConfig config, ILogger<Program> logger)
     {
-        return ProcessOrder(id, request, store, processor, exchangeFactory, config,
+        return ProcessOrder(id, request, store, processor, exchangeFactory, config, logger,
             (g, fee, req) => processor.Sell(g, fee, req.InstrumentId, req.Quantity, req.Price, req.StopPrice));
     }
 
-    private static IResult Wait(string id, GameStore store, TurnProcessor processor, IExchangeFactory exchangeFactory, GameConfig config)
+    private static IResult Wait(string id, GameStore store, TurnProcessor processor, IExchangeFactory exchangeFactory, GameConfig config, ILogger<Program> logger)
     {
         var game = store.GetGame(id);
         if (game is null) return Results.NotFound();
 
         var turn = processor.Wait(game, config.Fee);
         store.UpdateGame(id, turn.Game);
+        LogTurnEvents(logger, id, turn);
+
         var exchange = exchangeFactory.Create(turn.Game.Prices, config.Fee);
         var recentTrades = store.GetRecentTrades(id);
         return Results.Ok(GameMapper.ToResponse(id, turn.Game, exchange, recentTrades: recentTrades));
@@ -61,7 +63,7 @@ public static class GameEndpoints
 
     private static IResult ProcessOrder(
         string id, OrderRequest request, GameStore store, TurnProcessor processor,
-        IExchangeFactory exchangeFactory, GameConfig config,
+        IExchangeFactory exchangeFactory, GameConfig config, ILogger<Program> logger,
         Func<Game, int, OrderRequest, TurnResult> action)
     {
         var game = store.GetGame(id);
@@ -73,8 +75,22 @@ public static class GameEndpoints
             store.UpdateGame(id, turn.Game);
             if (turn.Trade is not null) store.AddTrade(id, turn.Trade);
         }
+        LogTurnEvents(logger, id, turn);
+
         var exchange = exchangeFactory.Create(turn.Game.Prices, config.Fee);
         var recentTrades = store.GetRecentTrades(id);
         return Results.Ok(GameMapper.ToResponse(id, turn.Game, exchange, turn.Warning, recentTrades));
+    }
+
+    private static void LogTurnEvents(ILogger logger, string gameId, TurnResult result)
+    {
+        logger.LogInformation(
+            "OrdersSubmitted Game={GameId} Turn={Turn} Count={Count} Warning={Warning} {@Orders}",
+            gameId, result.ProcessedTurn, result.SubmittedOrders.Count,
+            result.Warning, result.SubmittedOrders);
+
+        logger.LogInformation(
+            "OrdersMatched Game={GameId} Turn={Turn} Count={Count} {@Fills}",
+            gameId, result.ProcessedTurn, result.Fills.Count, result.Fills);
     }
 }
