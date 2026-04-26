@@ -2,7 +2,7 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "./lib/cli.mjs";
 import { loadAgents } from "./lib/agents.mjs";
-import { loadPrompt, resolvePromptName } from "./lib/prompts.mjs";
+import { loadPrompt, resolvePrompt } from "./lib/prompts.mjs";
 import { loadWorkflow } from "./lib/workflows.mjs";
 import { run } from "./lib/runner.mjs";
 
@@ -11,7 +11,7 @@ const AGENTS_DIR = resolve(__dirname, "agents");
 const PROMPTS_DIR = resolve(__dirname, "prompts");
 const WORKFLOWS_DIR = resolve(__dirname, "workflows");
 
-const { workflowName, agentName, promptName } = parseArgs(process.argv);
+const { workflowName, agentName, promptName, promptRaw } = parseArgs(process.argv);
 
 // --- エージェント読み込み ---
 const agents = await loadAgents(AGENTS_DIR);
@@ -35,7 +35,7 @@ if (workflowName) {
   workflow = await loadWorkflow(WORKFLOWS_DIR, workflowName);
   steps = workflow.steps;
 } else {
-  steps = [{ agentName, promptName }];
+  steps = [{ agentName, promptName, promptRaw }];
 }
 
 // --- ステップを直列実行 ---
@@ -43,12 +43,16 @@ const results = [];
 for (let i = 0; i < steps.length; i++) {
   const step = steps[i];
   const agent = resolveAgent(step.agentName);
-  const resolvedPromptName = resolvePromptName(step.promptName, agent);
-  const prompt = await loadPrompt(PROMPTS_DIR, resolvedPromptName);
+  const resolved = resolvePrompt(step.promptName, step.promptRaw, agent);
+  const prompt =
+    resolved.kind === "raw"
+      ? resolved.text
+      : await loadPrompt(PROMPTS_DIR, resolved.name);
+  const promptLabel = resolved.kind === "raw" ? "<raw>" : resolved.name;
 
   if (workflow) {
     console.log(
-      `\n=== Step ${i + 1}/${steps.length}: ${agent.name} (${resolvedPromptName}) ===`,
+      `\n=== Step ${i + 1}/${steps.length}: ${agent.name} (${promptLabel}) ===`,
     );
   }
 
@@ -56,7 +60,7 @@ for (let i = 0; i < steps.length; i++) {
   results.push({
     step: i + 1,
     agent: agent.name,
-    prompt: resolvedPromptName,
+    prompt: promptLabel,
     logPath,
   });
 }

@@ -48,6 +48,7 @@ export async function loadWorkflow(workflowsDir, workflowName) {
     steps: config.steps.map((step) => ({
       agentName: step.agent,
       promptName: step.prompt ?? null,
+      promptRaw: step.promptRaw ?? null,
     })),
   };
 }

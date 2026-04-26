@@ -21,6 +21,7 @@ export async function loadAgents(agentsDir) {
       name: config.name ?? key,
       description: config.description ?? "",
       defaultPrompt: config.defaultPrompt ?? null,
+      defaultPromptRaw: config.defaultPromptRaw ?? null,
       options: config.options ?? {},
     };
   }

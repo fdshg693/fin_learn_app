@@ -16,15 +16,19 @@ npm install
 ## 使い方
 
 ```bash
-node run.mjs [プロンプトファイル名] [--agent エージェント名]
+node run.mjs [--agent エージェント名] [--prompt プロンプトファイル名] [--prompt-raw "生のプロンプト文字列"]
 node run.mjs --workflow ワークフロー名
 ```
 
+すべてフラグ指定。位置引数は受け付けない（誤指定はエラーになる）。
+
 - プロンプトファイルは `prompts/` ディレクトリに `.md` で配置する
 - `--agent` を省略すると `plain` が使われる
-- プロンプトファイルを省略した場合、エージェントの `defaultPrompt` → `default.md` の順で解決される
-- `--workflow` 指定時は、`--agent` ・プロンプト引数の指定は無視される
+- `--prompt` を省略した場合、エージェントの `defaultPrompt` → `default.md` の順で解決される
+- `--prompt-raw` を指定するとプロンプトファイルの代わりに引数の文字列がそのままプロンプトとして渡される（`--prompt` より優先）
+- `--workflow` 指定時は、`--agent` ・`--prompt` ・`--prompt-raw` の指定は無視される
 - 実行終了後、各ステップの結果ログファイルのパスを標準出力に表示する
+- ヘルプは `node run.mjs --help` で確認できる
 
 ### エージェント一覧
 
@@ -37,10 +41,13 @@ node run.mjs --workflow ワークフロー名
 
 ```bash
 # Plain Agent でシンプルな質問に回答
-node run.mjs default.md
+node run.mjs --prompt default.md
 
 # File Agent でファイルを読んで要約
-node run.mjs file-test.md --agent file
+node run.mjs --agent file --prompt file-test.md
+
+# 生のプロンプト文字列を直接渡す
+node run.mjs --prompt-raw "今日の日付を教えて"
 
 # ワークフロー（直列）を実行
 node run.mjs --workflow sample
@@ -57,9 +64,10 @@ node run.mjs --workflow sample
 ```jsonc
 // agents/bash.json
 {
-  "name": "Bash Agent",          // 省略時はファイル名が表示名になる
+  "name": "Bash Agent",                   // 省略時はファイル名が表示名になる
   "description": "シェルコマンドを実行できる",
-  "defaultPrompt": "bash-task.md", // デフォルトプロンプト（省略可）
+  "defaultPrompt": "bash-task.md",        // デフォルトプロンプト（省略可）
+  "defaultPromptRaw": "ls -la を実行して", // 生プロンプト（省略可、defaultPrompt より優先）
   "options": {
     "maxTurns": 5,
     "allowedTools": ["Read", "Bash", "Glob"],
@@ -80,32 +88,13 @@ node run.mjs --workflow sample
   "description": "...",             // 省略可
   "steps": [
     { "agent": "file",  "prompt": "step1.md" },
-    { "agent": "plain", "prompt": "step2.md" }  // prompt は省略可
+    { "agent": "plain", "prompt": "step2.md" },        // prompt は省略可
+    { "agent": "plain", "promptRaw": "あいさつして" }    // promptRaw は prompt より優先
   ]
 }
 ```
 
 - 各ステップは指定されたエージェントとプロンプトで順番に実行される
-- `prompt` を省略するとエージェントの `defaultPrompt` → `default.md` の順で解決される
+- `promptRaw` を指定すると文字列がそのままプロンプトとして渡される（`prompt` より優先）
+- `prompt` ・`promptRaw` をいずれも省略するとエージェントの `defaultPromptRaw` → `defaultPrompt` → `default.md` の順で解決される
 - 現状は直列実行のみサポート
-
-## プロジェクト構造
-
-```
-claude-automate/
-├── run.mjs              # エントリポイント
-├── lib/
-│   ├── cli.mjs          # CLI 引数パース
-│   ├── agents.mjs       # agents/ からエージェント定義を読み込み
-│   ├── prompts.mjs      # prompts/ からプロンプトを読み込み
-│   ├── workflows.mjs    # workflows/ からワークフロー定義を読み込み
-│   └── runner.mjs       # SDK 実行 & ストリーミング出力（結果ログパスを返す）
-├── agents/              # エージェント定義（1ファイル = 1エージェント）
-│   ├── plain.json
-│   └── file.json
-├── prompts/             # プロンプトテンプレート
-│   ├── default.md
-│   └── file-test.md
-└── workflows/           # ワークフロー定義（1ファイル = 1ワークフロー）
-    └── sample.json
-```

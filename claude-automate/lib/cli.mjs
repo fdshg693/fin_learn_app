@@ -1,28 +1,32 @@
+import { Command } from "commander";
+
 /**
  * CLI 引数をパースする。
- * 戻り値: { workflowName, agentName, promptName }
+ * 戻り値: { workflowName, agentName, promptName, promptRaw }
  *
- * - `--workflow <name>` が指定された場合、agentName / promptName は無視される
- *   （呼び出し側でワークフロー優先のロジックを実装する）
- * - promptName はプロンプトが明示指定されなかった場合 null を返す。
+ * すべてフラグ指定。位置引数は受け付けない。
+ *
+ * - `--workflow <name>` 指定時、agentName / promptName / promptRaw は呼び出し側で無視される
+ * - `--prompt-raw <text>` はプロンプトファイル (`--prompt`) より優先される（呼び出し側で解決）
+ * - 未指定時の promptName は null。agentName のデフォルトは "plain"。
  */
 export function parseArgs(argv) {
-  const args = argv.slice(2);
-  let workflowName = null;
-  let agentName = "plain";
-  let promptName = null;
+  const program = new Command();
+  program
+    .name("run.mjs")
+    .description("Claude Agent SDK 自動化ランナー")
+    .option("--workflow <name>", "ワークフロー名 (workflows/<name>.json)")
+    .option("--agent <name>", "エージェント名 (agents/<name>.json)", "plain")
+    .option("--prompt <file>", "プロンプトファイル名 (prompts/<file>)")
+    .option("--prompt-raw <text>", "生のプロンプト文字列 (--prompt より優先)")
+    .allowExcessArguments(false)
+    .parse(argv);
 
-  for (let i = 0; i < args.length; i++) {
-    if (args[i] === "--workflow" && args[i + 1]) {
-      workflowName = args[i + 1];
-      i++;
-    } else if (args[i] === "--agent" && args[i + 1]) {
-      agentName = args[i + 1];
-      i++;
-    } else {
-      promptName = args[i];
-    }
-  }
-
-  return { workflowName, agentName, promptName };
+  const opts = program.opts();
+  return {
+    workflowName: opts.workflow ?? null,
+    agentName: opts.agent ?? "plain",
+    promptName: opts.prompt ?? null,
+    promptRaw: opts.promptRaw ?? null,
+  };
 }
