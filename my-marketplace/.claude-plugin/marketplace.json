@@ -23,9 +23,9 @@
       "source": "./meta"
     },
     {
-      "name": "plans",
+      "name": "planner",
       "description": "For plan-related skills",
-      "source": "./plans"
+      "source": "./planner"
     },
     {
       "name": "subagents",
