@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "add-server": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["mcps/passthrough.mjs", "add-server"]
+    }
+  }
+}

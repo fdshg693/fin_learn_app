@@ -1,6 +1,6 @@
 .claude/settings.local.json
 .github/agents
-.vscode/mcp.json
+*mcp.json
 node_modules/
 
 .DS_Store
