@@ -5,6 +5,11 @@ using FinLearn.Core;
 
 namespace FinLearn.Api.Endpoints;
 
+/// <summary>
+/// 注文関連ログの SourceContext マーカー。Serilog のフィルタ用。
+/// </summary>
+public sealed class OrderLog { }
+
 public static class GameEndpoints
 {
     public static RouteGroupBuilder MapGameEndpoints(this WebApplication app)
@@ -35,19 +40,19 @@ public static class GameEndpoints
         return Results.Ok(GameMapper.ToResponse(id, game, exchange));
     }
 
-    private static IResult Buy(string id, OrderRequest request, GameStore store, TurnProcessor processor, IExchangeFactory exchangeFactory, GameConfig config, ILogger<Program> logger)
+    private static IResult Buy(string id, OrderRequest request, GameStore store, TurnProcessor processor, IExchangeFactory exchangeFactory, GameConfig config, ILogger<OrderLog> logger)
     {
         return ProcessOrder(id, request, store, processor, exchangeFactory, config, logger,
             (g, fee, req) => processor.Buy(g, fee, req.InstrumentId, req.Quantity, req.Price, req.StopPrice));
     }
 
-    private static IResult Sell(string id, OrderRequest request, GameStore store, TurnProcessor processor, IExchangeFactory exchangeFactory, GameConfig config, ILogger<Program> logger)
+    private static IResult Sell(string id, OrderRequest request, GameStore store, TurnProcessor processor, IExchangeFactory exchangeFactory, GameConfig config, ILogger<OrderLog> logger)
     {
         return ProcessOrder(id, request, store, processor, exchangeFactory, config, logger,
             (g, fee, req) => processor.Sell(g, fee, req.InstrumentId, req.Quantity, req.Price, req.StopPrice));
     }
 
-    private static IResult Wait(string id, GameStore store, TurnProcessor processor, IExchangeFactory exchangeFactory, GameConfig config, ILogger<Program> logger)
+    private static IResult Wait(string id, GameStore store, TurnProcessor processor, IExchangeFactory exchangeFactory, GameConfig config, ILogger<OrderLog> logger)
     {
         var game = store.GetGame(id);
         if (game is null) return Results.NotFound();
@@ -63,7 +68,7 @@ public static class GameEndpoints
 
     private static IResult ProcessOrder(
         string id, OrderRequest request, GameStore store, TurnProcessor processor,
-        IExchangeFactory exchangeFactory, GameConfig config, ILogger<Program> logger,
+        IExchangeFactory exchangeFactory, GameConfig config, ILogger<OrderLog> logger,
         Func<Game, int, OrderRequest, TurnResult> action)
     {
         var game = store.GetGame(id);

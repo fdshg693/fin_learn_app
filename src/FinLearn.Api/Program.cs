@@ -2,18 +2,21 @@ using FinLearn.Api.Endpoints;
 using FinLearn.Api.Services;
 using FinLearn.Core;
 using Serilog;
+using Serilog.Filters;
 using Serilog.Formatting.Compact;
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
     .Enrich.FromLogContext()
     .WriteTo.Console(
-        outputTemplate: "{Timestamp:HH:mm:ss} [{Level:u3}] {Message:lj}{NewLine}")
-    .WriteTo.File(
-        formatter: new CompactJsonFormatter(),
-        path: "logs/finlearn-.log",
-        rollingInterval: RollingInterval.Day,
-        retainedFileCountLimit: 7)
+        outputTemplate: "{Timestamp:HH:mm:ss} [{Level:u3}] {SourceContext} {Message:lj}{NewLine}")
+    .WriteTo.Logger(lc => lc
+        .Filter.ByIncludingOnly(Matching.FromSource<OrderLog>())
+        .WriteTo.File(
+            formatter: new CompactJsonFormatter(),
+            path: "logs/orders-.log",
+            rollingInterval: RollingInterval.Day,
+            retainedFileCountLimit: 7))
     .CreateLogger();
 
 try

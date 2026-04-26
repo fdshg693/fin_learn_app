@@ -23,3 +23,15 @@ pnpm
 ## 実装概要
 - .NETがバックエンドで、Reactがフロントエンド
     - Reactはサーバーを立てて、API経由でバックエンドと通信
+
+## 実行コマンド
+
+バックエンド
+```bash
+dotnet run --project src\FinLearn.Api\FinLearn.Api.csproj
+```
+フロントエンド
+```bash
+cd frontend
+npm run dev
+```
