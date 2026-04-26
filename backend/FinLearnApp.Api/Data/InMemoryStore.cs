@@ -79,7 +79,7 @@ public sealed class InMemoryStore
         var nextTurn = currentTurn + 1;
         _turnByInvestor[investorId] = nextTurn;
 
-        ApplyPriceFluctuation();
+        ApplyPriceFluctuation(nextTurn);
         GenerateSystemOrdersForTurn();
 
         return nextTurn;
@@ -207,7 +207,7 @@ public sealed class InMemoryStore
         return new OrderMatchResult(quantity, executedQuantity, totalProceeds);
     }
 
-    private void ApplyPriceFluctuation()
+    private void ApplyPriceFluctuation(int turn)
     {
         foreach (var ticker in Tickers)
         {
@@ -218,7 +218,7 @@ public sealed class InMemoryStore
                 newAmount = 1m;
             }
 
-            ticker.UpdatePrice(Money.Jpy(newAmount));
+            ticker.UpdatePrice(Money.Jpy(newAmount), turn);
         }
     }
 
