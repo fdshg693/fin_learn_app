@@ -52,29 +52,29 @@ public static class GameEndpoints
         var game = store.GetGame(id);
         if (game is null) return Results.NotFound();
 
-        var (result, _, _) = processor.Wait(game, config.Fee);
-        store.UpdateGame(id, result);
-        var exchange = exchangeFactory.Create(result.Prices, config.Fee);
+        var turn = processor.Wait(game, config.Fee);
+        store.UpdateGame(id, turn.Game);
+        var exchange = exchangeFactory.Create(turn.Game.Prices, config.Fee);
         var recentTrades = store.GetRecentTrades(id);
-        return Results.Ok(GameMapper.ToResponse(id, result, exchange, recentTrades: recentTrades));
+        return Results.Ok(GameMapper.ToResponse(id, turn.Game, exchange, recentTrades: recentTrades));
     }
 
     private static IResult ProcessOrder(
         string id, OrderRequest request, GameStore store, TurnProcessor processor,
         IExchangeFactory exchangeFactory, GameConfig config,
-        Func<Game, int, OrderRequest, (Game Result, TradeResult? Trade, string? Warning)> action)
+        Func<Game, int, OrderRequest, TurnResult> action)
     {
         var game = store.GetGame(id);
         if (game is null) return Results.NotFound();
 
-        var (result, trade, warning) = action(game, config.Fee, request);
-        if (warning is null)
+        var turn = action(game, config.Fee, request);
+        if (turn.Warning is null)
         {
-            store.UpdateGame(id, result);
-            if (trade is not null) store.AddTrade(id, trade);
+            store.UpdateGame(id, turn.Game);
+            if (turn.Trade is not null) store.AddTrade(id, turn.Trade);
         }
-        var exchange = exchangeFactory.Create(result.Prices, config.Fee);
+        var exchange = exchangeFactory.Create(turn.Game.Prices, config.Fee);
         var recentTrades = store.GetRecentTrades(id);
-        return Results.Ok(GameMapper.ToResponse(id, result, exchange, warning, recentTrades));
+        return Results.Ok(GameMapper.ToResponse(id, turn.Game, exchange, turn.Warning, recentTrades));
     }
 }

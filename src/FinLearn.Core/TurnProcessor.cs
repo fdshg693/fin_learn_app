@@ -31,60 +31,89 @@ public sealed class TurnProcessor
         PlayerTtl = playerTtl;
     }
 
-    public (Game Result, TradeResult? Trade, string? Warning) Buy(Game game, int fee, int instrumentId, int quantity, int? price = null, int? stopPrice = null)
+    public TurnResult Buy(Game game, int fee, int instrumentId, int quantity, int? price = null, int? stopPrice = null)
     {
         if (quantity <= 0)
-            return (game, null, Messages.QuantityMustBePositive);
+            return Rejected(game, Messages.QuantityMustBePositive);
         if (price is not null && price <= 0)
-            return (game, null, Messages.PriceMustBePositive);
+            return Rejected(game, Messages.PriceMustBePositive);
 
         var instrument = new Instrument(instrumentId);
         return PlaceOrder(game, fee, instrument, OrderSide.Buy, quantity, price, stopPrice, Messages.NoMatchingSellOrders);
     }
 
-    public (Game Result, TradeResult? Trade, string? Warning) Sell(Game game, int fee, int instrumentId, int quantity, int? price = null, int? stopPrice = null)
+    public TurnResult Sell(Game game, int fee, int instrumentId, int quantity, int? price = null, int? stopPrice = null)
     {
         if (quantity <= 0)
-            return (game, null, Messages.QuantityMustBePositive);
+            return Rejected(game, Messages.QuantityMustBePositive);
         if (price is not null && price <= 0)
-            return (game, null, Messages.PriceMustBePositive);
+            return Rejected(game, Messages.PriceMustBePositive);
 
         var instrument = new Instrument(instrumentId);
         return PlaceOrder(game, fee, instrument, OrderSide.Sell, quantity, price, stopPrice, Messages.NoMatchingBuyOrders);
     }
 
-    public (Game Result, TradeResult? Trade, string? Warning) Wait(Game game, int fee)
+    public TurnResult Wait(Game game, int fee)
     {
         var exchange = ExchangeFactory.Create(game.Prices, fee);
-        var (bookWithOrders, nextId, _) = OrderPlacer.PlaceOrders(game.OrderBook, exchange, game.Instruments, game.NextOrderId, game.Turn);
-        return (AdvanceTurn(game, game.Player, bookWithOrders, nextId), null, null);
+        var (bookWithOrders, nextId, placedOrders) = OrderPlacer.PlaceOrders(game.OrderBook, exchange, game.Instruments, game.NextOrderId, game.Turn);
+
+        var nextGame = AdvanceTurn(game, game.Player, bookWithOrders, nextId);
+        return new TurnResult(
+            Game: nextGame,
+            Trade: null,
+            Warning: null,
+            ProcessedTurn: game.Turn,
+            SubmittedOrders: placedOrders,
+            Fills: Array.Empty<OrderFill>());
     }
 
-    private (Game Result, TradeResult? Trade, string? Warning) PlaceOrder(
+    private TurnResult PlaceOrder(
         Game game, int fee, Instrument instrument, OrderSide side,
         int quantity, int? price, int? stopPrice, string noMatchMessage)
     {
         var exchange = ExchangeFactory.Create(game.Prices, fee);
 
         // 1. コンピューター注文を生成 → プレイヤー注文を生成 → 市場で約定
-        var (bookWithOrders, nextId, _) = OrderPlacer.PlaceOrders(game.OrderBook, exchange, game.Instruments, game.NextOrderId, game.Turn);
+        var (bookWithOrders, nextId, placedOrders) = OrderPlacer.PlaceOrders(game.OrderBook, exchange, game.Instruments, game.NextOrderId, game.Turn);
         var order = game.Player.CreateOrder(nextId, instrument, side, quantity, price, stopPrice, game.Turn);
         var matchResult = Market.Execute(bookWithOrders, order, exchange);
 
+        var submittedOrders = Combine(placedOrders, order);
+
         // 2. 成行注文で約定ゼロ → コンピューター注文は板に残し、Waitと同じ挙動でターンを進める
         if (price is null && matchResult.Trade.FilledQuantity == 0)
-            return (AdvanceTurn(game, game.Player, bookWithOrders, nextId), null, noMatchMessage);
+        {
+            var nextGameNoMatch = AdvanceTurn(game, game.Player, bookWithOrders, nextId);
+            return new TurnResult(nextGameNoMatch, null, noMatchMessage, game.Turn, submittedOrders, Array.Empty<OrderFill>());
+        }
 
         // 3. 約定分があればポートフォリオを更新
         var (resultPlayer, warning) = ApplyTradeToPlayer(game.Player, matchResult.Trade);
         if (warning is not null)
-            return (AdvanceTurn(game, game.Player, bookWithOrders, nextId), null, warning);
+        {
+            // 残高不足等で約定をロールバック → Fills は空にしてログ＝確定事実の対応関係を保つ
+            var rolledBack = AdvanceTurn(game, game.Player, bookWithOrders, nextId);
+            return new TurnResult(rolledBack, null, warning, game.Turn, submittedOrders, Array.Empty<OrderFill>());
+        }
 
         // 4. 指値注文の未約定分を板に追加
         var updatedBook = AddRemainingLimitOrder(matchResult.UpdatedBook, order, quantity, matchResult.Trade.FilledQuantity, price);
 
         // 5. 株価変動を適用して新しいゲーム状態を返す
-        return (AdvanceTurn(game, resultPlayer, updatedBook, nextId + 1), matchResult.Trade, null);
+        var nextGame = AdvanceTurn(game, resultPlayer, updatedBook, nextId + 1);
+        return new TurnResult(nextGame, matchResult.Trade, null, game.Turn, submittedOrders, matchResult.Fills);
+    }
+
+    private static TurnResult Rejected(Game game, string warning) =>
+        new(game, null, warning, game.Turn, Array.Empty<Order>(), Array.Empty<OrderFill>());
+
+    private static IReadOnlyList<Order> Combine(IReadOnlyList<Order> placedOrders, Order playerOrder)
+    {
+        var combined = new List<Order>(placedOrders.Count + 1);
+        combined.AddRange(placedOrders);
+        combined.Add(playerOrder);
+        return combined;
     }
 
     private static (Player Result, string? Warning) ApplyTradeToPlayer(Player player, TradeResult trade)
