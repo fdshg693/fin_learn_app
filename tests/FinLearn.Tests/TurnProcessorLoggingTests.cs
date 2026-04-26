@@ -43,6 +43,7 @@ public class TurnProcessorLoggingTests
         var game = CreateGame();
         var processor = CreateProcessor();
 
+        // 高い指値で確実に約定させる（基準価格 100、コンピューター売り 95-115%）
         var result = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 1, price: 115);
 
         Assert.Null(result.Warning);
@@ -61,11 +62,13 @@ public class TurnProcessorLoggingTests
         Assert.Null(result.Warning);
         Assert.NotEmpty(result.Fills);
 
+        // SubmittedOrders 末尾＝プレイヤー注文（Combine の実装により末尾に追加される）
         var playerOrder = result.SubmittedOrders.Single(o => o.TraderId == "player");
         var playerFill = result.Fills.Single(f => f.OrderId == playerOrder.Id);
         Assert.Equal(result.Trade!.FilledQuantity, playerFill.FilledQuantity);
         Assert.Equal(result.Trade.TotalAmount, playerFill.TotalAmount);
 
+        // 対側の resting order の fill も含まれる（双方向シンメトリ）
         Assert.Contains(result.Fills, f => f.OrderId != playerOrder.Id);
     }
 
@@ -100,6 +103,9 @@ public class TurnProcessorLoggingTests
     [Fact]
     public void Buy残高不足_はFillsを空にロールバックする()
     {
+        // RNG 依存を排除するため OrderBook を直接組んで確実に約定→残高不足を誘発する。
+        // - NoOpOrderPlacer でコンピューター注文の生成を抑止
+        // - 銘柄1に 20000 の指値売り（プレイヤー初期資金 10000 を確実に超える）
         var seedBook = new OrderBook().Add(
             new Order(Id: 1, TraderId: "computer", Instrument: Instruments[0],
                 Side: OrderSide.Sell, Quantity: 1, Price: 20000, createdAtTurn: 1));
@@ -112,11 +118,14 @@ public class TurnProcessorLoggingTests
             Prices);
         var processor = new TurnProcessor(new NoOpOrderPlacer(), new NoPriceFluctuator());
 
+        // 指値 20000 の買い注文 → 売り側と一致して約定試行 → 残高不足でロールバック
         var result = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 1, price: 20000);
 
         Assert.Equal(Messages.InsufficientCashToBuy, result.Warning);
+        // SubmittedOrders にはプレイヤー注文だけ残る (NoOpOrderPlacer は computer を出さない)
         Assert.Single(result.SubmittedOrders);
         Assert.Equal("player", result.SubmittedOrders[0].TraderId);
+        // ロールバック扱い: Fills は空（ログ＝確定事実の対応関係を保つ）
         Assert.Empty(result.Fills);
     }
 
