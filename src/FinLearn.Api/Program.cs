@@ -1,38 +1,61 @@
 using FinLearn.Api.Endpoints;
 using FinLearn.Api.Services;
 using FinLearn.Core;
+using Serilog;
+using Serilog.Formatting.Compact;
 
-var builder = WebApplication.CreateBuilder(args);
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .Enrich.FromLogContext()
+    .WriteTo.Console(
+        outputTemplate: "{Timestamp:HH:mm:ss} [{Level:u3}] {Message:lj}{NewLine}")
+    .WriteTo.File(
+        formatter: new CompactJsonFormatter(),
+        path: "logs/finlearn-.log",
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 7)
+    .CreateLogger();
 
-builder.Services.AddSingleton<GameConfig>();
-builder.Services.AddSingleton<GameStore>();
-builder.Services.AddSingleton<IExchangeFactory, SimpleExchangeFactory>();
-builder.Services.AddTransient<TurnProcessor>(sp =>
+try
 {
-    var exchangeFactory = sp.GetRequiredService<IExchangeFactory>();
-    return new TurnProcessor(new ComputerTrader(Random.Shared), new Market(), new RandomPriceFluctuator(Random.Shared), exchangeFactory);
-});
+    var builder = WebApplication.CreateBuilder(args);
 
-var corsOrigins = builder.Configuration["CORS_ALLOWED_ORIGINS"]?
-    .Split(',', StringSplitOptions.RemoveEmptyEntries)
-    ?? ["http://localhost:5173"];
+    builder.Host.UseSerilog();
 
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(policy =>
+    builder.Services.AddSingleton<GameConfig>();
+    builder.Services.AddSingleton<GameStore>();
+    builder.Services.AddSingleton<IExchangeFactory, SimpleExchangeFactory>();
+    builder.Services.AddTransient<TurnProcessor>(sp =>
     {
-        policy.WithOrigins(corsOrigins)
-            .AllowAnyHeader()
-            .AllowAnyMethod();
+        var exchangeFactory = sp.GetRequiredService<IExchangeFactory>();
+        return new TurnProcessor(new ComputerTrader(Random.Shared), new Market(), new RandomPriceFluctuator(Random.Shared), exchangeFactory);
     });
-});
 
-var app = builder.Build();
+    var corsOrigins = builder.Configuration["CORS_ALLOWED_ORIGINS"]?
+        .Split(',', StringSplitOptions.RemoveEmptyEntries)
+        ?? ["http://localhost:5173"];
 
-app.UseCors();
-app.MapGameEndpoints();
-app.MapAdminEndpoints();
+    builder.Services.AddCors(options =>
+    {
+        options.AddDefaultPolicy(policy =>
+        {
+            policy.WithOrigins(corsOrigins)
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        });
+    });
 
-app.Run();
+    var app = builder.Build();
+
+    app.UseCors();
+    app.MapGameEndpoints();
+    app.MapAdminEndpoints();
+
+    app.Run();
+}
+finally
+{
+    Log.CloseAndFlush();
+}
 
 public partial class Program { }
