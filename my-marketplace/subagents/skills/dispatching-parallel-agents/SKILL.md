@@ -9,24 +9,24 @@ description: Use when facing 2+ independent tasks that can be worked on without 
 
 You delegate tasks to specialized agents with isolated context. By precisely crafting their instructions and context, you ensure they stay focused and succeed at their task. They should never inherit your session's context or history — you construct exactly what they need. This also preserves your own context for coordination work.
 
-When you have multiple unrelated failures (different test files, different subsystems, different bugs), investigating them sequentially wastes time. Each investigation is independent and can happen in parallel.
+When you have multiple unrelated tasks (different files, different subsystems, different concerns), handling them sequentially wastes time. Each task is independent and can happen in parallel — whether it's research, implementation, refactoring, review, or debugging.
 
-**Core principle:** Dispatch one agent per independent problem domain. Let them work concurrently.
+**Core principle:** Dispatch one agent per independent task domain. Let them work concurrently.
 
 ## When to Use
 
 ```dot
 digraph when_to_use {
-    "Multiple failures?" [shape=diamond];
+    "Multiple tasks?" [shape=diamond];
     "Are they independent?" [shape=diamond];
-    "Single agent investigates all" [shape=box];
-    "One agent per problem domain" [shape=box];
+    "Single agent handles all" [shape=box];
+    "One agent per task domain" [shape=box];
     "Can they work in parallel?" [shape=diamond];
     "Sequential agents" [shape=box];
     "Parallel dispatch" [shape=box];
 
-    "Multiple failures?" -> "Are they independent?" [label="yes"];
-    "Are they independent?" -> "Single agent investigates all" [label="no - related"];
+    "Multiple tasks?" -> "Are they independent?" [label="yes"];
+    "Are they independent?" -> "Single agent handles all" [label="no - related"];
     "Are they independent?" -> "Can they work in parallel?" [label="yes"];
     "Can they work in parallel?" -> "Parallel dispatch" [label="yes"];
     "Can they work in parallel?" -> "Sequential agents" [label="no - shared state"];
@@ -34,42 +34,44 @@ digraph when_to_use {
 ```
 
 **Use when:**
-- 3+ test files failing with different root causes
-- Multiple subsystems broken independently
-- Each problem can be understood without context from others
-- No shared state between investigations
+- 3+ independent areas to investigate, implement, refactor, or review
+- Multiple subsystems that need separate work
+- Each task can be understood without context from the others
+- No shared state or file conflicts between agents
 
 **Don't use when:**
-- Failures are related (fix one might fix others)
-- Need to understand full system state
-- Agents would interfere with each other
+- Tasks are related (one's outcome affects another)
+- Need to understand full system state in a single coherent view
+- Agents would interfere with each other (editing same files, same resources)
 
 ## The Pattern
 
 ### 1. Identify Independent Domains
 
-Group failures by what's broken:
-- File A tests: Tool approval flow
-- File B tests: Batch completion behavior
-- File C tests: Abort functionality
+Group work by what's separable. Examples across task types:
+- **Research:** Codebase area X; library Y; external API docs Z
+- **Implementation:** API endpoint A; UI component B; data migration C
+- **Refactor:** Module A cleanup; Module B rename; Module C API change
+- **Review:** Service A; service B; service C
+- **Debugging:** File A tests (tool approval); File B tests (batch completion); File C tests (abort)
 
-Each domain is independent - fixing tool approval doesn't affect abort tests.
+Each domain is independent — work in one doesn't depend on the others.
 
 ### 2. Create Focused Agent Tasks
 
 Each agent gets:
-- **Specific scope:** One test file or subsystem
-- **Clear goal:** Make these tests pass
-- **Constraints:** Don't change other code
-- **Expected output:** Summary of what you found and fixed
+- **Specific scope:** One file, module, or subsystem
+- **Clear goal:** What "done" looks like (e.g. "summarize findings", "make these tests pass", "implement endpoint X")
+- **Constraints:** What not to touch
+- **Expected output:** Summary, diff, findings, or whatever the parent needs to integrate
 
 ### 3. Dispatch in Parallel
 
 ```typescript
 // In Claude Code / AI environment
-Task("Fix agent-tool-abort.test.ts failures")
-Task("Fix batch-completion-behavior.test.ts failures")
-Task("Fix tool-approval-race-conditions.test.ts failures")
+Task("Investigate auth flow in src/auth/ and report how tokens are refreshed")
+Task("Implement /search endpoint per spec in docs/api/search.md")
+Task("Refactor logger in src/utils/log.ts to use structured logging")
 // All three run concurrently
 ```
 
@@ -77,16 +79,18 @@ Task("Fix tool-approval-race-conditions.test.ts failures")
 
 When agents return:
 - Read each summary
-- Verify fixes don't conflict
-- Run full test suite
-- Integrate all changes
+- Verify outputs don't conflict (overlapping edits, contradictory findings)
+- Run any needed verification (tests, type-check, build)
+- Integrate all changes into a coherent whole
 
 ## Agent Prompt Structure
 
 Good agent prompts are:
-1. **Focused** - One clear problem domain
-2. **Self-contained** - All context needed to understand the problem
+1. **Focused** - One clear task domain
+2. **Self-contained** - All context needed (the agent never sees your session history)
 3. **Specific about output** - What should the agent return?
+
+Concrete example (debugging task — same shape applies to research, implementation, or refactor prompts):
 
 ```markdown
 Fix the 3 failing tests in src/agents/agent-tool-abort.test.ts:
@@ -111,24 +115,24 @@ Return: Summary of what you found and what you fixed.
 
 ## Common Mistakes
 
-**❌ Too broad:** "Fix all the tests" - agent gets lost
-**✅ Specific:** "Fix agent-tool-abort.test.ts" - focused scope
+**❌ Too broad:** "Clean up the codebase" — agent gets lost
+**✅ Specific:** "Refactor src/utils/log.ts to use structured logging" — focused scope
 
-**❌ No context:** "Fix the race condition" - agent doesn't know where
-**✅ Context:** Paste the error messages and test names
+**❌ No context:** "Investigate the auth bug" — agent doesn't know where to start
+**✅ Context:** Paste the relevant file paths, error messages, or specifications
 
-**❌ No constraints:** Agent might refactor everything
-**✅ Constraints:** "Do NOT change production code" or "Fix tests only"
+**❌ No constraints:** Agent ranges far beyond the intended scope
+**✅ Constraints:** "Edit only files under src/api/" or "Read-only investigation"
 
-**❌ Vague output:** "Fix it" - you don't know what changed
-**✅ Specific:** "Return summary of root cause and changes"
+**❌ Vague output:** "Do it" — you don't know what came back
+**✅ Specific:** "Return a summary of findings and a list of files changed"
 
 ## When NOT to Use
 
-**Related failures:** Fixing one might fix others - investigate together first
-**Need full context:** Understanding requires seeing entire system
-**Exploratory debugging:** You don't know what's broken yet
-**Shared state:** Agents would interfere (editing same files, using same resources)
+**Related tasks:** One task's outcome changes another's — handle together first
+**Need full context:** A coherent answer requires seeing the entire system at once
+**Exploratory work:** You don't yet know how to decompose the problem
+**Shared state:** Agents would interfere (editing the same files, contending for the same resources)
 
 ## Real Example from Session
 
@@ -159,18 +163,18 @@ Agent 3 → Fix tool-approval-race-conditions.test.ts
 
 ## Key Benefits
 
-1. **Parallelization** - Multiple investigations happen simultaneously
+1. **Parallelization** - Multiple tasks progress simultaneously
 2. **Focus** - Each agent has narrow scope, less context to track
 3. **Independence** - Agents don't interfere with each other
-4. **Speed** - 3 problems solved in time of 1
+4. **Speed** - N tasks completed in roughly the time of 1
 
 ## Verification
 
 After agents return:
-1. **Review each summary** - Understand what changed
-2. **Check for conflicts** - Did agents edit same code?
-3. **Run full suite** - Verify all fixes work together
-4. **Spot check** - Agents can make systematic errors
+1. **Review each summary** - Understand what was done or found
+2. **Check for conflicts** - Did agents edit overlapping code or contradict each other?
+3. **Run verification** - Tests, type-check, build, or whatever validates the integrated result
+4. **Spot check** - Agents can make systematic errors; sample their work
 
 ## Real-World Impact
 

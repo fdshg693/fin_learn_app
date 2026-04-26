@@ -1,6 +1,7 @@
 ---
 name: subagent-driven-development
 description: Use when executing implementation plans with independent tasks in the current session
+# 必要エージェント: code-reviewer
 ---
 
 # Subagent-Driven Development
@@ -62,7 +63,6 @@ digraph process {
     "Read plan, extract all tasks with full text, note context, create TodoWrite" [shape=box];
     "More tasks remain?" [shape=diamond];
     "Dispatch final code reviewer subagent for entire implementation" [shape=box];
-    "Use superpowers:finishing-a-development-branch" [shape=box style=filled fillcolor=lightgreen];
 
     "Read plan, extract all tasks with full text, note context, create TodoWrite" -> "Triage: lightweight or full?";
     "Triage: lightweight or full?" -> "Dispatch implementer subagent (./implementer-prompt.md)";
@@ -258,7 +258,6 @@ Done!
 ## Red Flags
 
 **Never:**
-- Start implementation on main/master branch without explicit user consent
 - Skip reviews on full-flow tasks (lightweight tasks per the triage section are the only exception — and only both-reviews-or-neither, never just one)
 - Skip the final whole-implementation review, even if every task was lightweight
 - Proceed with unfixed issues
@@ -287,11 +286,3 @@ Done!
 **If subagent fails task:**
 - Dispatch fix subagent with specific instructions
 - Don't try to fix manually (context pollution)
-
-## Integration
-
-- **superpowers:requesting-code-review** - Code review template for reviewer subagents
-- **superpowers:finishing-a-development-branch** - Complete development after all tasks
-
-**Subagents should use:**
-- **subagents:test-driven-development** - Subagents follow TDD for each task

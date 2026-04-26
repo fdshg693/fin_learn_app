@@ -8,6 +8,11 @@
   },
   "plugins": [
     {
+      "name": "debugging",
+      "description": "For debugging",
+      "source": "./debugging"
+    },
+    {
       "name": "mcp-apps-custom",
       "description": "For Mcp Apps",
       "source": "./mcp-apps-custom"
@@ -26,11 +31,6 @@
       "name": "subagents",
       "description": "For Using Subagents",
       "source": "./subagents"
-    },
-    {
-      "name": "superpowers-custom",
-      "description": "customize and extracted from original superpowers plugin",
-      "source": "./superpowers-custom"
     }
   ]
 }

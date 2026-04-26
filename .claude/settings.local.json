@@ -22,9 +22,11 @@
   },
   "enabledPlugins": {
     "mcp-apps-custom@my-marketplace": false,
+    "debugging@my-marketplace": true,
     "meta@my-marketplace": true,
+    "plans@my-marketplace": true,
     "subagents@my-marketplace": true,
-    "plan@my-marketplace": true,
     "superpowers-developing-for-claude-code@superpowers-developing-for-claude-code-dev": false
+    
   }
 }
