@@ -17,7 +17,7 @@ https://code.claude.com/docs/en/sub-agents#built-in-subagents
         - Inherits 
     - Claude Code Guide
         - Haiku
-        - Claude Code に関する質問に答えてくれる/p
+        - Claude Code に関する質問に答えてくれる
 - その他のエージェント
     - General-purpose
         - Inherits
