@@ -9,11 +9,12 @@ public sealed class GameStore
     private readonly ConcurrentDictionary<string, List<TradeResult>> _tradeHistories = new();
     private readonly ConcurrentDictionary<string, object> _locks = new();
     private readonly GameConfig _config;
-    private const int MaxRecentTrades = 3;
+    private readonly GameStoreConfig _storeConfig;
 
-    public GameStore(GameConfig config)
+    public GameStore(GameConfig config, GameStoreConfig storeConfig)
     {
         _config = config;
+        _storeConfig = storeConfig;
     }
 
     public (string GameId, Game Game) CreateGame()
@@ -45,7 +46,7 @@ public sealed class GameStore
         lock (history)
         {
             history.Add(trade);
-            if (history.Count > MaxRecentTrades)
+            if (history.Count > _storeConfig.MaxRecentTrades)
                 history.RemoveAt(0);
         }
     }

@@ -2,6 +2,8 @@
 name: brainstorming
 description: "You MUST use this before any creative work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements, and design before implementation, and ends after writing the approved spec."
 # 必要エージェント: code-reviewer
+# 後続スキル: writing-plans
+# 出力: docs/specs/<topic>-design.md
 ---
 
 # Brainstorming Ideas Into Designs

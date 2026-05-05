@@ -19,7 +19,9 @@ import { PositionList } from "~/components/PositionList";
 import { TradeForm } from "~/components/TradeForm";
 import { WarningMessage } from "~/components/WarningMessage";
 import { TradeHistory } from "~/components/TradeHistory";
-import { OrderBookPanel, ORDERBOOK_PAGE_SIZE } from "~/components/OrderBookPanel";
+import { OrderBookPanel } from "~/components/OrderBookPanel";
+import { ORDERBOOK_PAGE_SIZE } from "~/config";
+import { TradeIntent, OrderSide } from "~/lib/enums";
 
 type LoaderData = {
   game: GameResponse;
@@ -56,7 +58,7 @@ export async function clientAction({ params, request }: ClientActionFunctionArgs
   try {
     let game: GameResponse;
 
-    if (intent === "wait") {
+    if (intent === TradeIntent.Wait) {
       game = await wait(id);
     } else {
       const instrumentId = Number(formData.get("instrumentId"));
@@ -68,7 +70,10 @@ export async function clientAction({ params, request }: ClientActionFunctionArgs
         return { error: "入力値が不正です。数値を入力してください。", lastSubmission: submission };
       }
 
-      const side = intent === "buy" ? "Buy" : intent === "sell" ? "Sell" : null;
+      const side =
+        intent === TradeIntent.Buy ? OrderSide.Buy
+        : intent === TradeIntent.Sell ? OrderSide.Sell
+        : null;
       if (side === null) {
         return { error: `Invalid intent: ${intent}`, lastSubmission: submission };
       }

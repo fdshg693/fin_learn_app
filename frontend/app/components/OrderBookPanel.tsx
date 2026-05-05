@@ -1,9 +1,9 @@
 import { memo, useCallback, useEffect, useState } from "react";
 import type { OrderBookResponse, OrderDto } from "~/types/game";
 import { getOrderBook } from "~/api/gameApi";
+import { ORDERBOOK_PAGE_SIZE } from "~/config";
+import { OrderSide, OrderType } from "~/lib/enums";
 import { formatJPY } from "~/utils/format";
-
-export const ORDERBOOK_PAGE_SIZE = 20;
 
 type Props = {
   gameId: string;
@@ -107,15 +107,15 @@ export const OrderBookPanel = memo(function OrderBookPanel({
               <tr
                 key={order.id}
                 className={`border-b ${
-                  order.side === "Buy"
+                  order.side === OrderSide.Buy
                     ? "text-red-600 dark:text-red-400"
                     : "text-blue-600 dark:text-blue-400"
                 }`}
               >
                 <td className="py-2">{order.id}</td>
                 <td className="py-2">{order.instrumentId}</td>
-                <td className="py-2">{order.side === "Buy" ? "買" : "売"}</td>
-                <td className="py-2">{order.type === "Limit" ? "指値" : "成行"}</td>
+                <td className="py-2">{order.side === OrderSide.Buy ? "買" : "売"}</td>
+                <td className="py-2">{order.type === OrderType.Limit ? "指値" : "成行"}</td>
                 <td className="py-2 text-right">{order.quantity}</td>
                 <td className="py-2 text-right">{order.price != null ? formatJPY(order.price) : "-"}</td>
                 <td className="py-2 text-right">{order.stopPrice != null ? formatJPY(order.stopPrice) : "-"}</td>

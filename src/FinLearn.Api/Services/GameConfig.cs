@@ -5,7 +5,7 @@ namespace FinLearn.Api.Services;
 /// </summary>
 public sealed class GameConfig
 {
-    public int InstrumentCount { get; } = 3;
-    public int InitialPrice { get; } = 100;
-    public int Fee { get; } = 10;
+    public int InstrumentCount { get; init; } = 3;
+    public int InitialPrice { get; init; } = 100;
+    public int Fee { get; init; } = 10;
 }

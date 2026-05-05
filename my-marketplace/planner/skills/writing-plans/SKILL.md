@@ -1,6 +1,9 @@
 ---
 name: writing-plans
 description: Use when you have a spec or requirements for a multi-step task, before touching code
+# 前段スキル: brainstorming (必須ではなく、spec等が出来ていればOK)
+# 入力ファイル: docs/specs/<topic>-design.md (必須ではない。brainstorming スキルの後続として使う場合は、brainstorming の出力がこれになるはず)
+# 出力ファイル: docs/writing-plans/<feature-name>.md + docs/writing-plans/<feature-name>/*.md (one file per task)
 ---
 
 # Writing Plans

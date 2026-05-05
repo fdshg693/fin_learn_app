@@ -2,10 +2,8 @@ namespace FinLearn.Core;
 
 public sealed class Player
 {
-    private const int InitialCash = 10000;
-
     public Player(string name = "player")
-        : this(name, new Portfolio(cash: InitialCash, positions: Array.Empty<Position>()))
+        : this(name, new Portfolio(cash: GameRules.Player.InitialCash, positions: Array.Empty<Position>()))
     {
     }
 
@@ -32,6 +30,6 @@ public sealed class Player
 
     public int ProfitLoss(IExchange exchange)
     {
-        return Portfolio.TotalAmount(exchange) - InitialCash;
+        return Portfolio.TotalAmount(exchange) - GameRules.Player.InitialCash;
     }
 }

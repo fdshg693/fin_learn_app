@@ -6,7 +6,6 @@ namespace FinLearn.Core;
 public sealed class ComputerTrader : IOrderPlacer
 {
     public const string TraderIdPrefix = "computer";
-    private const int ComputerCount = 10;
 
     public static bool IsComputerTrader(string traderId) =>
         traderId.StartsWith(TraderIdPrefix, StringComparison.Ordinal);
@@ -34,31 +33,31 @@ public sealed class ComputerTrader : IOrderPlacer
     {
         var currentId = startOrderId;
         var updatedBook = book;
-        var placed = new List<Order>(ComputerCount * 2);
+        var placed = new List<Order>(GameRules.ComputerTraders.Count * 2);
 
         // 買い注文: 各 computer{i} が1件、株価の85〜105%
-        for (int i = 1; i <= ComputerCount; i++)
+        for (int i = 1; i <= GameRules.ComputerTraders.Count; i++)
         {
             var traderId = $"{TraderIdPrefix}{i}";
             var instrument = instruments[_random.Next(instruments.Count)];
             if (!exchange.TryGetPrice(instrument.Id, out var marketPrice))
                 continue;
-            var percent = _random.Next(85, 106); // 85〜105
-            var price = Math.Max(1, marketPrice * percent / 100);
+            var percent = _random.Next(GameRules.ComputerTraders.BuyPriceMinPercent, GameRules.ComputerTraders.BuyPriceMaxPercentExclusive);
+            var price = Math.Max(GameRules.PriceFluctuation.MinPrice, marketPrice * percent / 100);
             var order = new Order(currentId++, traderId, instrument, OrderSide.Buy, 1, price, currentTurn);
             placed.Add(order);
             updatedBook = PlaceWithMatching(updatedBook, order);
         }
 
         // 売り注文: 各 computer{i} が1件、株価の95〜115%
-        for (int i = 1; i <= ComputerCount; i++)
+        for (int i = 1; i <= GameRules.ComputerTraders.Count; i++)
         {
             var traderId = $"{TraderIdPrefix}{i}";
             var instrument = instruments[_random.Next(instruments.Count)];
             if (!exchange.TryGetPrice(instrument.Id, out var marketPrice))
                 continue;
-            var percent = _random.Next(95, 116); // 95〜115
-            var price = Math.Max(1, marketPrice * percent / 100);
+            var percent = _random.Next(GameRules.ComputerTraders.SellPriceMinPercent, GameRules.ComputerTraders.SellPriceMaxPercentExclusive);
+            var price = Math.Max(GameRules.PriceFluctuation.MinPrice, marketPrice * percent / 100);
             var order = new Order(currentId++, traderId, instrument, OrderSide.Sell, 1, price, currentTurn);
             placed.Add(order);
             updatedBook = PlaceWithMatching(updatedBook, order);

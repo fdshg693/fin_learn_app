@@ -1,6 +1,7 @@
 import { memo, useState, useCallback } from "react";
 import { Form, useNavigation } from "react-router";
 import type { InstrumentDto } from "~/types/game";
+import { TradeIntent } from "~/lib/enums";
 import { formatJPY } from "~/utils/format";
 
 type Props = {
@@ -104,9 +105,9 @@ export const TradeForm = memo(function TradeForm({ instruments, selectedInstrume
       </div>
 
       <div className="flex gap-2 mt-4">
-        <TradeButton intent="buy" label="買う" color="bg-red-500 hover:bg-red-600" disabled={isSubmitting} hiddenFields={orderFields} />
-        <TradeButton intent="sell" label="売る" color="bg-blue-500 hover:bg-blue-600" disabled={isSubmitting} hiddenFields={orderFields} />
-        <TradeButton intent="wait" label="待つ" color="bg-gray-400 hover:bg-gray-500" disabled={isSubmitting} />
+        <TradeButton intent={TradeIntent.Buy} label="買う" color="bg-red-500 hover:bg-red-600" disabled={isSubmitting} hiddenFields={orderFields} />
+        <TradeButton intent={TradeIntent.Sell} label="売る" color="bg-blue-500 hover:bg-blue-600" disabled={isSubmitting} hiddenFields={orderFields} />
+        <TradeButton intent={TradeIntent.Wait} label="待つ" color="bg-gray-400 hover:bg-gray-500" disabled={isSubmitting} />
       </div>
     </div>
   );

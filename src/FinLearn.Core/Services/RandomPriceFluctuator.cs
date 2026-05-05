@@ -18,8 +18,8 @@ public sealed class RandomPriceFluctuator : IPriceFluctuator
         foreach (var (instrumentId, price) in currentPrices)
         {
             // -5% ~ +5%: factor は 95..105
-            var factor = _random.Next(95, 106);
-            var newPrice = Math.Max(1, price * factor / 100);
+            var factor = _random.Next(GameRules.PriceFluctuation.MinPercent, GameRules.PriceFluctuation.MaxPercentExclusive);
+            var newPrice = Math.Max(GameRules.PriceFluctuation.MinPrice, price * factor / 100);
             result[instrumentId] = newPrice;
         }
         return result;

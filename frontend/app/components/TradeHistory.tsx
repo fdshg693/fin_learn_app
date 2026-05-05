@@ -1,5 +1,6 @@
 import { memo } from "react";
 import type { TradeResultDto } from "~/types/game";
+import { OrderSide } from "~/lib/enums";
 import { formatJPY } from "~/utils/format";
 
 type Props = {
@@ -25,8 +26,8 @@ export const TradeHistory = memo(function TradeHistory({ trades }: Props) {
         <tbody>
           {[...trades].reverse().map((trade, i) => (
             <tr key={i} className="border-b">
-              <td className={`py-2 font-medium ${trade.side === "Buy" ? "text-red-600" : "text-blue-600"}`}>
-                {trade.side === "Buy" ? "買" : "売"}
+              <td className={`py-2 font-medium ${trade.side === OrderSide.Buy ? "text-red-600" : "text-blue-600"}`}>
+                {trade.side === OrderSide.Buy ? "買" : "売"}
               </td>
               <td className="py-2">{trade.instrumentId}</td>
               <td className="py-2 text-right">{trade.filledQuantity}</td>

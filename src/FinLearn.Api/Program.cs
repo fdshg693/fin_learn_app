@@ -2,36 +2,51 @@ using System.Text.Json.Serialization;
 using FinLearn.Api.Endpoints;
 using FinLearn.Api.Services;
 using FinLearn.Core;
+using Microsoft.Extensions.Options;
 using Serilog;
 using Serilog.Filters;
 using Serilog.Formatting.Compact;
 
+// Bootstrap logger — replaced once host is built. Console-only so we don't need config.
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
-    .Enrich.FromLogContext()
-    .WriteTo.Console(
-        outputTemplate: "{Timestamp:HH:mm:ss} [{Level:u3}] {SourceContext} {Message:lj}{NewLine}")
-    .WriteTo.Logger(lc => lc
-        .Filter.ByIncludingOnly(Matching.FromSource<OrderLog>())
-        .WriteTo.File(
-            formatter: new CompactJsonFormatter(),
-            path: "logs/orders-.log",
-            rollingInterval: RollingInterval.Day,
-            retainedFileCountLimit: 7))
-    .CreateLogger();
+    .WriteTo.Console()
+    .CreateBootstrapLogger();
 
 try
 {
     var builder = WebApplication.CreateBuilder(args);
 
-    builder.Host.UseSerilog();
+    builder.Host.UseSerilog((ctx, lc) =>
+    {
+        var retainedFileCountLimit = ctx.Configuration.GetValue<int?>("OrderLog:RetainedFileCountLimit") ?? 7;
+        lc.MinimumLevel.Information()
+            .Enrich.FromLogContext()
+            .WriteTo.Console(
+                outputTemplate: "{Timestamp:HH:mm:ss} [{Level:u3}] {SourceContext} {Message:lj}{NewLine}")
+            .WriteTo.Logger(sub => sub
+                .Filter.ByIncludingOnly(Matching.FromSource<OrderLog>())
+                .WriteTo.File(
+                    formatter: new CompactJsonFormatter(),
+                    path: "logs/orders-.log",
+                    rollingInterval: RollingInterval.Day,
+                    retainedFileCountLimit: retainedFileCountLimit));
+    });
 
     builder.Services.ConfigureHttpJsonOptions(options =>
     {
         options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
-    builder.Services.AddSingleton<GameConfig>();
+    builder.Services.Configure<GameConfig>(builder.Configuration.GetSection("Game"));
+    builder.Services.Configure<AdminConfig>(builder.Configuration.GetSection("Admin"));
+    builder.Services.Configure<GameStoreConfig>(builder.Configuration.GetSection("GameStore"));
+
+    // Existing consumers expect the POCO directly — expose IOptions<T>.Value as a singleton.
+    builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<GameConfig>>().Value);
+    builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<AdminConfig>>().Value);
+    builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<GameStoreConfig>>().Value);
+
     builder.Services.AddSingleton<GameStore>();
     builder.Services.AddSingleton<IExchangeFactory, SimpleExchangeFactory>();
     builder.Services.AddTransient<TurnProcessor>(sp =>

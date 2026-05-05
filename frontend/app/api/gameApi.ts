@@ -1,7 +1,5 @@
 import type { GameResponse, OrderRequest, OrderBookResponse } from "~/types/game";
-
-const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:5088";
-const DEFAULT_TIMEOUT_MS = 8000;
+import { API_BASE_URL, DEFAULT_TIMEOUT_MS } from "~/config";
 
 const ERROR_MESSAGES: Record<number, string> = {
   400: "リクエストが不正です。入力内容を確認してください。",
@@ -32,17 +30,17 @@ async function handleResponse<T>(res: Response): Promise<T> {
 }
 
 export async function createGame(): Promise<GameResponse> {
-  const res = await apiFetch(`${BASE}/api/games`, { method: "POST" });
+  const res = await apiFetch(`${API_BASE_URL}/api/games`, { method: "POST" });
   return handleResponse(res);
 }
 
 export async function getGame(id: string): Promise<GameResponse> {
-  const res = await apiFetch(`${BASE}/api/games/${id}`);
+  const res = await apiFetch(`${API_BASE_URL}/api/games/${id}`);
   return handleResponse(res);
 }
 
 export async function placeOrder(id: string, order: OrderRequest): Promise<GameResponse> {
-  const res = await apiFetch(`${BASE}/api/games/${id}/orders`, {
+  const res = await apiFetch(`${API_BASE_URL}/api/games/${id}/orders`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(order),
@@ -51,7 +49,7 @@ export async function placeOrder(id: string, order: OrderRequest): Promise<GameR
 }
 
 export async function wait(id: string): Promise<GameResponse> {
-  const res = await apiFetch(`${BASE}/api/games/${id}/wait`, { method: "POST" });
+  const res = await apiFetch(`${API_BASE_URL}/api/games/${id}/wait`, { method: "POST" });
   return handleResponse(res);
 }
 
@@ -64,7 +62,7 @@ export async function getOrderBook(
   if (page !== undefined) params.set("page", String(page));
   if (pageSize !== undefined) params.set("pageSize", String(pageSize));
   const query = params.toString();
-  const url = `${BASE}/api/admin/games/${id}/orderbook${query ? `?${query}` : ""}`;
+  const url = `${API_BASE_URL}/api/admin/games/${id}/orderbook${query ? `?${query}` : ""}`;
   const res = await apiFetch(url);
   return handleResponse(res);
 }
