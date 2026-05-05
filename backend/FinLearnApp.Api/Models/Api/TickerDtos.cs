@@ -35,3 +35,5 @@ public sealed record TickerDetailDto
         CurrentPrice = currentPrice;
     }
 }
+
+public sealed record PriceRecordDto(int Turn, MoneyDto Price);

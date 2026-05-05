@@ -88,3 +88,8 @@ export type MarketSnapshotDto = {
   sellOrders: MarketOrderDto[]
   trades: MarketTradeDto[]
 }
+
+export type PriceRecordDto = {
+  turn: number
+  price: MoneyDto
+}
