@@ -1,12 +1,14 @@
 # 取引ルール
 
+> バリデーション・エラー応答の詳細は [docs/FEATURES/VALIDATION/LOGIC.md](../FEATURES/VALIDATION/LOGIC.md) 参照。
+
 ## 手数料
 
 - **固定手数料制**: 1取引あたり固定額（JPY）を徴収
 - 手数料は `TurnProcessor` の各メソッド (`Buy`/`Sell`/`Wait`) に `int fee` パラメータとして注入
 - **買い**: `新キャッシュ = 現金 - 約定金額 - 手数料`
 - **売り**: `新キャッシュ = 現金 + 約定金額 - 手数料`
-- 買いバリデーション: `現金 < 約定金額 + 手数料` で拒否（手数料込みチェック）
+- 残高チェックは手数料込み（`現金 < 約定金額 + 手数料` で拒否）
 
 ## 注文の種類
 
@@ -25,11 +27,7 @@
 
 例: 市場価格100の銘柄で売り板に `[100, 100, 500]` がある場合、`StopPrice=200` の成行買い3株では `100 + 100 = 200` のみ約定し、500の売り注文はスキップされる。
 
-### バリデーション
-
-- 数量は `int Quantity > 0` 必須（`Order` コンストラクタで `ArgumentException`）
-- 指値注文の価格は `> 0` 必須
-- ストップ価格は `> 0` 必須（指定時）
+> 注文の入力バリデーション（数量・価格・ストップ価格 > 0）は [docs/FEATURES/VALIDATION/LOGIC.md](../FEATURES/VALIDATION/LOGIC.md) を参照。
 
 ## コンピューター注文生成（`ComputerTrader`）
 
@@ -73,6 +71,8 @@
 
 ## ポートフォリオ更新（`Portfolio.ApplyTrade`）
 
+> 失敗時の Warning 設計は [docs/FEATURES/VALIDATION/LOGIC.md](../FEATURES/VALIDATION/LOGIC.md) 参照。
+
 ### 買い
 
 1. `FilledQuantity > 0` チェック（0以下で拒否）
@@ -101,8 +101,7 @@
 ```
 
 - **Wait**: コンピューター注文生成 + 株価変動のみ（プレイヤー注文なし）
-- **入力バリデーション失敗時**（数量0以下、指値0以下）: 元の `Game` をそのまま返す（状態不変、コンピューター注文未生成）
-- **約定・ポートフォリオ更新失敗時**（約定ゼロ、現金不足、保有不足）: コンピューター注文は板に残し、ターンを進め、株価も変動する（Waitと同じ挙動）。ポートフォリオは不変
+- **失敗時のターン進行ルール**（形式不正／約定ゼロ／状態依存失敗）: [docs/FEATURES/VALIDATION/LOGIC.md](../FEATURES/VALIDATION/LOGIC.md) 「失敗時のターン進行ルール」表を参照
 
 ## 株価変動（`RandomPriceFluctuator`）
 
