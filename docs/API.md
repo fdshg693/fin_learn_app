@@ -92,9 +92,9 @@
 |---|---|---|---|
 | side | `"Buy"` \| `"Sell"` | YES | 売買区分。未指定または不正値は 400 |
 | instrumentId | int | YES | 銘柄ID |
-| quantity | int | YES | 数量（1以上） |
-| price | int? | NO | 指値価格（null = 成行） |
-| stopPrice | int? | NO | 逆指値価格（null = 通常注文） |
+| quantity | int | YES | 数量（1 以上）。`<= 0` は 400 |
+| price | int? | NO | 指値価格（null = 成行）。指定する場合 1 以上、`<= 0` は 400 |
+| stopPrice | int? | NO | 逆指値価格（null = 通常注文）。指定する場合 1 以上、`<= 0` は 400 |
 
 **レスポンス:** `200 OK`
 
@@ -111,9 +111,9 @@
 }
 ```
 
-**警告付きレスポンス（ターン不変）:** `200 OK`
+**警告付きレスポンス:** `200 OK`
 
-約定失敗や残高不足など、ドメインが `(Game, TradeResult?, string? Warning)` で `Warning != null` を返した場合、`warning` にメッセージが入り、`GameStore` は更新されない（`turn` は進まず、取引履歴も追加されない）。
+ゲーム状態に依存する失敗（残高不足、保有不足、成行で約定なし等）でドメインが `(Game, TradeResult?, string? Warning)` で `Warning != null` を返した場合、`warning` にメッセージが入り、`GameStore` は更新されない（取引履歴も追加されない）。
 
 ```json
 {
@@ -126,7 +126,7 @@
 }
 ```
 
-**400 Bad Request:** `side` が未指定または `"Buy"` / `"Sell"` 以外の値の場合。
+**400 Bad Request:** 形式不正（`side` 未指定または `"Buy"` / `"Sell"` 以外、`quantity <= 0`、`price <= 0`、`stopPrice <= 0`）。
 
 ### POST /api/games/{id}/wait
 
@@ -283,7 +283,10 @@ Random              → Random.Shared を直接利用
 ## 設計判断
 
 - **Minimal API を採用**: Controller ベースではなく Minimal API。エンドポイント数が少なく、シンプルな構造に適合
-- **警告は 200 で返す**: ドメインが例外ではなく `(Game, TradeResult?, string? Warning)` タプルで結果を返す設計のため、HTTP ステータスではなく `warning` フィールドで表現。`warning != null` の場合は `GameStore` が更新されず、`turn` も進まないため、フロントエンドが状態変化の有無を判断できる
+- **エラー応答の二系統**:
+  - **形式不正は 400 BadRequest**: `side` 未指定/不正、`quantity <= 0`、`price <= 0`、`stopPrice <= 0`。クライアントの不正リクエストに対する REST 慣習に沿った応答。`PlaceOrder` ハンドラ冒頭で弾く。
+  - **ゲーム状態依存の失敗は 200 OK + `warning`**: 残高不足・保有不足・約定ゼロなど。ドメインが例外ではなく `(Game, TradeResult?, string? Warning)` タプルで結果を返す設計に対応。`warning != null` の場合は `GameStore` が更新されない。
+- **多重防御**: API 層で形式不正を弾いた上で、`TurnProcessor.Buy/Sell` も同条件で `Rejected()` を返す safety net を持つ。Domain 層を直接呼ぶテストや将来の他経路に対する自律性を保つ
 - **取引履歴は API 側で保持**: ドメインの `Game` は取引履歴を持たない。`GameStore` が直近の `TradeResult` を最大 `MaxRecentTrades`（=3）件キャッシュし、レスポンスに同梱する
 - **DTO マッピング**: `GameMapper.ToResponse` で `Game` + `IExchange` → `GameResponse` 変換。`IExchangeFactory` 経由で `game.Prices` から評価用の `IExchange` を生成
 - **ゲームIDは GUID**: `Guid.NewGuid().ToString("N")` で生成。URL フレンドリーな 32 文字 hex

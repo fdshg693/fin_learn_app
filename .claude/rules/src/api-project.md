@@ -47,8 +47,11 @@ ASP.NET Core Minimal API layer. Translates HTTP requests into `TurnProcessor` ca
 
 ### Design Decisions
 
-- **Warning handling**: Domain returns `(Game, string? Warning)` tuples. API always returns 200 OK — `warning` field is `null` on success, contains a message on failure. Turn does not advance when warning is present, and `GameStore` is not updated
-- **ProcessOrder helper**: 注文処理の共通ロジック（ゲーム取得 → アクション実行 → ストア更新 → レスポンス生成）を `ProcessOrder` static メソッドに集約。`PlaceOrder` ハンドラが `request.Side` で `processor.Buy` / `processor.Sell` を switch して `Func` として渡す。`side` が未指定の場合は handler 冒頭で 400 BadRequest
+- **エラー応答の二系統**:
+  - **形式不正 → 400 BadRequest**: `side` 未指定、`quantity <= 0`、`price <= 0`、`stopPrice <= 0`。`PlaceOrder` ハンドラ冒頭で弾く。クライアントの不正リクエストに対する REST 慣習に沿った応答。
+  - **ゲーム状態依存の失敗 → 200 OK + `warning` フィールド**: 保有不足、現金不足、約定ゼロ等。Domain の `(Game, string? Warning)` タプルから `GameResponse.warning` にマップ。`warning` が null 以外のとき `GameStore` は更新しない。
+- **Domain の多重防御**: API 層で形式不正を弾いた上で、`TurnProcessor.Buy/Sell` も同条件で `Rejected()` を返す safety net を持つ。Domain 層を直接呼ぶテストや将来の他経路に対する自律性を保つため。
+- **ProcessOrder helper**: 注文処理の共通ロジック（ゲーム取得 → アクション実行 → ストア更新 → レスポンス生成）を `ProcessOrder` static メソッドに集約。`PlaceOrder` ハンドラが `request.Side` で `processor.Buy` / `processor.Sell` を switch して `Func` として渡す。
 - **Enum JSON binding**: `Program.cs` で `JsonStringEnumConverter` をグローバル登録。`OrderRequest.Side` は `OrderSide?` 型で、JSON では `"Buy"` / `"Sell"` 文字列。null（未指定）は handler が 400 を返し、`"Hold"` などの不正値は ASP.NET Core のモデルバインドが自動で 400 を返す
 - **DTO mapping**: `ToResponse` static method in `Program.cs` converts `Game` → `GameResponse`. `IExchangeFactory` 経由で価格評価用の exchange を生成
 - **Game ID**: `Guid.NewGuid().ToString("N")` — 32-char hex string, URL-friendly

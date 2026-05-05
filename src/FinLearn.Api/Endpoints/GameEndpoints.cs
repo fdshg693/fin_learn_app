@@ -45,6 +45,18 @@ public static class GameEndpoints
         {
             return Results.BadRequest(new { error = "side は必須です（\"Buy\" または \"Sell\"）" });
         }
+        if (request.Quantity <= 0)
+        {
+            return Results.BadRequest(new { error = "quantity は 1 以上を指定してください" });
+        }
+        if (request.Price is not null && request.Price <= 0)
+        {
+            return Results.BadRequest(new { error = "price は 1 以上を指定してください" });
+        }
+        if (request.StopPrice is not null && request.StopPrice <= 0)
+        {
+            return Results.BadRequest(new { error = "stopPrice は 1 以上を指定してください" });
+        }
 
         return ProcessOrder(id, request, store, processor, exchangeFactory, config, logger,
             (g, fee, req) => req.Side switch

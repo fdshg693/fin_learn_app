@@ -57,37 +57,46 @@ public class GameApiTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
-    [Fact]
-    public async Task POST_buy_買い注文でターンが進む()
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public async Task POST_orders_数量が0以下で400(int quantity)
     {
         var created = await CreateGame();
 
-        // 高い指値で確実に約定させる（コンピューター注文同士のマッチングで売り注文が減る可能性があるため）
         var response = await _client.PostAsJsonAsync(
             $"/api/games/{created.GameId}/orders",
-            new OrderRequest(Side: OrderSide.Buy, InstrumentId: 1, Quantity: 1, Price: 150));
+            new OrderRequest(Side: OrderSide.Buy, InstrumentId: 1, Quantity: quantity));
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var game = await response.Content.ReadFromJsonAsync<GameResponse>();
-        Assert.NotNull(game);
-        Assert.Equal(2, game.Turn);
-        Assert.Null(game.Warning);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
-    [Fact]
-    public async Task POST_buy_数量0でwarning付きターン不変()
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public async Task POST_orders_priceが0以下で400(int price)
     {
         var created = await CreateGame();
 
         var response = await _client.PostAsJsonAsync(
             $"/api/games/{created.GameId}/orders",
-            new OrderRequest(Side: OrderSide.Buy, InstrumentId: 1, Quantity: 0));
+            new OrderRequest(Side: OrderSide.Buy, InstrumentId: 1, Quantity: 1, Price: price));
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var game = await response.Content.ReadFromJsonAsync<GameResponse>();
-        Assert.NotNull(game);
-        Assert.NotNull(game.Warning);
-        Assert.Equal(1, game.Turn);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public async Task POST_orders_stopPriceが0以下で400(int stopPrice)
+    {
+        var created = await CreateGame();
+
+        var response = await _client.PostAsJsonAsync(
+            $"/api/games/{created.GameId}/orders",
+            new OrderRequest(Side: OrderSide.Buy, InstrumentId: 1, Quantity: 1, StopPrice: stopPrice));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
@@ -147,27 +156,43 @@ public class GameApiTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task POST_buy_sell_ラウンドトリップで売買できる()
+    public async Task POST_orders_400後はターンも板も不変()
     {
         var created = await CreateGame();
 
-        // 買い
-        var buyResponse = await _client.PostAsJsonAsync(
-            $"/api/games/{created.GameId}/orders",
-            new OrderRequest(Side: OrderSide.Buy, InstrumentId: 1, Quantity: 1));
-        var afterBuy = await buyResponse.Content.ReadFromJsonAsync<GameResponse>();
-        Assert.NotNull(afterBuy);
-        Assert.Null(afterBuy.Warning);
-        Assert.Equal(2, afterBuy.Turn);
+        // 形式不正のリクエストを複数送信
+        await _client.PostAsJsonAsync($"/api/games/{created.GameId}/orders",
+            new OrderRequest(Side: OrderSide.Buy, InstrumentId: 1, Quantity: 0));
+        await _client.PostAsJsonAsync($"/api/games/{created.GameId}/orders",
+            new OrderRequest(Side: OrderSide.Buy, InstrumentId: 1, Quantity: 1, Price: 0));
+        await _client.PostAsJsonAsync($"/api/games/{created.GameId}/orders",
+            new OrderRequest(Side: OrderSide.Buy, InstrumentId: 1, Quantity: 1, StopPrice: -1));
 
-        // 売り
-        var sellResponse = await _client.PostAsJsonAsync(
-            $"/api/games/{afterBuy.GameId}/orders",
-            new OrderRequest(Side: OrderSide.Sell, InstrumentId: 1, Quantity: 1));
-        var afterSell = await sellResponse.Content.ReadFromJsonAsync<GameResponse>();
-        Assert.NotNull(afterSell);
-        Assert.Null(afterSell.Warning);
-        Assert.Equal(3, afterSell.Turn);
+        // ターン不変
+        var game = await _client.GetFromJsonAsync<GameResponse>($"/api/games/{created.GameId}");
+        Assert.NotNull(game);
+        Assert.Equal(1, game.Turn);
+
+        // コンピューター注文も生成されていない（板が空）
+        var orderBook = await _client.GetFromJsonAsync<OrderBookResponse>(
+            $"/api/admin/games/{created.GameId}/orderbook");
+        Assert.NotNull(orderBook);
+        Assert.Empty(orderBook.Orders);
+    }
+
+    [Fact]
+    public async Task POST_orders_404後も既存ゲームのターンは不変()
+    {
+        var created = await CreateGame();
+
+        var response = await _client.PostAsJsonAsync(
+            "/api/games/nonexistent/orders",
+            new OrderRequest(Side: OrderSide.Buy, InstrumentId: 1, Quantity: 1));
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+
+        var game = await _client.GetFromJsonAsync<GameResponse>($"/api/games/{created.GameId}");
+        Assert.NotNull(game);
+        Assert.Equal(1, game.Turn);
     }
 
     [Fact]
