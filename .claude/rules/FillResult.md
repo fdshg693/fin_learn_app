@@ -7,6 +7,7 @@ paths:
   - "src/FinLearn.Api/Dtos/OrderBookResponse.cs"
   - "src/FinLearn.Api/Mappers/OrderBookMapper.cs"
   - frontend/app/components/OrderBookPanel.tsx
+  - "docs/FEATURES/**"
 ---
 
 ## 約定（FillResult）関連ドキュメント

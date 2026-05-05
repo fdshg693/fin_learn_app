@@ -610,6 +610,74 @@ public class OrderBookTests
         Assert.Single(result.UpdatedBook.SellOrders(instrumentId: 1));
     }
 
+    // --- 自己約定の防止 ---
+
+    [Fact]
+    public void 同一TraderIdの売り注文には買い指値で約定しない()
+    {
+        var book = new OrderBook()
+            .Add(new Order(1, "alice", new Instrument(1), OrderSide.Sell, 5, 100));
+        var incoming = new Order(10, "alice", new Instrument(1), OrderSide.Buy, 3, 100);
+
+        var result = book.Match(incoming);
+        var incomingFill = result.GetFill(10);
+
+        Assert.NotNull(incomingFill);
+        Assert.Equal(0, incomingFill.FilledQuantity);
+        Assert.Equal(0, incomingFill.TotalAmount);
+        Assert.Single(result.UpdatedBook.SellOrders(instrumentId: 1));
+    }
+
+    [Fact]
+    public void 同一TraderIdの買い注文には売り指値で約定しない()
+    {
+        var book = new OrderBook()
+            .Add(new Order(1, "alice", new Instrument(1), OrderSide.Buy, 5, 100));
+        var incoming = new Order(10, "alice", new Instrument(1), OrderSide.Sell, 3, 100);
+
+        var result = book.Match(incoming);
+        var incomingFill = result.GetFill(10);
+
+        Assert.NotNull(incomingFill);
+        Assert.Equal(0, incomingFill.FilledQuantity);
+        Assert.Single(result.UpdatedBook.BuyOrders(instrumentId: 1));
+    }
+
+    [Fact]
+    public void 同一TraderIdは成行注文でも約定しない()
+    {
+        var book = new OrderBook()
+            .Add(new Order(1, "alice", new Instrument(1), OrderSide.Sell, 5, 100));
+        var incoming = Order.CreateMarket(10, "alice", new Instrument(1), OrderSide.Buy, 3);
+
+        var result = book.Match(incoming);
+        var incomingFill = result.GetFill(10);
+
+        Assert.NotNull(incomingFill);
+        Assert.Equal(0, incomingFill.FilledQuantity);
+    }
+
+    [Fact]
+    public void 同一TraderIdの注文をスキップして異なるTraderIdの注文と約定する()
+    {
+        // 板：自分(alice)の売り@100が先頭、bobの売り@110が次
+        // → 自己約定はスキップされ、bobの注文と約定する
+        var book = new OrderBook()
+            .Add(new Order(1, "alice", new Instrument(1), OrderSide.Sell, 5, 100))
+            .Add(new Order(2, "bob", new Instrument(1), OrderSide.Sell, 3, 110));
+        var incoming = new Order(10, "alice", new Instrument(1), OrderSide.Buy, 3, 110);
+
+        var result = book.Match(incoming);
+        var incomingFill = result.GetFill(10);
+
+        Assert.NotNull(incomingFill);
+        Assert.Equal(3, incomingFill.FilledQuantity);
+        Assert.Equal(3 * 110, incomingFill.TotalAmount);
+        // 自分の売り注文は板に残り、bobの売り注文が消化される
+        Assert.Contains(result.UpdatedBook.SellOrders(1), o => o.TraderId == "alice");
+        Assert.DoesNotContain(result.UpdatedBook.SellOrders(1), o => o.TraderId == "bob");
+    }
+
     // --- 注文の有効期限 ---
 
     [Fact]

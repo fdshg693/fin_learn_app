@@ -29,23 +29,23 @@ FillResult
 
 ### 1. 対象注文の抽出
 
-受注注文の反対側から、価格条件を満たす注文を `TakeWhile` で抽出する。ソート済みリストに対する `TakeWhile` なので、条件を満たさない最初の注文以降は全てスキップされる。
+受注注文の反対側の板から、以下の2条件を**両方**満たす注文を順に抽出する。リストはソート済みなので、価格条件を満たすものから順に約定する。
 
-**指値注文の場合:**
+#### 1-a. 自己約定の防止（TraderId フィルタ）
 
-| incoming | 対象 | 条件 |
-|---|---|---|
-| 買い指値 | 売り注文（安い順） | `売り価格 <= 買い指値` |
-| 売り指値 | 買い注文（高い順） | `買い価格 >= 売り指値` |
+`resting.TraderId != incoming.TraderId` の注文のみを対象とする。同一 TraderId の注文は約定対象から外れる（`OrderBook.Match` 内で `Where` フィルタを適用）。
 
-**成行注文の場合:**
+> **注意:** 現状コンピューター注文は全て `TraderId = "computer"` で生成されるため、コンピューター注文同士は約定しない。コンピューター注文の識別方式は後続タスクで見直し予定。
 
-| incoming | 対象 | 条件 |
-|---|---|---|
-| 買い成行（StopPrice なし） | 売り注文（安い順） | 全て |
-| 買い成行（StopPrice あり） | 売り注文（安い順） | `売り価格 <= StopPrice` |
-| 売り成行（StopPrice なし） | 買い注文（高い順） | 全て |
-| 売り成行（StopPrice あり） | 買い注文（高い順） | `買い価格 >= StopPrice` |
+#### 1-b. 価格条件
+
+`IsPriceCompatible(incoming, resting)` で判定する。指値か成行か、買いか売りかで境界値と向きを切り替える：
+
+| incoming タイプ | 価格境界 (`limit`) | Buy | Sell |
+|---|---|---|---|
+| 指値（Limit） | `incoming.Price` | `resting.Price <= limit` | `resting.Price >= limit` |
+| 成行（Market・StopPrice あり） | `incoming.StopPrice` | `resting.Price <= limit` | `resting.Price >= limit` |
+| 成行（Market・StopPrice なし） | `null` | 全て | 全て |
 
 ### 2. Fill ループ
 
@@ -71,6 +71,7 @@ fills.Add(OrderFill(incoming.Id, 約定数量, 合計金額))   ← incoming 分
 ### 3. 重要ルール
 
 - **約定価格は常に待機注文（板に既存の注文）の価格**。incoming の価格ではない
+- **自己約定は発生しない**（同一 TraderId の注文同士はマッチしない）
 - incoming の `OrderFill` は Fills の**末尾**に追加される
 - `OrderBook` は不変。`Fill` は新しい `OrderBook` インスタンスを返す
 
@@ -93,4 +94,4 @@ fills.Add(OrderFill(incoming.Id, 約定数量, 合計金額))   ← incoming 分
 ## 関連
 
 - [取引ルール全体](../../DDD/EXCHANGE_RULE.md) — 手数料、注文種別、ターン進行フロー
-- [テスト](../../../tests/FinLearn.Tests/OrderBookTests.cs) — 77件のマッチングテスト
+- [テスト](../../../tests/FinLearn.Tests/OrderBookTests.cs) — マッチング・自己約定防止・TTL のテスト

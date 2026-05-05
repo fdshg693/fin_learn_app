@@ -63,22 +63,35 @@ public sealed class OrderBook
     /// <summary>
     /// 対称的マッチング — 受注注文を板の反対側注文とマッチングする。
     /// 約定価格は常に待機注文（板にいた注文）の価格。
+    /// 自己約定（同一TraderId同士の約定）は行わない。
     /// </summary>
     public FillResult Match(Order incoming)
     {
-        var eligible = incoming.Type == OrderType.Market
-            ? (incoming.Side == OrderSide.Buy
-                ? SellOrders(incoming.Instrument.Id)
-                    .TakeWhile(o => incoming.StopPrice is null || o.Price <= incoming.StopPrice.Value).ToList()
-                : BuyOrders(incoming.Instrument.Id)
-                    .TakeWhile(o => incoming.StopPrice is null || o.Price >= incoming.StopPrice.Value).ToList())
-            : (incoming.Side == OrderSide.Buy
-                ? SellOrders(incoming.Instrument.Id)
-                    .TakeWhile(o => o.Price <= incoming.Price!.Value).ToList()
-                : BuyOrders(incoming.Instrument.Id)
-                    .TakeWhile(o => o.Price >= incoming.Price!.Value).ToList());
+        var eligible = OppositeSideOrders(incoming)
+            .Where(resting => resting.TraderId != incoming.TraderId)
+            .Where(resting => IsPriceCompatible(incoming, resting))
+            .ToList();
 
         return Fill(incoming, eligible);
+    }
+
+    private IReadOnlyList<Order> OppositeSideOrders(Order incoming) =>
+        incoming.Side == OrderSide.Buy
+            ? SellOrders(incoming.Instrument.Id)
+            : BuyOrders(incoming.Instrument.Id);
+
+    /// <summary>
+    /// 受注注文の価格条件を待機注文が満たすかを判定する。
+    /// 指値注文は Price、成行注文は StopPrice（無ければ無制限）を上限/下限として用いる。
+    /// </summary>
+    private static bool IsPriceCompatible(Order incoming, Order resting)
+    {
+        var limit = incoming.Type == OrderType.Limit ? incoming.Price : incoming.StopPrice;
+        if (limit is null) return true;
+
+        return incoming.Side == OrderSide.Buy
+            ? resting.Price <= limit.Value
+            : resting.Price >= limit.Value;
     }
 
     private FillResult Fill(Order incoming, IReadOnlyList<Order> matchingOrders)
