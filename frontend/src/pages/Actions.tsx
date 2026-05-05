@@ -232,254 +232,211 @@ export default function Actions() {
   }
 
   return (
-    <section>
-      <h1>アクション実行</h1>
-      {isLoading && <p>読み込み中...</p>}
-      {error && <p>エラー: {error}</p>}
-      {portfolio && (
-        <div>
-          <p>投資家ID: {portfolio.investorId}</p>
-          <p>
-            現金: {portfolio.cash.amount.toLocaleString()} {portfolio.cash.currency}
-          </p>
-          <p>
-            評価額: {portfolio.valuation.amount.toLocaleString()} {portfolio.valuation.currency}
-          </p>
-          <p>
-            損益: {portfolio.profitLoss.amount.toLocaleString()} {portfolio.profitLoss.currency}
-          </p>
-          <p>現在ターン: {currentTurn}</p>
-        </div>
-      )}
+    <div>
+      <h1 style={{ margin: '0 0 1rem' }}>アクション実行</h1>
+      {isLoading && <p style={{ color: '#94a3b8' }}>読み込み中...</p>}
+      {error && <p style={{ color: '#ef4444' }}>エラー: {error}</p>}
+      {resultMessage && <p style={{ color: '#4ade80', marginBottom: '1rem' }}>{resultMessage}</p>}
 
-      <form>
-        <div>
-          <label>
-            銘柄
-            <select value={tickerId} onChange={(event) => setTickerId(event.target.value)}>
-              {tickers.map((ticker) => (
-                <option key={ticker.tickerId} value={ticker.tickerId}>
-                  {ticker.symbol} ({ticker.companyName})
-                </option>
+      <div className="page-grid" style={{ marginBottom: '1.25rem' }}>
+        {/* 左: 取引フォーム */}
+        <div className="card">
+          <h2>注文</h2>
+          <form style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.875rem', color: '#94a3b8' }}>
+              銘柄
+              <select value={tickerId} onChange={(e) => setTickerId(e.target.value)}
+                style={{ background: '#1e293b', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '6px', padding: '0.4rem 0.6rem' }}>
+                {tickers.map((ticker) => (
+                  <option key={ticker.tickerId} value={ticker.tickerId}>
+                    {ticker.symbol} ({ticker.companyName})
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.875rem', color: '#94a3b8' }}>
+              数量
+              <input type="number" min={1} value={quantity}
+                onChange={(e) => setQuantity(Number(e.target.value))}
+                style={{ background: '#1e293b', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '6px', padding: '0.4rem 0.6rem' }} />
+            </label>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.875rem', color: '#94a3b8' }}>
+              指値価格
+              <input type="number" min={1} value={limitPriceAmount}
+                onChange={(e) => setLimitPriceAmount(Number(e.target.value))}
+                style={{ background: '#1e293b', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '6px', padding: '0.4rem 0.6rem' }} />
+            </label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.25rem' }}>
+              {[
+                { label: 'BuyNow', action: () => executeTradeAction('buy'), color: '#16a34a' },
+                { label: 'SellNow', action: () => executeTradeAction('sell'), color: '#dc2626' },
+                { label: 'Wait', action: executeWaitAction, color: '#475569' },
+                { label: 'BuyLimit', action: () => executeLimitAction('buy'), color: '#065f46' },
+                { label: 'SellLimit', action: () => executeLimitAction('sell'), color: '#7f1d1d' },
+              ].map(({ label, action, color }) => (
+                <button key={label} type="button" disabled={isSubmitting || isLoading} onClick={action}
+                  style={{ background: color, color: '#fff', border: 'none', borderRadius: '6px', padding: '0.45rem 0.9rem', cursor: 'pointer', fontSize: '0.875rem', opacity: isSubmitting ? 0.6 : 1 }}>
+                  {isSubmitting ? '送信中...' : label}
+                </button>
               ))}
-            </select>
-          </label>
+            </div>
+          </form>
         </div>
-        <div>
-          <label>
-            数量
-            <input
-              type="number"
-              min={1}
-              value={quantity}
-              onChange={(event) => setQuantity(Number(event.target.value))}
-            />
-          </label>
-        </div>
-        <div>
-          <label>
-            指値価格
-            <input
-              type="number"
-              min={1}
-              value={limitPriceAmount}
-              onChange={(event) => setLimitPriceAmount(Number(event.target.value))}
-            />
-          </label>
-        </div>
-        <div className="actions">
-          <button
-            type="button"
-            disabled={isSubmitting || isLoading}
-            onClick={() => executeTradeAction('buy')}
-          >
-            {isSubmitting ? '送信中...' : 'BuyNow'}
-          </button>
-          <button
-            type="button"
-            disabled={isSubmitting || isLoading}
-            onClick={() => executeTradeAction('sell')}
-          >
-            {isSubmitting ? '送信中...' : 'SellNow'}
-          </button>
-          <button type="button" disabled={isSubmitting || isLoading} onClick={executeWaitAction}>
-            {isSubmitting ? '送信中...' : 'Wait'}
-          </button>
-          <button
-            type="button"
-            disabled={isSubmitting || isLoading}
-            onClick={() => executeLimitAction('buy')}
-          >
-            {isSubmitting ? '送信中...' : 'BuyLimit'}
-          </button>
-          <button
-            type="button"
-            disabled={isSubmitting || isLoading}
-            onClick={() => executeLimitAction('sell')}
-          >
-            {isSubmitting ? '送信中...' : 'SellLimit'}
-          </button>
-        </div>
-      </form>
 
-      {resultMessage && <p>{resultMessage}</p>}
-
-      {portfolio && portfolio.holdings.length > 0 && (
-        <div>
-          <h2>保有銘柄</h2>
-          <ul>
-            {portfolio.holdings.map((holding) => (
-              <li key={holding.tickerId}>
-                {holding.symbol} - {holding.quantity} 株 / 評価額{' '}
-                {holding.marketValue.amount.toLocaleString()} {holding.marketValue.currency}
-              </li>
-            ))}
-          </ul>
+        {/* 右: ポートフォリオ */}
+        <div className="card">
+          <h2>ポートフォリオ</h2>
+          {portfolio && (
+            <>
+              <div className="stat-row">
+                <div className="stat">
+                  <span className="stat-label">ターン</span>
+                  <span className="stat-value">{currentTurn}</span>
+                </div>
+                <div className="stat">
+                  <span className="stat-label">現金</span>
+                  <span className="stat-value">¥{portfolio.cash.amount.toLocaleString()}</span>
+                </div>
+                <div className="stat">
+                  <span className="stat-label">評価額</span>
+                  <span className="stat-value">¥{portfolio.valuation.amount.toLocaleString()}</span>
+                </div>
+                <div className="stat">
+                  <span className="stat-label">損益</span>
+                  <span className="stat-value" style={{ color: portfolio.profitLoss.amount >= 0 ? '#4ade80' : '#f87171' }}>
+                    {portfolio.profitLoss.amount >= 0 ? '+' : ''}¥{portfolio.profitLoss.amount.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+              {portfolio.holdings.length > 0 && (
+                <>
+                  <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.5rem' }}>保有銘柄</p>
+                  <table>
+                    <thead><tr><th>銘柄</th><th>株数</th><th>評価額</th></tr></thead>
+                    <tbody>
+                      {portfolio.holdings.map((h) => (
+                        <tr key={h.tickerId}>
+                          <td>{h.symbol}</td>
+                          <td>{h.quantity}</td>
+                          <td>¥{h.marketValue.amount.toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </>
+              )}
+            </>
+          )}
         </div>
-      )}
+      </div>
 
       {marketSnapshot && (
-        <div>
-          <h2>銘柄別サマリー（買い）</h2>
-          {buySummaryBySymbol.length === 0 && <p>買い注文はありません。</p>}
-          {buySummaryBySymbol.length > 0 && (
-            <table>
-              <thead>
-                <tr>
-                  <th>銘柄</th>
-                  <th>合計数量</th>
-                  <th>最高買い気配</th>
-                </tr>
-              </thead>
-              <tbody>
-                {buySummaryBySymbol.map((summary) => (
-                  <tr key={summary.symbol}>
-                    <td>{summary.symbol}</td>
-                    <td>{summary.totalQuantity}</td>
-                    <td>
-                      {summary.bestPrice.toLocaleString()} {summary.currency}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+        <>
+          {/* 気配値サマリー: 買い・売り横並び */}
+          <div className="page-grid" style={{ marginBottom: '1.25rem' }}>
+            <div className="card">
+              <h2>気配値（買い）</h2>
+              {buySummaryBySymbol.length === 0
+                ? <p style={{ color: '#64748b' }}>買い注文はありません。</p>
+                : <table>
+                    <thead><tr><th>銘柄</th><th>合計数量</th><th>最高気配</th></tr></thead>
+                    <tbody>
+                      {buySummaryBySymbol.map((s) => (
+                        <tr key={s.symbol}>
+                          <td>{s.symbol}</td>
+                          <td>{s.totalQuantity}</td>
+                          <td style={{ color: '#4ade80' }}>¥{s.bestPrice.toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+              }
+            </div>
+            <div className="card">
+              <h2>気配値（売り）</h2>
+              {sellSummaryBySymbol.length === 0
+                ? <p style={{ color: '#64748b' }}>売り注文はありません。</p>
+                : <table>
+                    <thead><tr><th>銘柄</th><th>合計数量</th><th>最安気配</th></tr></thead>
+                    <tbody>
+                      {sellSummaryBySymbol.map((s) => (
+                        <tr key={s.symbol}>
+                          <td>{s.symbol}</td>
+                          <td>{s.totalQuantity}</td>
+                          <td style={{ color: '#f87171' }}>¥{s.bestPrice.toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+              }
+            </div>
+          </div>
 
-          <h2>銘柄別サマリー（売り）</h2>
-          {sellSummaryBySymbol.length === 0 && <p>売り注文はありません。</p>}
-          {sellSummaryBySymbol.length > 0 && (
-            <table>
-              <thead>
-                <tr>
-                  <th>銘柄</th>
-                  <th>合計数量</th>
-                  <th>最安売り気配</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sellSummaryBySymbol.map((summary) => (
-                  <tr key={summary.symbol}>
-                    <td>{summary.symbol}</td>
-                    <td>{summary.totalQuantity}</td>
-                    <td>
-                      {summary.bestPrice.toLocaleString()} {summary.currency}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+          {/* 注文票: 買い・売り横並び */}
+          <div className="page-grid" style={{ marginBottom: '1.25rem' }}>
+            <div className="card">
+              <h2>注文票（買い）</h2>
+              {sortedBuyOrders.length === 0
+                ? <p style={{ color: '#64748b' }}>買い注文はありません。</p>
+                : <table>
+                    <thead><tr><th>銘柄</th><th>数量</th><th>価格</th><th>発注元</th></tr></thead>
+                    <tbody>
+                      {sortedBuyOrders.slice(0, 20).map((o) => (
+                        <tr key={o.orderId}>
+                          <td>{o.symbol}</td>
+                          <td>{o.quantity}</td>
+                          <td>¥{o.price.amount.toLocaleString()}</td>
+                          <td style={{ color: '#64748b' }}>{o.origin}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+              }
+            </div>
+            <div className="card">
+              <h2>注文票（売り）</h2>
+              {sortedSellOrders.length === 0
+                ? <p style={{ color: '#64748b' }}>売り注文はありません。</p>
+                : <table>
+                    <thead><tr><th>銘柄</th><th>数量</th><th>価格</th><th>発注元</th></tr></thead>
+                    <tbody>
+                      {sortedSellOrders.slice(0, 20).map((o) => (
+                        <tr key={o.orderId}>
+                          <td>{o.symbol}</td>
+                          <td>{o.quantity}</td>
+                          <td>¥{o.price.amount.toLocaleString()}</td>
+                          <td style={{ color: '#64748b' }}>{o.origin}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+              }
+            </div>
+          </div>
 
-          <h2>注文票（買い）</h2>
-          {sortedBuyOrders.length === 0 && <p>買い注文はありません。</p>}
-          {sortedBuyOrders.length > 0 && (
-            <table>
-              <thead>
-                <tr>
-                  <th>銘柄</th>
-                  <th>数量</th>
-                  <th>価格</th>
-                  <th>発注元</th>
-                  <th>発注時刻</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedBuyOrders.slice(0, 20).map((order) => (
-                  <tr key={order.orderId}>
-                    <td>{order.symbol}</td>
-                    <td>{order.quantity}</td>
-                    <td>
-                      {order.price.amount.toLocaleString()} {order.price.currency}
-                    </td>
-                    <td>{order.origin}</td>
-                    <td>{new Date(order.createdAt).toLocaleString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-
-          <h2>注文票（売り）</h2>
-          {sortedSellOrders.length === 0 && <p>売り注文はありません。</p>}
-          {sortedSellOrders.length > 0 && (
-            <table>
-              <thead>
-                <tr>
-                  <th>銘柄</th>
-                  <th>数量</th>
-                  <th>価格</th>
-                  <th>発注元</th>
-                  <th>発注時刻</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedSellOrders.slice(0, 20).map((order) => (
-                  <tr key={order.orderId}>
-                    <td>{order.symbol}</td>
-                    <td>{order.quantity}</td>
-                    <td>
-                      {order.price.amount.toLocaleString()} {order.price.currency}
-                    </td>
-                    <td>{order.origin}</td>
-                    <td>{new Date(order.createdAt).toLocaleString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-
-          <h2>約定履歴</h2>
-          {marketSnapshot.trades.length === 0 && <p>約定はまだありません。</p>}
-          {marketSnapshot.trades.length > 0 && (
-            <table>
-              <thead>
-                <tr>
-                  <th>銘柄</th>
-                  <th>数量</th>
-                  <th>価格</th>
-                  <th>手数料</th>
-                  <th>時刻</th>
-                </tr>
-              </thead>
-              <tbody>
-                {marketSnapshot.trades.slice(0, 10).map((trade) => (
-                  <tr key={trade.tradeId}>
-                    <td>{trade.symbol}</td>
-                    <td>{trade.quantity}</td>
-                    <td>
-                      {trade.price.amount.toLocaleString()} {trade.price.currency}
-                    </td>
-                    <td>
-                      {trade.fee.amount.toLocaleString()} {trade.fee.currency}
-                    </td>
-                    <td>{new Date(trade.executedAt).toLocaleString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+          {/* 約定履歴: フル幅 */}
+          <div className="card">
+            <h2>約定履歴</h2>
+            {marketSnapshot.trades.length === 0
+              ? <p style={{ color: '#64748b' }}>約定はまだありません。</p>
+              : <table>
+                  <thead><tr><th>銘柄</th><th>数量</th><th>価格</th><th>手数料</th><th>時刻</th></tr></thead>
+                  <tbody>
+                    {marketSnapshot.trades.slice(0, 10).map((t) => (
+                      <tr key={t.tradeId}>
+                        <td>{t.symbol}</td>
+                        <td>{t.quantity}</td>
+                        <td>¥{t.price.amount.toLocaleString()}</td>
+                        <td style={{ color: '#64748b' }}>¥{t.fee.amount.toLocaleString()}</td>
+                        <td style={{ color: '#64748b' }}>{new Date(t.executedAt).toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+            }
+          </div>
+        </>
       )}
-    </section>
+    </div>
   )
 }

@@ -1,3 +1,9 @@
+html,
+body {
+  margin: 0;
+  background: #0f172a;
+}
+
 #root {
   min-height: 100vh;
   background: #0f172a;
@@ -12,29 +18,23 @@
 }
 
 .app-sidebar {
-  width: 200px;
+  width: 160px;
   flex-shrink: 0;
   background: #0b1120;
   border-right: 1px solid #1e293b;
   display: flex;
   flex-direction: column;
-  padding: 1.5rem 1rem;
-  gap: 0.5rem;
+  padding: 1.25rem 0.75rem;
+  gap: 0.25rem;
 }
 
 .app-sidebar .app-title {
   font-weight: 700;
-  font-size: 1.125rem;
-  margin-bottom: 1rem;
-  padding-bottom: 1rem;
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
   border-bottom: 1px solid #1e293b;
   display: block;
-}
-
-.app-sidebar nav {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
 }
 
 .app-sidebar a {
@@ -57,15 +57,15 @@
 
 .app-main {
   flex: 1;
-  padding: 2rem;
+  padding: 1.25rem 1.5rem;
   min-width: 0;
 }
 
 section {
   background: #111827;
-  padding: 2rem;
+  padding: 1.5rem 2rem;
   border-radius: 16px;
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.4);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.4);
 }
 
 section h1 {
@@ -75,6 +75,79 @@ section h1 {
 
 section ul {
   padding-left: 1.25rem;
+}
+
+.page-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.page-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.card {
+  background: #111827;
+  padding: 1.25rem 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.4);
+}
+
+.card h2 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stat-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.stat-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+th {
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  color: #64748b;
+  border-bottom: 1px solid #1e293b;
+}
+
+td {
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid #0f172a;
+  color: #cbd5e1;
 }
 
 .actions {
