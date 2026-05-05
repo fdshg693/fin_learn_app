@@ -41,5 +41,3 @@ paths:
 dotnet test                                        # 全テスト実行
 cd tests/FinLearn.Tests && dotnet watch test        # TDD ウォッチモード
 ```
-
-<!-- Last updated by agent: 2026-03-08 -->

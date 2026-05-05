@@ -54,4 +54,4 @@ npm run test:watch # vitest（ウォッチモード）
 
 ### Screen Design
 
-@./../docs/FRONT.md
+`docs/FRONT.md`を参照
