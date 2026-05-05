@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLoaderData, useActionData, isRouteErrorResponse, type ClientLoaderFunctionArgs, type ClientActionFunctionArgs } from "react-router";
-import { getGame, getOrderBook, buy, sell, wait } from "~/api/gameApi";
+import { getGame, getOrderBook, placeOrder, wait } from "~/api/gameApi";
 import type { Route } from "./+types/games.$id";
 import type { GameResponse, OrderRequest, OrderBookResponse } from "~/types/game";
 import { GameHeader } from "~/components/GameHeader";
@@ -45,15 +45,13 @@ export async function clientAction({ params, request }: ClientActionFunctionArgs
       throw new Error("入力値が不正です。数値を入力してください。");
     }
 
-    const order: OrderRequest = { instrumentId, quantity, price };
-
-    if (intent === "buy") {
-      game = await buy(id, order);
-    } else if (intent === "sell") {
-      game = await sell(id, order);
-    } else {
+    const side = intent === "buy" ? "Buy" : intent === "sell" ? "Sell" : null;
+    if (side === null) {
       throw new Error(`Invalid intent: ${intent}`);
     }
+
+    const order: OrderRequest = { side, instrumentId, quantity, price };
+    game = await placeOrder(id, order);
   }
 
   const orderBook = await getOrderBook(id, 1, ORDERBOOK_PAGE_SIZE);

@@ -36,6 +36,7 @@ export type InstrumentDto = {
 };
 
 export type OrderRequest = {
+  side: "Buy" | "Sell";
   instrumentId: number;
   quantity: number;
   price: number | null;

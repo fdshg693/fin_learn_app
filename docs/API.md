@@ -27,8 +27,7 @@
 |---|---|---|
 | POST | `/api/games` | 新規ゲーム作成 |
 | GET | `/api/games/{id}` | ゲーム状態取得 |
-| POST | `/api/games/{id}/buy` | 買い注文 |
-| POST | `/api/games/{id}/sell` | 売り注文 |
+| POST | `/api/games/{id}/orders` | 注文（買い/売り） |
 | POST | `/api/games/{id}/wait` | 待機（ターンスキップ） |
 | GET | `/api/admin/games/{id}/orderbook` | 板（注文帳）状態取得（管理用） |
 
@@ -73,14 +72,15 @@
 
 **エラー:** `404 Not Found`（ゲームが存在しない場合）
 
-### POST /api/games/{id}/buy
+### POST /api/games/{id}/orders
 
-買い注文を実行する。
+買い注文または売り注文を実行する。`side` フィールドで売買区分を指定する。
 
 **リクエスト:**
 
 ```json
 {
+  "side": "Buy",
   "instrumentId": 1,
   "quantity": 5,
   "price": null,
@@ -90,6 +90,7 @@
 
 | フィールド | 型 | 必須 | 説明 |
 |---|---|---|---|
+| side | `"Buy"` \| `"Sell"` | YES | 売買区分。未指定または不正値は 400 |
 | instrumentId | int | YES | 銘柄ID |
 | quantity | int | YES | 数量（1以上） |
 | price | int? | NO | 指値価格（null = 成行） |
@@ -125,9 +126,7 @@
 }
 ```
 
-### POST /api/games/{id}/sell
-
-売り注文を実行する。リクエスト・レスポンス形式は `/buy` と同一。
+**400 Bad Request:** `side` が未指定または `"Buy"` / `"Sell"` 以外の値の場合。
 
 ### POST /api/games/{id}/wait
 

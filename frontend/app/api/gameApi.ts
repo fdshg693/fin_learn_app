@@ -26,17 +26,8 @@ export async function getGame(id: string): Promise<GameResponse> {
   return handleResponse(res);
 }
 
-export async function buy(id: string, order: OrderRequest): Promise<GameResponse> {
-  const res = await fetch(`${BASE}/api/games/${id}/buy`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(order),
-  });
-  return handleResponse(res);
-}
-
-export async function sell(id: string, order: OrderRequest): Promise<GameResponse> {
-  const res = await fetch(`${BASE}/api/games/${id}/sell`, {
+export async function placeOrder(id: string, order: OrderRequest): Promise<GameResponse> {
+  const res = await fetch(`${BASE}/api/games/${id}/orders`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(order),

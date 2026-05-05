@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using FinLearn.Api.Dtos;
+using FinLearn.Core;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace FinLearn.Api.Tests;
@@ -63,8 +64,8 @@ public class GameApiTests : IClassFixture<WebApplicationFactory<Program>>
 
         // 高い指値で確実に約定させる（コンピューター注文同士のマッチングで売り注文が減る可能性があるため）
         var response = await _client.PostAsJsonAsync(
-            $"/api/games/{created.GameId}/buy",
-            new OrderRequest(InstrumentId: 1, Quantity: 1, Price: 150));
+            $"/api/games/{created.GameId}/orders",
+            new OrderRequest(Side: OrderSide.Buy, InstrumentId: 1, Quantity: 1, Price: 150));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var game = await response.Content.ReadFromJsonAsync<GameResponse>();
@@ -79,8 +80,8 @@ public class GameApiTests : IClassFixture<WebApplicationFactory<Program>>
         var created = await CreateGame();
 
         var response = await _client.PostAsJsonAsync(
-            $"/api/games/{created.GameId}/buy",
-            new OrderRequest(InstrumentId: 1, Quantity: 0));
+            $"/api/games/{created.GameId}/orders",
+            new OrderRequest(Side: OrderSide.Buy, InstrumentId: 1, Quantity: 0));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var game = await response.Content.ReadFromJsonAsync<GameResponse>();
@@ -95,8 +96,8 @@ public class GameApiTests : IClassFixture<WebApplicationFactory<Program>>
         var created = await CreateGame();
 
         var response = await _client.PostAsJsonAsync(
-            $"/api/games/{created.GameId}/sell",
-            new OrderRequest(InstrumentId: 1, Quantity: 1));
+            $"/api/games/{created.GameId}/orders",
+            new OrderRequest(Side: OrderSide.Sell, InstrumentId: 1, Quantity: 1));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var game = await response.Content.ReadFromJsonAsync<GameResponse>();
@@ -110,8 +111,8 @@ public class GameApiTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task POST_sell_存在しないゲームは404()
     {
         var response = await _client.PostAsJsonAsync(
-            "/api/games/nonexistent/sell",
-            new OrderRequest(InstrumentId: 1, Quantity: 1));
+            "/api/games/nonexistent/orders",
+            new OrderRequest(Side: OrderSide.Sell, InstrumentId: 1, Quantity: 1));
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
@@ -119,8 +120,8 @@ public class GameApiTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task POST_buy_存在しないゲームは404()
     {
         var response = await _client.PostAsJsonAsync(
-            "/api/games/nonexistent/buy",
-            new OrderRequest(InstrumentId: 1, Quantity: 1));
+            "/api/games/nonexistent/orders",
+            new OrderRequest(Side: OrderSide.Buy, InstrumentId: 1, Quantity: 1));
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
@@ -152,8 +153,8 @@ public class GameApiTests : IClassFixture<WebApplicationFactory<Program>>
 
         // 買い
         var buyResponse = await _client.PostAsJsonAsync(
-            $"/api/games/{created.GameId}/buy",
-            new OrderRequest(InstrumentId: 1, Quantity: 1));
+            $"/api/games/{created.GameId}/orders",
+            new OrderRequest(Side: OrderSide.Buy, InstrumentId: 1, Quantity: 1));
         var afterBuy = await buyResponse.Content.ReadFromJsonAsync<GameResponse>();
         Assert.NotNull(afterBuy);
         Assert.Null(afterBuy.Warning);
@@ -161,12 +162,36 @@ public class GameApiTests : IClassFixture<WebApplicationFactory<Program>>
 
         // 売り
         var sellResponse = await _client.PostAsJsonAsync(
-            $"/api/games/{afterBuy.GameId}/sell",
-            new OrderRequest(InstrumentId: 1, Quantity: 1));
+            $"/api/games/{afterBuy.GameId}/orders",
+            new OrderRequest(Side: OrderSide.Sell, InstrumentId: 1, Quantity: 1));
         var afterSell = await sellResponse.Content.ReadFromJsonAsync<GameResponse>();
         Assert.NotNull(afterSell);
         Assert.Null(afterSell.Warning);
         Assert.Equal(3, afterSell.Turn);
+    }
+
+    [Fact]
+    public async Task POST_orders_side未指定で400()
+    {
+        var created = await CreateGame();
+
+        var response = await _client.PostAsJsonAsync(
+            $"/api/games/{created.GameId}/orders",
+            new { instrumentId = 1, quantity = 1 });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task POST_orders_不正なsideで400()
+    {
+        var created = await CreateGame();
+
+        var response = await _client.PostAsJsonAsync(
+            $"/api/games/{created.GameId}/orders",
+            new { side = "Hold", instrumentId = 1, quantity = 1 });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
@@ -187,8 +212,8 @@ public class GameApiTests : IClassFixture<WebApplicationFactory<Program>>
 
         // 指値買い注文（約定しにくい低価格）で板に注文を残す
         await _client.PostAsJsonAsync(
-            $"/api/games/{created.GameId}/buy",
-            new OrderRequest(InstrumentId: 1, Quantity: 1, Price: 1));
+            $"/api/games/{created.GameId}/orders",
+            new OrderRequest(Side: OrderSide.Buy, InstrumentId: 1, Quantity: 1, Price: 1));
 
         var response = await _client.GetAsync($"/api/admin/games/{created.GameId}/orderbook");
 
@@ -241,8 +266,8 @@ public class GameApiTests : IClassFixture<WebApplicationFactory<Program>>
         for (int i = 0; i < 3; i++)
         {
             await _client.PostAsJsonAsync(
-                $"/api/games/{created.GameId}/buy",
-                new OrderRequest(InstrumentId: 1, Quantity: 1, Price: 1));
+                $"/api/games/{created.GameId}/orders",
+                new OrderRequest(Side: OrderSide.Buy, InstrumentId: 1, Quantity: 1, Price: 1));
         }
 
         var response = await _client.GetAsync($"/api/admin/games/{created.GameId}/orderbook?page=1&pageSize=1");

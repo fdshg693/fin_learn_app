@@ -76,8 +76,7 @@ public sealed record GameResponse(
 
 | エンドポイント | recentTrades への影響 |
 |---|---|
-| `POST /api/games/{id}/buy` | 約定成功時のみ末尾に追加 |
-| `POST /api/games/{id}/sell` | 約定成功時のみ末尾に追加 |
+| `POST /api/games/{id}/orders` | 約定成功時のみ末尾に追加（買い・売り共通） |
 | `POST /api/games/{id}/wait` | 変更なし（既存の履歴を返す） |
 | `GET /api/games/{id}` | 現在の履歴をそのまま返す |
 
@@ -128,8 +127,8 @@ export type GameResponse = {
 [`frontend/app/routes/games.$id.tsx`](../../../frontend/app/routes/games.$id.tsx):
 
 ```
-clientAction (buy/sell/wait)
-  → fetch /api/games/{id}/{action}
+clientAction (orders/wait)
+  → fetch /api/games/{id}/orders もしくは /api/games/{id}/wait
   → GameResponse （recentTrades 含む）
   → React Router の再描画で TradeHistory に流れ込む
 ```

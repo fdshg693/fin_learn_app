@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using FinLearn.Api.Endpoints;
 using FinLearn.Api.Services;
 using FinLearn.Core;
@@ -24,6 +25,11 @@ try
     var builder = WebApplication.CreateBuilder(args);
 
     builder.Host.UseSerilog();
+
+    builder.Services.ConfigureHttpJsonOptions(options =>
+    {
+        options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 
     builder.Services.AddSingleton<GameConfig>();
     builder.Services.AddSingleton<GameStore>();

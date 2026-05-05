@@ -18,8 +18,7 @@ public static class GameEndpoints
 
         group.MapPost("/", CreateGame);
         group.MapGet("/{id}", GetGame);
-        group.MapPost("/{id}/buy", Buy);
-        group.MapPost("/{id}/sell", Sell);
+        group.MapPost("/{id}/orders", PlaceOrder);
         group.MapPost("/{id}/wait", Wait);
 
         return group;
@@ -40,16 +39,20 @@ public static class GameEndpoints
         return Results.Ok(GameMapper.ToResponse(id, game, exchange));
     }
 
-    private static IResult Buy(string id, OrderRequest request, GameStore store, TurnProcessor processor, IExchangeFactory exchangeFactory, GameConfig config, ILogger<OrderLog> logger)
+    private static IResult PlaceOrder(string id, OrderRequest request, GameStore store, TurnProcessor processor, IExchangeFactory exchangeFactory, GameConfig config, ILogger<OrderLog> logger)
     {
-        return ProcessOrder(id, request, store, processor, exchangeFactory, config, logger,
-            (g, fee, req) => processor.Buy(g, fee, req.InstrumentId, req.Quantity, req.Price, req.StopPrice));
-    }
+        if (request.Side is null)
+        {
+            return Results.BadRequest(new { error = "side は必須です（\"Buy\" または \"Sell\"）" });
+        }
 
-    private static IResult Sell(string id, OrderRequest request, GameStore store, TurnProcessor processor, IExchangeFactory exchangeFactory, GameConfig config, ILogger<OrderLog> logger)
-    {
         return ProcessOrder(id, request, store, processor, exchangeFactory, config, logger,
-            (g, fee, req) => processor.Sell(g, fee, req.InstrumentId, req.Quantity, req.Price, req.StopPrice));
+            (g, fee, req) => req.Side switch
+            {
+                OrderSide.Buy => processor.Buy(g, fee, req.InstrumentId, req.Quantity, req.Price, req.StopPrice),
+                OrderSide.Sell => processor.Sell(g, fee, req.InstrumentId, req.Quantity, req.Price, req.StopPrice),
+                _ => throw new ArgumentOutOfRangeException(nameof(request), req.Side, "Unknown order side")
+            });
     }
 
     private static IResult Wait(string id, GameStore store, TurnProcessor processor, IExchangeFactory exchangeFactory, GameConfig config, ILogger<OrderLog> logger)

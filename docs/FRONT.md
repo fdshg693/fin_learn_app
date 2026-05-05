@@ -42,7 +42,7 @@ App (root.tsx)
 ゲーム状態はすべてサーバー駆動。クライアントは `GameResponse` を受け取って描画するだけ。
 
 ```
-[ユーザー操作] → clientAction (POST buy/sell/wait)
+[ユーザー操作] → clientAction (POST orders/wait)
                       ↓
               API が更新後の GameResponse を返却
                       ↓
@@ -54,7 +54,7 @@ React Router のデータ API との対応:
 | React Router | API | 用途 |
 |---|---|---|
 | `clientLoader` | `GET /api/games/:id` | 画面初期表示・リロード |
-| `clientAction` | `POST buy/sell/wait` | プレイヤーアクション |
+| `clientAction` | `POST orders/wait` | プレイヤーアクション |
 
 ---
 
@@ -118,11 +118,11 @@ React Router の `clientLoader` / `clientAction` でデータ取得・アクシ�
 
 | ボタン | API | 備考 |
 |---|---|---|
-| 買う | `POST /games/:id/buy` | フォーム入力値を送信 |
-| 売る | `POST /games/:id/sell` | フォーム入力値を送信 |
+| 買う | `POST /games/:id/orders` (`side: "Buy"`) | フォーム入力値を送信 |
+| 売る | `POST /games/:id/orders` (`side: "Sell"`) | フォーム入力値を送信 |
 | 待つ | `POST /games/:id/wait` | フォーム入力不要 |
 
-3 つのボタンはすべて React Router の `<Form>` を使い、hidden フィールド `intent` で区別する。
+3 つのボタンはすべて React Router の `<Form>` を使い、hidden フィールド `intent` (`buy` / `sell` / `wait`) で区別する。`clientAction` 境界で `intent` を `side` (`"Buy"` / `"Sell"`) に変換してから API を呼ぶ。
 
 ### TradeHistory
 
@@ -169,8 +169,7 @@ const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:5088";
 
 createGame()             → POST /api/games
 getGame(id)              → GET  /api/games/:id
-buy(id, order)           → POST /api/games/:id/buy
-sell(id, order)          → POST /api/games/:id/sell
+placeOrder(id, order)    → POST /api/games/:id/orders   // order.side: "Buy" | "Sell"
 wait(id)                 → POST /api/games/:id/wait
 getOrderBook(id, page?, pageSize?)  → GET  /api/admin/games/:id/orderbook
 ```
