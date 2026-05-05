@@ -35,7 +35,7 @@ FillResult
 
 `resting.TraderId != incoming.TraderId` の注文のみを対象とする。同一 TraderId の注文は約定対象から外れる（`OrderBook.Match` 内で `Where` フィルタを適用）。
 
-> **注意:** 現状コンピューター注文は全て `TraderId = "computer"` で生成されるため、コンピューター注文同士は約定しない。コンピューター注文の識別方式は後続タスクで見直し予定。
+> **コンピューター注文:** TraderId は `computer1` 〜 `computer10` の10種類に分かれており、別の `computer{i}` 同士は約定対象になる。詳細は [COMPUTER_ORDER/LOGIC.md](../COMPUTER_ORDER/LOGIC.md) 参照。
 
 #### 1-b. 価格条件
 

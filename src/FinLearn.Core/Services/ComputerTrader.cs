@@ -5,9 +5,11 @@ namespace FinLearn.Core;
 /// </summary>
 public sealed class ComputerTrader : IOrderPlacer
 {
-    private const string TraderId = "computer";
-    private const int BuyOrderCount = 10;
-    private const int SellOrderCount = 10;
+    public const string TraderIdPrefix = "computer";
+    private const int ComputerCount = 10;
+
+    public static bool IsComputerTrader(string traderId) =>
+        traderId.StartsWith(TraderIdPrefix, StringComparison.Ordinal);
 
     private readonly Random _random;
 
@@ -18,7 +20,10 @@ public sealed class ComputerTrader : IOrderPlacer
 
     /// <summary>
     /// 注文を生成してOrderBookに追加する。
-    /// 買い注文10個（株価の85〜105%）と売り注文10個（株価の95〜115%）を銘柄にランダム分散。
+    /// computer1〜computer10 の10プレイヤーが各自 買い1件（株価の85〜105%）と
+    /// 売り1件（株価の95〜115%）を銘柄ランダムで発注する（合計20件）。
+    /// 買い10件をすべて処理した後に売り10件を処理することで、売り注文時点で板に乗った
+    /// 他プレイヤーの買い注文と価格交差すれば約定する。
     /// </summary>
     public (OrderBook UpdatedBook, int NextOrderId, IReadOnlyList<Order> PlacedOrders) PlaceOrders(
         OrderBook book,
@@ -29,30 +34,32 @@ public sealed class ComputerTrader : IOrderPlacer
     {
         var currentId = startOrderId;
         var updatedBook = book;
-        var placed = new List<Order>(BuyOrderCount + SellOrderCount);
+        var placed = new List<Order>(ComputerCount * 2);
 
-        // 買い注文: 株価の85〜105%
-        for (int i = 0; i < BuyOrderCount; i++)
+        // 買い注文: 各 computer{i} が1件、株価の85〜105%
+        for (int i = 1; i <= ComputerCount; i++)
         {
+            var traderId = $"{TraderIdPrefix}{i}";
             var instrument = instruments[_random.Next(instruments.Count)];
             if (!exchange.TryGetPrice(instrument.Id, out var marketPrice))
                 continue;
             var percent = _random.Next(85, 106); // 85〜105
             var price = Math.Max(1, marketPrice * percent / 100);
-            var order = new Order(currentId++, TraderId, instrument, OrderSide.Buy, 1, price, currentTurn);
+            var order = new Order(currentId++, traderId, instrument, OrderSide.Buy, 1, price, currentTurn);
             placed.Add(order);
             updatedBook = PlaceWithMatching(updatedBook, order);
         }
 
-        // 売り注文: 株価の95〜115%
-        for (int i = 0; i < SellOrderCount; i++)
+        // 売り注文: 各 computer{i} が1件、株価の95〜115%
+        for (int i = 1; i <= ComputerCount; i++)
         {
+            var traderId = $"{TraderIdPrefix}{i}";
             var instrument = instruments[_random.Next(instruments.Count)];
             if (!exchange.TryGetPrice(instrument.Id, out var marketPrice))
                 continue;
             var percent = _random.Next(95, 116); // 95〜115
             var price = Math.Max(1, marketPrice * percent / 100);
-            var order = new Order(currentId++, TraderId, instrument, OrderSide.Sell, 1, price, currentTurn);
+            var order = new Order(currentId++, traderId, instrument, OrderSide.Sell, 1, price, currentTurn);
             placed.Add(order);
             updatedBook = PlaceWithMatching(updatedBook, order);
         }

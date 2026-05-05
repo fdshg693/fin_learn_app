@@ -32,7 +32,7 @@ public class TurnProcessorLoggingTests
 
         Assert.Equal(1, result.ProcessedTurn);
         Assert.NotEmpty(result.SubmittedOrders);
-        Assert.All(result.SubmittedOrders, o => Assert.Equal("computer", o.TraderId));
+        Assert.All(result.SubmittedOrders, o => Assert.StartsWith("computer", o.TraderId));
         Assert.Empty(result.Fills);
         Assert.Null(result.Warning);
     }
@@ -47,7 +47,7 @@ public class TurnProcessorLoggingTests
         var result = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 1, price: 115);
 
         Assert.Null(result.Warning);
-        Assert.Contains(result.SubmittedOrders, o => o.TraderId == "computer");
+        Assert.Contains(result.SubmittedOrders, o => o.TraderId.StartsWith("computer"));
         Assert.Contains(result.SubmittedOrders, o => o.TraderId == "player");
     }
 

@@ -49,7 +49,7 @@ public sealed class OrderBook
     {
         var remaining = _orders.Where(o =>
         {
-            var ttl = o.TraderId == "computer" ? computerTtl : playerTtl;
+            var ttl = ComputerTrader.IsComputerTrader(o.TraderId) ? computerTtl : playerTtl;
             return currentTurn - o.CreatedAtTurn < ttl;
         }).ToImmutableList();
 

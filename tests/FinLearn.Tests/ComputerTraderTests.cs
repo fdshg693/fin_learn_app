@@ -100,20 +100,21 @@ public class ComputerTraderTests
     }
 
     [Fact]
-    public void 全注文のTraderIdはcomputer()
+    public void 全注文のTraderIdはcomputer1からcomputer10()
     {
         var trader = new ComputerTrader(new Random(42));
         var exchange = TestData.CreateExchange((1, 100), (2, 200), (3, 300));
 
-        var (book, _, _) = trader.PlaceOrders(new OrderBook(), exchange, Instruments, startOrderId: 1, currentTurn: 1);
+        var (book, _, placed) = trader.PlaceOrders(new OrderBook(), exchange, Instruments, startOrderId: 1, currentTurn: 1);
 
-        for (int id = 1; id <= 3; id++)
-        {
-            foreach (var order in book.BuyOrders(id))
-                Assert.Equal("computer", order.TraderId);
-            foreach (var order in book.SellOrders(id))
-                Assert.Equal("computer", order.TraderId);
-        }
+        var validIds = Enumerable.Range(1, 10).Select(i => $"computer{i}").ToHashSet();
+        Assert.All(placed, o => Assert.Contains(o.TraderId, validIds));
+
+        // 買い側・売り側それぞれで computer1〜computer10 の各IDが1回ずつ現れる
+        var buyIds = placed.Where(o => o.Side == OrderSide.Buy).Select(o => o.TraderId).ToList();
+        var sellIds = placed.Where(o => o.Side == OrderSide.Sell).Select(o => o.TraderId).ToList();
+        Assert.Equal(validIds.OrderBy(s => s), buyIds.OrderBy(s => s));
+        Assert.Equal(validIds.OrderBy(s => s), sellIds.OrderBy(s => s));
     }
 
     [Fact]
@@ -186,11 +187,11 @@ public class ComputerTraderTests
         Assert.True(totalOrders < 21, "コンピューター注文が既存板とマッチングされるべき");
     }
 
-    [Fact(Skip = "自己約定防止により同一TraderId同士はマッチしなくなったため、コンピューター注文同士のマッチングは現状不可。コンピューター注文の識別方式変更（後続タスク）後に再検討する。")]
+    [Fact]
     public void コンピューター注文同士が同一ターン内でマッチングされる()
     {
-        // 空の板でコンピューター注文を生成
-        // 買い@105%と売り@95%のような交差する注文が生成されれば約定するはず
+        // computer1〜computer10 でTraderIdが分かれているため、
+        // 買い@105%と売り@95%のような交差する注文があれば約定する。
         var exchange = TestData.CreateExchange((1, 100), (2, 200), (3, 300));
         var trader = new ComputerTrader(new Random(42));
 
@@ -234,7 +235,7 @@ public class ComputerTraderTests
             new OrderBook(), exchange, instruments, startOrderId: 100, currentTurn: 5);
 
         Assert.Equal(20, placed.Count);
-        Assert.All(placed, o => Assert.Equal("computer", o.TraderId));
+        Assert.All(placed, o => Assert.StartsWith("computer", o.TraderId));
         Assert.All(placed, o => Assert.Equal(5, o.CreatedAtTurn));
         Assert.Equal(100, placed[0].Id);
         Assert.Equal(119, placed[^1].Id);
