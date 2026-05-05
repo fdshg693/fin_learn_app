@@ -8,51 +8,57 @@
 .app-shell {
   min-height: 100vh;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
 }
 
-.app-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.25rem 2rem;
+.app-sidebar {
+  width: 200px;
+  flex-shrink: 0;
   background: #0b1120;
-  border-bottom: 1px solid #1e293b;
+  border-right: 1px solid #1e293b;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 1rem;
+  gap: 0.5rem;
 }
 
-.app-title {
+.app-sidebar .app-title {
   font-weight: 700;
   font-size: 1.125rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #1e293b;
+  display: block;
 }
 
-.app-header nav {
+.app-sidebar nav {
   display: flex;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
-.app-header a {
+.app-sidebar a {
   color: #cbd5f5;
   text-decoration: none;
-  padding: 0.35rem 0.75rem;
-  border-radius: 999px;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
   transition: background 0.2s ease;
+  font-size: 0.9rem;
 }
 
-.app-header a.active {
+.app-sidebar a.active {
   background: #1e293b;
   color: #f8fafc;
 }
 
-.app-header a:hover {
+.app-sidebar a:hover {
   background: #1f2937;
 }
 
 .app-main {
   flex: 1;
   padding: 2rem;
-  max-width: 960px;
-  margin: 0 auto;
-  width: 100%;
+  min-width: 0;
 }
 
 section {

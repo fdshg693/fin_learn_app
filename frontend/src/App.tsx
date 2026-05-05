@@ -12,18 +12,14 @@ import NotFound from './pages/NotFound'
 function App() {
   return (
     <div className="app-shell">
-      <header className="app-header">
+      <nav className="app-sidebar" aria-label="メインナビゲーション">
         <span className="app-title">FinLearnApp</span>
-        <nav>
-          <NavLink to="/" end>
-            ホーム
-          </NavLink>
-          <NavLink to="/tickers">銘柄</NavLink>
-          <NavLink to="/portfolios">ポートフォリオ</NavLink>
-          <NavLink to="/actions">アクション</NavLink>
-          <NavLink to="/chart">チャート</NavLink>
-        </nav>
-      </header>
+        <NavLink to="/" end>ホーム</NavLink>
+        <NavLink to="/tickers">銘柄</NavLink>
+        <NavLink to="/portfolios">ポートフォリオ</NavLink>
+        <NavLink to="/actions">アクション</NavLink>
+        <NavLink to="/chart">チャート</NavLink>
+      </nav>
       <main className="app-main">
         <Routes>
           <Route path="/" element={<Home />} />
