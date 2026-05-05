@@ -1,12 +1,27 @@
 import type { GameResponse, OrderRequest, OrderBookResponse } from "~/types/game";
 
 const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:5088";
+const DEFAULT_TIMEOUT_MS = 8000;
 
 const ERROR_MESSAGES: Record<number, string> = {
   400: "リクエストが不正です。入力内容を確認してください。",
   404: "ゲームが見つかりません。",
   500: "サーバーでエラーが発生しました。しばらく待ってから再試行してください。",
 };
+
+async function apiFetch(url: string, init?: RequestInit, timeoutMs: number = DEFAULT_TIMEOUT_MS): Promise<Response> {
+  try {
+    return await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
+  } catch (e) {
+    if (e instanceof DOMException && e.name === "TimeoutError") {
+      throw new Error("サーバーへの接続がタイムアウトしました。しばらく待ってから再試行してください。");
+    }
+    if (e instanceof TypeError) {
+      throw new Error("サーバーに接続できません。ネットワーク接続を確認してください。");
+    }
+    throw e;
+  }
+}
 
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -17,17 +32,17 @@ async function handleResponse<T>(res: Response): Promise<T> {
 }
 
 export async function createGame(): Promise<GameResponse> {
-  const res = await fetch(`${BASE}/api/games`, { method: "POST" });
+  const res = await apiFetch(`${BASE}/api/games`, { method: "POST" });
   return handleResponse(res);
 }
 
 export async function getGame(id: string): Promise<GameResponse> {
-  const res = await fetch(`${BASE}/api/games/${id}`);
+  const res = await apiFetch(`${BASE}/api/games/${id}`);
   return handleResponse(res);
 }
 
 export async function placeOrder(id: string, order: OrderRequest): Promise<GameResponse> {
-  const res = await fetch(`${BASE}/api/games/${id}/orders`, {
+  const res = await apiFetch(`${BASE}/api/games/${id}/orders`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(order),
@@ -36,7 +51,7 @@ export async function placeOrder(id: string, order: OrderRequest): Promise<GameR
 }
 
 export async function wait(id: string): Promise<GameResponse> {
-  const res = await fetch(`${BASE}/api/games/${id}/wait`, { method: "POST" });
+  const res = await apiFetch(`${BASE}/api/games/${id}/wait`, { method: "POST" });
   return handleResponse(res);
 }
 
@@ -50,6 +65,6 @@ export async function getOrderBook(
   if (pageSize !== undefined) params.set("pageSize", String(pageSize));
   const query = params.toString();
   const url = `${BASE}/api/admin/games/${id}/orderbook${query ? `?${query}` : ""}`;
-  const res = await fetch(url);
+  const res = await apiFetch(url);
   return handleResponse(res);
 }

@@ -1,5 +1,14 @@
 import { useState } from "react";
-import { useLoaderData, useActionData, isRouteErrorResponse, type ClientLoaderFunctionArgs, type ClientActionFunctionArgs } from "react-router";
+import {
+  useLoaderData,
+  useActionData,
+  useNavigation,
+  useSubmit,
+  isRouteErrorResponse,
+  type ClientLoaderFunctionArgs,
+  type ClientActionFunctionArgs,
+  type ShouldRevalidateFunctionArgs,
+} from "react-router";
 import { getGame, getOrderBook, placeOrder, wait } from "~/api/gameApi";
 import type { Route } from "./+types/games.$id";
 import type { GameResponse, OrderRequest, OrderBookResponse } from "~/types/game";
@@ -17,6 +26,18 @@ type LoaderData = {
   orderBook: OrderBookResponse;
 };
 
+type ActionData =
+  | { game: GameResponse; orderBook: OrderBookResponse; error?: undefined; lastSubmission?: undefined }
+  | { game?: undefined; orderBook?: undefined; error: string; lastSubmission: Record<string, string> };
+
+function formDataToRecord(fd: FormData): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [key, value] of fd.entries()) {
+    if (typeof value === "string") out[key] = value;
+  }
+  return out;
+}
+
 export async function clientLoader({ params }: ClientLoaderFunctionArgs): Promise<LoaderData> {
   const id = params.id!;
   const [game, orderBook] = await Promise.all([
@@ -26,36 +47,51 @@ export async function clientLoader({ params }: ClientLoaderFunctionArgs): Promis
   return { game, orderBook };
 }
 
-export async function clientAction({ params, request }: ClientActionFunctionArgs): Promise<LoaderData> {
+export async function clientAction({ params, request }: ClientActionFunctionArgs): Promise<ActionData> {
   const formData = await request.formData();
   const intent = formData.get("intent") as string;
   const id = params.id!;
+  const submission = formDataToRecord(formData);
 
-  let game: GameResponse;
+  try {
+    let game: GameResponse;
 
-  if (intent === "wait") {
-    game = await wait(id);
-  } else {
-    const instrumentId = Number(formData.get("instrumentId"));
-    const quantity = Number(formData.get("quantity"));
-    const priceRaw = formData.get("price");
-    const price = priceRaw ? Number(priceRaw) : null;
+    if (intent === "wait") {
+      game = await wait(id);
+    } else {
+      const instrumentId = Number(formData.get("instrumentId"));
+      const quantity = Number(formData.get("quantity"));
+      const priceRaw = formData.get("price");
+      const price = priceRaw ? Number(priceRaw) : null;
 
-    if (Number.isNaN(instrumentId) || Number.isNaN(quantity) || (price !== null && Number.isNaN(price))) {
-      throw new Error("入力値が不正です。数値を入力してください。");
+      if (Number.isNaN(instrumentId) || Number.isNaN(quantity) || (price !== null && Number.isNaN(price))) {
+        return { error: "入力値が不正です。数値を入力してください。", lastSubmission: submission };
+      }
+
+      const side = intent === "buy" ? "Buy" : intent === "sell" ? "Sell" : null;
+      if (side === null) {
+        return { error: `Invalid intent: ${intent}`, lastSubmission: submission };
+      }
+
+      const order: OrderRequest = { side, instrumentId, quantity, price };
+      game = await placeOrder(id, order);
     }
 
-    const side = intent === "buy" ? "Buy" : intent === "sell" ? "Sell" : null;
-    if (side === null) {
-      throw new Error(`Invalid intent: ${intent}`);
-    }
-
-    const order: OrderRequest = { side, instrumentId, quantity, price };
-    game = await placeOrder(id, order);
+    const orderBook = await getOrderBook(id, 1, ORDERBOOK_PAGE_SIZE);
+    return { game, orderBook };
+  } catch (e) {
+    return {
+      error: e instanceof Error ? e.message : "予期しないエラーが発生しました。",
+      lastSubmission: submission,
+    };
   }
+}
 
-  const orderBook = await getOrderBook(id, 1, ORDERBOOK_PAGE_SIZE);
-  return { game, orderBook };
+export function shouldRevalidate({ actionResult, defaultShouldRevalidate }: ShouldRevalidateFunctionArgs): boolean {
+  if (actionResult && typeof actionResult === "object" && "error" in actionResult && actionResult.error) {
+    return false;
+  }
+  return defaultShouldRevalidate;
 }
 
 export function HydrateFallback() {
@@ -68,13 +104,37 @@ export function HydrateFallback() {
 
 export default function GamePage() {
   const loaderData = useLoaderData<LoaderData>();
-  const actionData = useActionData<LoaderData>();
-  const { game, orderBook } = actionData ?? loaderData;
+  const actionData = useActionData<ActionData>();
+  const navigation = useNavigation();
+  const submit = useSubmit();
+  const game = actionData?.game ?? loaderData.game;
+  const orderBook = actionData?.orderBook ?? loaderData.orderBook;
+  const actionError = actionData?.error;
+  const lastSubmission = actionData?.lastSubmission;
+  const isSubmitting = navigation.state !== "idle";
   const [selectedInstrumentId, setSelectedInstrumentId] = useState<number | null>(null);
 
   return (
     <main className="max-w-2xl mx-auto p-4 space-y-4">
       <GameHeader turn={game.turn} playerName={game.player.name} />
+      {actionError && (
+        <div
+          role="alert"
+          className="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg flex items-center justify-between gap-3"
+        >
+          <span className="flex-1">{actionError}</span>
+          {lastSubmission && (
+            <button
+              type="button"
+              onClick={() => submit(lastSubmission, { method: "post" })}
+              disabled={isSubmitting}
+              className="bg-red-600 hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed text-white text-sm font-bold py-1 px-3 rounded whitespace-nowrap"
+            >
+              {isSubmitting ? "再試行中..." : "再試行"}
+            </button>
+          )}
+        </div>
+      )}
       <WarningMessage warning={game.warning} />
       <PlayerPanel
         cash={game.player.cash}
