@@ -644,7 +644,9 @@ public class BuyLimitTests
     public async Task BuyLimit_PartialFillConsumesOrder_RemainingQuantityStaysInOrderBook()
     {
         // Arrange: 売り注文 10株、4株だけ購入
-        var (store, _, ticker, _) = CreateStore(cashAmount: 1_000_000m, marketPrice: 1_000m);
+        // marketPrice を 800円にして、ターン後のシステム買い注文（760円）が
+        // 元の売り注文（900円）とクロスしないようにする
+        var (store, _, ticker, _) = CreateStore(cashAmount: 1_000_000m, marketPrice: 800m);
         var originalOrderId = new OrderId(Guid.Parse("dddddddd-0000-0000-0000-000000000001"));
         store.Exchange.OrderBook.Add(new Order(
             originalOrderId, ticker.Id, OrderSide.Sell,

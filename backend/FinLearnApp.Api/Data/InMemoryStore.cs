@@ -81,6 +81,7 @@ public sealed class InMemoryStore
 
         ApplyPriceFluctuation(nextTurn);
         GenerateSystemOrdersForTurn();
+        MatchCrossedOrdersForAllTickers();
 
         return nextTurn;
     }
@@ -263,6 +264,40 @@ public sealed class InMemoryStore
                 SystemOrderQuantity,
                 OrderOrigin.System,
                 createdAt));
+        }
+    }
+
+    private void MatchCrossedOrdersForAllTickers()
+    {
+        foreach (var ticker in Tickers)
+        {
+            MatchCrossedOrders(ticker.Id);
+        }
+    }
+
+    private void MatchCrossedOrders(TickerId tickerId)
+    {
+        while (true)
+        {
+            var bestBuy = Exchange.OrderBook
+                .FindByTickerAndSide(tickerId, OrderSide.Buy)
+                .OrderByDescending(o => o.Price.Amount)
+                .ThenBy(o => o.CreatedAt)
+                .FirstOrDefault();
+
+            var bestSell = Exchange.OrderBook
+                .FindByTickerAndSide(tickerId, OrderSide.Sell)
+                .OrderBy(o => o.Price.Amount)
+                .ThenBy(o => o.CreatedAt)
+                .FirstOrDefault();
+
+            if (bestBuy is null || bestSell is null || bestBuy.Price.Amount < bestSell.Price.Amount)
+                break;
+
+            var fillQuantity = Math.Min(bestBuy.Quantity, bestSell.Quantity);
+            RegisterTrade(tickerId, buyOrderId: bestBuy.Id, sellOrderId: bestSell.Id, bestSell.Price, fillQuantity);
+            Exchange.OrderBook.ReplaceWithRemaining(bestBuy, bestBuy.Quantity - fillQuantity);
+            Exchange.OrderBook.ReplaceWithRemaining(bestSell, bestSell.Quantity - fillQuantity);
         }
     }
 
