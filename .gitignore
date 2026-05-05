@@ -1,10 +1,13 @@
 node_modules/
 
-*.json
-!sample.json
-
-claude-automate/prompts
+claude-automate/prompts/*
 !claude-automate/prompts/sample*
+claude-automate/workflows/*
+!claude-automate/workflows/sample*
+claude-automate/agents/*
+!claude-automate/agents/sample*
+
+*mcp.json
 
 .DS_Store
 .env
