@@ -36,6 +36,7 @@ const mockOrderBook: OrderBookResponse = {
       price: 1600,
       stopPrice: null,
       createdAtTurn: 4,
+      expiresAtTurn: 6,
     },
   ],
   totalCount: 1,

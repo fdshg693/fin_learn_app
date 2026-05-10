@@ -681,52 +681,41 @@ public class OrderBookTests
     // --- 注文の有効期限 ---
 
     [Fact]
-    public void コンピューター注文がTTL超過で除去される()
+    public void ExpiresAtTurn到達で注文が除去される()
     {
         var book = new OrderBook()
-            .Add(new Order(1, "computer", new Instrument(1), OrderSide.Buy, 5, 100, createdAtTurn: 1))
-            .Add(new Order(2, "computer", new Instrument(1), OrderSide.Sell, 3, 110, createdAtTurn: 1));
+            .Add(new Order(1, "computer", new Instrument(1), OrderSide.Buy, 5, 100, createdAtTurn: 1, expiresAtTurn: 3))
+            .Add(new Order(2, "computer", new Instrument(1), OrderSide.Sell, 3, 110, createdAtTurn: 1, expiresAtTurn: 3));
 
-        var expired = book.ExpireOrders(currentTurn: 5, computerTtl: 3, playerTtl: 10);
+        // currentTurn=3 で ExpiresAtTurn=3 の注文は除去される (3 >= 3)
+        var expired = book.ExpireOrders(currentTurn: 3);
 
         Assert.Empty(expired.BuyOrders(1));
         Assert.Empty(expired.SellOrders(1));
     }
 
     [Fact]
-    public void プレイヤー注文がTTL超過で除去される()
+    public void ExpiresAtTurn未到達なら注文は残る()
     {
         var book = new OrderBook()
-            .Add(new Order(1, "player", new Instrument(1), OrderSide.Buy, 5, 100, createdAtTurn: 1));
+            .Add(new Order(1, "computer", new Instrument(1), OrderSide.Buy, 5, 100, createdAtTurn: 3, expiresAtTurn: 6))
+            .Add(new Order(2, "player", new Instrument(1), OrderSide.Sell, 3, 110, createdAtTurn: 2, expiresAtTurn: 7));
 
-        var expired = book.ExpireOrders(currentTurn: 12, computerTtl: 3, playerTtl: 10);
-
-        Assert.Empty(expired.BuyOrders(1));
-    }
-
-    [Fact]
-    public void TTL内の注文は残る()
-    {
-        var book = new OrderBook()
-            .Add(new Order(1, "computer", new Instrument(1), OrderSide.Buy, 5, 100, createdAtTurn: 3))
-            .Add(new Order(2, "player", new Instrument(1), OrderSide.Sell, 3, 110, createdAtTurn: 2));
-
-        var expired = book.ExpireOrders(currentTurn: 5, computerTtl: 3, playerTtl: 10);
+        var expired = book.ExpireOrders(currentTurn: 5);
 
         Assert.Single(expired.BuyOrders(1));
         Assert.Single(expired.SellOrders(1));
     }
 
     [Fact]
-    public void コンピューターとプレイヤーで異なるTTLが適用される()
+    public void 注文ごとに異なるExpiresAtTurnが個別に判定される()
     {
         var book = new OrderBook()
-            .Add(new Order(1, "computer", new Instrument(1), OrderSide.Buy, 5, 100, createdAtTurn: 1))
-            .Add(new Order(2, "player", new Instrument(1), OrderSide.Buy, 3, 100, createdAtTurn: 1));
+            .Add(new Order(1, "computer", new Instrument(1), OrderSide.Buy, 5, 100, createdAtTurn: 1, expiresAtTurn: 3))
+            .Add(new Order(2, "player", new Instrument(1), OrderSide.Buy, 3, 100, createdAtTurn: 1, expiresAtTurn: 6));
 
-        // currentTurn=5, computerTtl=3 → computer注文(turn1)は期限切れ (5 - 1 >= 3)
-        // currentTurn=5, playerTtl=10 → player注文(turn1)はまだ有効 (5 - 1 < 10)
-        var expired = book.ExpireOrders(currentTurn: 5, computerTtl: 3, playerTtl: 10);
+        // currentTurn=5: 注文1 (ExpiresAtTurn=3) は期限切れ、注文2 (ExpiresAtTurn=6) は有効
+        var expired = book.ExpireOrders(currentTurn: 5);
 
         var buyOrders = expired.BuyOrders(1);
         Assert.Single(buyOrders);
@@ -734,12 +723,24 @@ public class OrderBookTests
     }
 
     [Fact]
-    public void ExpireOrdersは元のOrderBookを変更しない()
+    public void ExpiresAtTurn未指定の注文は期限切れにならない()
     {
+        // ExpiresAtTurn のデフォルトは int.MaxValue（実質無期限）
         var book = new OrderBook()
             .Add(new Order(1, "computer", new Instrument(1), OrderSide.Buy, 5, 100, createdAtTurn: 1));
 
-        book.ExpireOrders(currentTurn: 10, computerTtl: 3, playerTtl: 10);
+        var expired = book.ExpireOrders(currentTurn: 1000);
+
+        Assert.Single(expired.BuyOrders(1));
+    }
+
+    [Fact]
+    public void ExpireOrdersは元のOrderBookを変更しない()
+    {
+        var book = new OrderBook()
+            .Add(new Order(1, "computer", new Instrument(1), OrderSide.Buy, 5, 100, createdAtTurn: 1, expiresAtTurn: 3));
+
+        book.ExpireOrders(currentTurn: 10);
 
         Assert.Single(book.BuyOrders(1));
     }

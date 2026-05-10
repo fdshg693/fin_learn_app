@@ -84,7 +84,8 @@
   "instrumentId": 1,
   "quantity": 5,
   "price": null,
-  "stopPrice": null
+  "stopPrice": null,
+  "expiresInTurns": 2
 }
 ```
 
@@ -95,6 +96,7 @@
 | quantity | int | YES | 数量（1 以上）。`<= 0` は 400 |
 | price | int? | NO | 指値価格（null = 成行）。指定する場合 1 以上、`<= 0` は 400 |
 | stopPrice | int? | NO | 逆指値価格（null = 通常注文）。指定する場合 1 以上、`<= 0` は 400 |
+| expiresInTurns | int? | NO | 注文の有効ターン数。未指定時はデフォルト 2（生成ターンと次のターンまで有効）。`<= 0` は 400 |
 
 **レスポンス:** `200 OK`
 
@@ -126,7 +128,7 @@
 }
 ```
 
-**400 Bad Request:** 形式不正（`side` 未指定または `"Buy"` / `"Sell"` 以外、`quantity <= 0`、`price <= 0`、`stopPrice <= 0`）。
+**400 Bad Request:** 形式不正（`side` 未指定または `"Buy"` / `"Sell"` 以外、`quantity <= 0`、`price <= 0`、`stopPrice <= 0`、`expiresInTurns <= 0`）。
 
 ### POST /api/games/{id}/wait
 
@@ -159,7 +161,8 @@
       "quantity": 5,
       "price": 100,
       "stopPrice": null,
-      "createdAtTurn": 1
+      "createdAtTurn": 1,
+      "expiresAtTurn": 3
     }
   ],
   "totalCount": 1,
@@ -245,6 +248,7 @@ OrderDto:
   price          : int?
   stopPrice      : int?
   createdAtTurn  : int
+  expiresAtTurn  : int             # 有効期限ターン番号（絶対値、currentTurn >= expiresAtTurn で除去）
 ```
 
 ---
@@ -260,7 +264,7 @@ src/
       AdminEndpoints.cs               # /api/admin/games/{id}/orderbook
     Dtos/
       GameResponse.cs                 # GameResponse, PlayerDto, PositionDto, InstrumentDto, TradeResultDto
-      OrderRequest.cs                 # OrderRequest (instrumentId, quantity, price?, stopPrice?)
+      OrderRequest.cs                 # OrderRequest (instrumentId, quantity, price?, stopPrice?, expiresInTurns?)
       OrderBookResponse.cs            # OrderBookResponse, OrderDto
     Mappers/
       GameMapper.cs                   # Game → GameResponse 変換

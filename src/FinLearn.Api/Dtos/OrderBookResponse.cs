@@ -15,4 +15,5 @@ public sealed record OrderDto(
     int Quantity,
     int? Price,
     int? StopPrice,
-    int CreatedAtTurn);
+    int CreatedAtTurn,
+    int ExpiresAtTurn);

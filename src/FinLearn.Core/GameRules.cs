@@ -6,6 +6,12 @@ namespace FinLearn.Core;
 /// </summary>
 public static class GameRules
 {
+    /// <summary>
+    /// 注文の有効期限のデフォルト値（ターン数）。
+    /// 2 = 注文生成ターンと次のターンまで有効。
+    /// </summary>
+    public const int DefaultOrderTtl = 2;
+
     public static class Player
     {
         public const int InitialCash = 10000;

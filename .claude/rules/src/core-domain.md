@@ -20,9 +20,9 @@ Pure domain layer with zero external dependencies. All types are **immutable sea
 | `IOrderPlacer.cs` | 注文生成戦略 | Interface for order generation (DI point for testing) |
 | `Game.cs` | ゲーム | State snapshot: turn, player, order book, instruments, **prices** |
 | `ComputerTrader.cs` | コンピュータートレーダー | Implements `IOrderPlacer`. 10 traders (`computer1`〜`computer10`) each place 1 buy (85-105%) + 1 sell (95-115%) per turn (20 orders total). `IsComputerTrader(string)` identifies any computer trader id |
-| `Order.cs` | 注文 | ID, trader, instrument, side, quantity, price, stopPrice, createdAtTurn (注文作成ターン) |
+| `Order.cs` | 注文 | ID, trader, instrument, side, quantity, price, stopPrice, createdAtTurn (作成ターン), expiresAtTurn (有効期限ターン・絶対値) |
 | `OrderSide.cs` | 売買区分 | `Buy` / `Sell` enum |
-| `OrderBook.cs` | 注文帳 | Order management + symmetric matching via `Match(Order)` + `ExpireOrders` for TTL-based expiration |
+| `OrderBook.cs` | 注文帳 | Order management + symmetric matching via `Match(Order)` + `ExpireOrders(currentTurn)` (per-order `ExpiresAtTurn` based) |
 | `OrderFill.cs` | 注文約定明細 | Per-order fill result: order ID, filled quantity, total amount |
 | `FillResult.cs` | 約定結果 | List of `OrderFill` per order ID + updated book. `GetFill(orderId)` for lookup |
 | `IMarket.cs` | 市場 | Interface: order matching mediator between Player and OrderBook |

@@ -98,4 +98,30 @@ public class OrderTests
 
         Assert.Equal(0, order.CreatedAtTurn);
     }
+
+    // --- 有効期限 ---
+
+    [Fact]
+    public void 指値注文に有効期限ターンを設定できる()
+    {
+        var order = new Order(1, "player", new Instrument(1), OrderSide.Buy, 5, 100, createdAtTurn: 3, expiresAtTurn: 5);
+
+        Assert.Equal(5, order.ExpiresAtTurn);
+    }
+
+    [Fact]
+    public void 成行注文に有効期限ターンを設定できる()
+    {
+        var order = Order.CreateMarket(1, "player", new Instrument(1), OrderSide.Buy, 3, createdAtTurn: 2, expiresAtTurn: 4);
+
+        Assert.Equal(4, order.ExpiresAtTurn);
+    }
+
+    [Fact]
+    public void 有効期限のデフォルトはintMaxValue()
+    {
+        var order = new Order(1, "player", new Instrument(1), OrderSide.Buy, 5, 100);
+
+        Assert.Equal(int.MaxValue, order.ExpiresAtTurn);
+    }
 }

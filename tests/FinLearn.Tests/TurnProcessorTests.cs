@@ -12,11 +12,9 @@ public class TurnProcessorTests
     private static readonly IReadOnlyDictionary<int, int> Prices =
         new Dictionary<int, int> { { 1, 100 }, { 2, 200 }, { 3, 300 } };
 
-    private static TurnProcessor CreateProcessor(int seed = 42, IPriceFluctuator? fluctuator = null,
-        int computerTtl = int.MaxValue, int playerTtl = int.MaxValue)
+    private static TurnProcessor CreateProcessor(int seed = 42, IPriceFluctuator? fluctuator = null)
     {
-        return new TurnProcessor(new ComputerTrader(new Random(seed)), fluctuator ?? new NoPriceFluctuator(),
-            computerTtl: computerTtl, playerTtl: playerTtl);
+        return new TurnProcessor(new ComputerTrader(new Random(seed)), fluctuator ?? new NoPriceFluctuator());
     }
 
     private static Game CreateGame(IReadOnlyDictionary<int, int>? prices = null)
@@ -422,53 +420,70 @@ public class TurnProcessorTests
     // --- 注文の有効期限 ---
 
     [Fact]
-    public void TTL超過のコンピューター注文がターン進行時に除去される()
+    public void コンピューター注文はデフォルトTTLで期限切れになる()
     {
         var game = CreateGame();
-        var processor = CreateProcessor(computerTtl: 2, playerTtl: 10);
+        var processor = CreateProcessor();
 
-        // ターン1: コンピューター注文生成 → createdAtTurn=1
+        // ターン1: コンピューター注文生成 → ExpiresAtTurn = 1 + 2 = 3
         var turn2 = processor.Wait(game, fee: 0).Game;
-        // ターン2: コンピューター注文生成 → createdAtTurn=2
+        // ターン2: コンピューター注文生成 → ExpiresAtTurn = 2 + 2 = 4
         var turn3 = processor.Wait(turn2, fee: 0).Game;
-        // ターン3: ターン1の注文はTTL=2なので期限切れ (3-1 >= 2)
+        // ターン3への進行時に ExpireOrders(currentTurn=3) が呼ばれ、
+        // ターン1の注文(ExpiresAtTurn=3)は除去される (3 >= 3)
 
-        // ターン1の注文はすべて除去されているはず
-        // ターン2の注文(createdAtTurn=2)のみ残る → 10買い + 10売り
-        var totalBuys = turn3.OrderBook.BuyOrders(1).Count
-            + turn3.OrderBook.BuyOrders(2).Count
-            + turn3.OrderBook.BuyOrders(3).Count;
-        var totalSells = turn3.OrderBook.SellOrders(1).Count
-            + turn3.OrderBook.SellOrders(2).Count
-            + turn3.OrderBook.SellOrders(3).Count;
-
-        // ターン2の注文10個のみ残る（ターン1の10個は期限切れ）
-        // ただしターン2の注文同士で約定が起きる可能性がある
-        // なので、ターン1の注文が除去されていることを確認
-        Assert.True(totalBuys <= 10, $"買い注文が10個以下であること: {totalBuys}");
-        Assert.True(totalSells <= 10, $"売り注文が10個以下であること: {totalSells}");
+        // ターン1由来のコンピューター注文が残っていないことを確認
+        var allOrders = turn3.OrderBook.Orders;
+        Assert.DoesNotContain(allOrders, o => o.CreatedAtTurn == 1);
     }
 
     [Fact]
-    public void プレイヤー指値注文はplayerTtlで管理される()
+    public void プレイヤー注文はデフォルト2ターンで生成ターンと次のターンに残る()
     {
         var game = CreateGame();
-        var processor = CreateProcessor(computerTtl: 2, playerTtl: 5);
+        var processor = CreateProcessor();
 
-        // ターン1: 低い価格で指値買い → 板に残る
+        // ターン1: 約定しない低価格で指値買い → 板に残る
         var turn2 = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 1, price: 1).Game;
         Assert.Contains(turn2.OrderBook.BuyOrders(1), o => o.TraderId == "player");
 
-        // 数ターン待つ（playerTtl=5なのでターン6まで有効）
+        // ターン2 → 3 進行時に ExpireOrders(currentTurn=3) → プレイヤー注文(ExpiresAtTurn=3)は除去
+        var turn3 = processor.Wait(turn2, fee: 0).Game;
+        Assert.DoesNotContain(turn3.OrderBook.BuyOrders(1), o => o.TraderId == "player");
+    }
+
+    [Fact]
+    public void プレイヤーがexpiresInTurnsを指定できる()
+    {
+        var game = CreateGame();
+        var processor = CreateProcessor();
+
+        // ターン1: expiresInTurns=5 → ExpiresAtTurn = 1 + 5 = 6
+        var turn2 = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 1, price: 1, expiresInTurns: 5).Game;
+        Assert.Contains(turn2.OrderBook.BuyOrders(1), o => o.TraderId == "player");
+
+        // ターン5まで進める（4回 Wait） → ExpireOrders(currentTurn=2..5) → 全て < 6 で残る
         var current = turn2;
         for (int i = 0; i < 3; i++)
             current = processor.Wait(current, fee: 0).Game;
-
-        // ターン5: まだプレイヤー注文が残っている (5-1 < 5)
+        Assert.Equal(5, current.Turn);
         Assert.Contains(current.OrderBook.BuyOrders(1), o => o.TraderId == "player");
 
-        // さらに1ターン進める → ターン6: プレイヤー注文は期限切れ (6-1 >= 5)
+        // ターン6に進める → ExpireOrders(6) → 6 >= 6 で期限切れ
         current = processor.Wait(current, fee: 0).Game;
         Assert.DoesNotContain(current.OrderBook.BuyOrders(1), o => o.TraderId == "player");
+    }
+
+    [Fact]
+    public void expiresInTurns0以下でRejectedが返る()
+    {
+        var game = CreateGame();
+        var processor = CreateProcessor();
+
+        var result = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 1, expiresInTurns: 0);
+
+        Assert.NotNull(result.Warning);
+        Assert.Equal(Messages.ExpiresInTurnsMustBePositive, result.Warning);
+        Assert.Equal(1, result.Game.Turn); // ターン進行しない
     }
 }

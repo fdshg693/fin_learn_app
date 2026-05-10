@@ -40,6 +40,7 @@ export type OrderRequest = {
   instrumentId: number;
   quantity: number;
   price: number | null;
+  expiresInTurns?: number;
 };
 
 export type OrderBookResponse = {
@@ -59,4 +60,5 @@ export type OrderDto = {
   price: number | null;
   stopPrice: number | null;
   createdAtTurn: number;
+  expiresAtTurn: number;
 };

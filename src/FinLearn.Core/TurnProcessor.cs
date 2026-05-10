@@ -10,25 +10,19 @@ public sealed class TurnProcessor
     public IMarket Market { get; }
     public IPriceFluctuator Fluctuator { get; }
     public IExchangeFactory ExchangeFactory { get; }
-    public int ComputerTtl { get; }
-    public int PlayerTtl { get; }
 
-    public TurnProcessor(IOrderPlacer orderPlacer, IPriceFluctuator fluctuator,
-        int computerTtl = int.MaxValue, int playerTtl = int.MaxValue)
-        : this(orderPlacer, new Market(), fluctuator, new SimpleExchangeFactory(), computerTtl, playerTtl)
+    public TurnProcessor(IOrderPlacer orderPlacer, IPriceFluctuator fluctuator)
+        : this(orderPlacer, new Market(), fluctuator, new SimpleExchangeFactory())
     {
     }
 
     public TurnProcessor(IOrderPlacer orderPlacer, IMarket market,
-        IPriceFluctuator fluctuator, IExchangeFactory exchangeFactory,
-        int computerTtl = int.MaxValue, int playerTtl = int.MaxValue)
+        IPriceFluctuator fluctuator, IExchangeFactory exchangeFactory)
     {
         OrderPlacer = orderPlacer;
         Market = market;
         Fluctuator = fluctuator;
         ExchangeFactory = exchangeFactory;
-        ComputerTtl = computerTtl;
-        PlayerTtl = playerTtl;
     }
 
     /// <summary>
@@ -36,15 +30,17 @@ public sealed class TurnProcessor
     /// 引数バリデーション失敗時は SubmittedOrders / Fills が空、Warning が設定される。
     /// 詳細は <see cref="TurnResult"/> を参照。
     /// </summary>
-    public TurnResult Buy(Game game, int fee, int instrumentId, int quantity, int? price = null, int? stopPrice = null)
+    public TurnResult Buy(Game game, int fee, int instrumentId, int quantity, int? price = null, int? stopPrice = null, int expiresInTurns = GameRules.DefaultOrderTtl)
     {
         if (quantity <= 0)
             return Rejected(game, Messages.QuantityMustBePositive);
         if (price is not null && price <= 0)
             return Rejected(game, Messages.PriceMustBePositive);
+        if (expiresInTurns <= 0)
+            return Rejected(game, Messages.ExpiresInTurnsMustBePositive);
 
         var instrument = new Instrument(instrumentId);
-        return PlaceOrder(game, fee, instrument, OrderSide.Buy, quantity, price, stopPrice, Messages.NoMatchingSellOrders);
+        return PlaceOrder(game, fee, instrument, OrderSide.Buy, quantity, price, stopPrice, expiresInTurns, Messages.NoMatchingSellOrders);
     }
 
     /// <summary>
@@ -52,15 +48,17 @@ public sealed class TurnProcessor
     /// 引数バリデーション失敗時は SubmittedOrders / Fills が空、Warning が設定される。
     /// 詳細は <see cref="TurnResult"/> を参照。
     /// </summary>
-    public TurnResult Sell(Game game, int fee, int instrumentId, int quantity, int? price = null, int? stopPrice = null)
+    public TurnResult Sell(Game game, int fee, int instrumentId, int quantity, int? price = null, int? stopPrice = null, int expiresInTurns = GameRules.DefaultOrderTtl)
     {
         if (quantity <= 0)
             return Rejected(game, Messages.QuantityMustBePositive);
         if (price is not null && price <= 0)
             return Rejected(game, Messages.PriceMustBePositive);
+        if (expiresInTurns <= 0)
+            return Rejected(game, Messages.ExpiresInTurnsMustBePositive);
 
         var instrument = new Instrument(instrumentId);
-        return PlaceOrder(game, fee, instrument, OrderSide.Sell, quantity, price, stopPrice, Messages.NoMatchingBuyOrders);
+        return PlaceOrder(game, fee, instrument, OrderSide.Sell, quantity, price, stopPrice, expiresInTurns, Messages.NoMatchingBuyOrders);
     }
 
     /// <summary>
@@ -85,13 +83,14 @@ public sealed class TurnProcessor
 
     private TurnResult PlaceOrder(
         Game game, int fee, Instrument instrument, OrderSide side,
-        int quantity, int? price, int? stopPrice, string noMatchMessage)
+        int quantity, int? price, int? stopPrice, int expiresInTurns, string noMatchMessage)
     {
         var exchange = ExchangeFactory.Create(game.Prices, fee);
 
         // 1. コンピューター注文を生成 → プレイヤー注文を生成 → 市場で約定
         var (bookWithOrders, nextId, placedOrders) = OrderPlacer.PlaceOrders(game.OrderBook, exchange, game.Instruments, game.NextOrderId, game.Turn);
-        var order = game.Player.CreateOrder(nextId, instrument, side, quantity, price, stopPrice, game.Turn);
+        var expiresAtTurn = game.Turn + expiresInTurns;
+        var order = game.Player.CreateOrder(nextId, instrument, side, quantity, price, stopPrice, game.Turn, expiresAtTurn);
         var matchResult = Market.Execute(bookWithOrders, order, exchange);
 
         var submittedOrders = Combine(placedOrders, order);
@@ -158,7 +157,7 @@ public sealed class TurnProcessor
     private Game AdvanceTurn(Game game, Player player, OrderBook book, int nextOrderId)
     {
         var newPrices = Fluctuator.Fluctuate(game.Prices);
-        var expiredBook = book.ExpireOrders(game.Turn + 1, ComputerTtl, PlayerTtl);
+        var expiredBook = book.ExpireOrders(game.Turn + 1);
         return new Game(player, game.Turn + 1, expiredBook, nextOrderId, game.Instruments, newPrices);
     }
 }

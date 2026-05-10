@@ -57,12 +57,18 @@ public static class GameEndpoints
         {
             return Results.BadRequest(new { error = "stopPrice は 1 以上を指定してください" });
         }
+        if (request.ExpiresInTurns is not null && request.ExpiresInTurns <= 0)
+        {
+            return Results.BadRequest(new { error = "expiresInTurns は 1 以上を指定してください" });
+        }
+
+        var expiresInTurns = request.ExpiresInTurns ?? GameRules.DefaultOrderTtl;
 
         return ProcessOrder(id, request, store, processor, exchangeFactory, config, logger,
             (g, fee, req) => req.Side switch
             {
-                OrderSide.Buy => processor.Buy(g, fee, req.InstrumentId, req.Quantity, req.Price, req.StopPrice),
-                OrderSide.Sell => processor.Sell(g, fee, req.InstrumentId, req.Quantity, req.Price, req.StopPrice),
+                OrderSide.Buy => processor.Buy(g, fee, req.InstrumentId, req.Quantity, req.Price, req.StopPrice, expiresInTurns),
+                OrderSide.Sell => processor.Sell(g, fee, req.InstrumentId, req.Quantity, req.Price, req.StopPrice, expiresInTurns),
                 _ => throw new ArgumentOutOfRangeException(nameof(request), req.Side, "Unknown order side")
             });
     }

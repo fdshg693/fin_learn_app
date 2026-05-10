@@ -8,4 +8,5 @@ public static class Messages
     public const string NoMatchingSellOrders = "約定できる売り注文がありません";
     public const string NoMatchingBuyOrders = "約定できる買い注文がありません";
     public const string PriceMustBePositive = "価格は0より大きい必要があります";
+    public const string ExpiresInTurnsMustBePositive = "有効期限は1ターン以上を指定してください";
 }

@@ -37,9 +37,12 @@ function TradeButton({ intent, label, color, disabled, hiddenFields }: TradeButt
   );
 }
 
+const DEFAULT_EXPIRES_IN_TURNS = 2;
+
 export const TradeForm = memo(function TradeForm({ instruments, selectedInstrumentId, onInstrumentChange }: Props) {
   const [quantity, setQuantity] = useState(1);
   const [price, setPrice] = useState("");
+  const [expiresInTurns, setExpiresInTurns] = useState(DEFAULT_EXPIRES_IN_TURNS);
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
 
@@ -57,8 +60,12 @@ export const TradeForm = memo(function TradeForm({ instruments, selectedInstrume
     (e: React.ChangeEvent<HTMLInputElement>) => setPrice(e.target.value),
     [],
   );
+  const handleExpiresChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => setExpiresInTurns(Number(e.target.value)),
+    [],
+  );
 
-  const orderFields = { instrumentId, quantity, price };
+  const orderFields = { instrumentId, quantity, price, expiresInTurns };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
@@ -99,6 +106,17 @@ export const TradeForm = memo(function TradeForm({ instruments, selectedInstrume
             value={price}
             onChange={handlePriceChange}
             placeholder="成行"
+            className="w-full border rounded px-3 py-2 text-sm dark:bg-gray-700 dark:border-gray-600"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">有効期限（ターン）</label>
+          <input
+            type="number"
+            min={1}
+            value={expiresInTurns}
+            onChange={handleExpiresChange}
             className="w-full border rounded px-3 py-2 text-sm dark:bg-gray-700 dark:border-gray-600"
           />
         </div>

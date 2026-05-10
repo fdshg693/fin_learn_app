@@ -84,7 +84,7 @@ public class PlayerTests
         var player = new Player();
         var instrument = new Instrument(1);
 
-        var order = player.CreateOrder(orderId: 99, instrument, OrderSide.Buy, quantity: 5, price: 100);
+        var order = player.CreateOrder(orderId: 99, instrument, OrderSide.Buy, quantity: 5, price: 100, stopPrice: null, createdAtTurn: 0, expiresAtTurn: 2);
 
         Assert.Equal(99, order.Id);
         Assert.Equal("player", order.TraderId);
@@ -100,7 +100,7 @@ public class PlayerTests
         var player = new Player();
         var instrument = new Instrument(1);
 
-        var order = player.CreateOrder(orderId: 10, instrument, OrderSide.Buy, quantity: 5, price: null);
+        var order = player.CreateOrder(orderId: 10, instrument, OrderSide.Buy, quantity: 5, price: null, stopPrice: null, createdAtTurn: 0, expiresAtTurn: 2);
 
         Assert.Equal(10, order.Id);
         Assert.Equal("player", order.TraderId);

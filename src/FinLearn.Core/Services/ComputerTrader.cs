@@ -44,7 +44,7 @@ public sealed class ComputerTrader : IOrderPlacer
                 continue;
             var percent = _random.Next(GameRules.ComputerTraders.BuyPriceMinPercent, GameRules.ComputerTraders.BuyPriceMaxPercentExclusive);
             var price = Math.Max(GameRules.PriceFluctuation.MinPrice, marketPrice * percent / 100);
-            var order = new Order(currentId++, traderId, instrument, OrderSide.Buy, 1, price, currentTurn);
+            var order = new Order(currentId++, traderId, instrument, OrderSide.Buy, 1, price, currentTurn, currentTurn + GameRules.DefaultOrderTtl);
             placed.Add(order);
             updatedBook = PlaceWithMatching(updatedBook, order);
         }
@@ -58,7 +58,7 @@ public sealed class ComputerTrader : IOrderPlacer
                 continue;
             var percent = _random.Next(GameRules.ComputerTraders.SellPriceMinPercent, GameRules.ComputerTraders.SellPriceMaxPercentExclusive);
             var price = Math.Max(GameRules.PriceFluctuation.MinPrice, marketPrice * percent / 100);
-            var order = new Order(currentId++, traderId, instrument, OrderSide.Sell, 1, price, currentTurn);
+            var order = new Order(currentId++, traderId, instrument, OrderSide.Sell, 1, price, currentTurn, currentTurn + GameRules.DefaultOrderTtl);
             placed.Add(order);
             updatedBook = PlaceWithMatching(updatedBook, order);
         }

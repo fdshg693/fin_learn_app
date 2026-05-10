@@ -1,7 +1,7 @@
 namespace FinLearn.Core;
 
 /// <summary>
-/// 注文（ID・注文者・銘柄・売買区分・注文タイプ・数量・価格）
+/// 注文（ID・注文者・銘柄・売買区分・注文タイプ・数量・価格・有効期限）
 /// </summary>
 public sealed record Order
 {
@@ -14,11 +14,12 @@ public sealed record Order
     public int? Price { get; }
     public int? StopPrice { get; }
     public int CreatedAtTurn { get; }
+    public int ExpiresAtTurn { get; }
 
     /// <summary>
     /// 指値注文を作成する
     /// </summary>
-    public Order(int Id, string TraderId, Instrument Instrument, OrderSide Side, int Quantity, int Price, int createdAtTurn = 0)
+    public Order(int Id, string TraderId, Instrument Instrument, OrderSide Side, int Quantity, int Price, int createdAtTurn = 0, int expiresAtTurn = int.MaxValue)
     {
         if (Quantity <= 0)
             throw new ArgumentException("数量は1以上である必要があります", nameof(Quantity));
@@ -34,9 +35,10 @@ public sealed record Order
         this.Price = Price;
         this.StopPrice = null;
         this.CreatedAtTurn = createdAtTurn;
+        this.ExpiresAtTurn = expiresAtTurn;
     }
 
-    private Order(int id, string traderId, Instrument instrument, OrderSide side, OrderType type, int quantity, int? price, int? stopPrice, int createdAtTurn)
+    private Order(int id, string traderId, Instrument instrument, OrderSide side, OrderType type, int quantity, int? price, int? stopPrice, int createdAtTurn, int expiresAtTurn)
     {
         if (quantity <= 0)
             throw new ArgumentException("数量は1以上である必要があります", nameof(quantity));
@@ -52,14 +54,15 @@ public sealed record Order
         Price = price;
         StopPrice = stopPrice;
         CreatedAtTurn = createdAtTurn;
+        ExpiresAtTurn = expiresAtTurn;
     }
 
     /// <summary>
     /// 成行注文を作成する
     /// </summary>
-    public static Order CreateMarket(int id, string traderId, Instrument instrument, OrderSide side, int quantity, int? stopPrice = null, int createdAtTurn = 0) =>
-        new(id, traderId, instrument, side, OrderType.Market, quantity, null, stopPrice, createdAtTurn);
+    public static Order CreateMarket(int id, string traderId, Instrument instrument, OrderSide side, int quantity, int? stopPrice = null, int createdAtTurn = 0, int expiresAtTurn = int.MaxValue) =>
+        new(id, traderId, instrument, side, OrderType.Market, quantity, null, stopPrice, createdAtTurn, expiresAtTurn);
 
     internal Order WithQuantity(int quantity) =>
-        new(Id, TraderId, Instrument, Side, Type, quantity, Price, StopPrice, CreatedAtTurn);
+        new(Id, TraderId, Instrument, Side, Type, quantity, Price, StopPrice, CreatedAtTurn, ExpiresAtTurn);
 }

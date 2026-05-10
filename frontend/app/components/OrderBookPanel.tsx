@@ -8,12 +8,14 @@ import { formatJPY } from "~/utils/format";
 type Props = {
   gameId: string;
   orderBook: OrderBookResponse;
+  currentTurn: number;
   pageSize?: number;
 };
 
 export const OrderBookPanel = memo(function OrderBookPanel({
   gameId,
   orderBook,
+  currentTurn,
   pageSize = ORDERBOOK_PAGE_SIZE,
 }: Props) {
   const [currentBook, setCurrentBook] = useState<OrderBookResponse>(orderBook);
@@ -99,6 +101,7 @@ export const OrderBookPanel = memo(function OrderBookPanel({
               <th className="py-2 text-right">価格</th>
               <th className="py-2 text-right">ストップ</th>
               <th className="py-2 text-right">ターン</th>
+              <th className="py-2 text-right">残り</th>
               <th className="py-2">トレーダー</th>
             </tr>
           </thead>
@@ -120,6 +123,11 @@ export const OrderBookPanel = memo(function OrderBookPanel({
                 <td className="py-2 text-right">{order.price != null ? formatJPY(order.price) : "-"}</td>
                 <td className="py-2 text-right">{order.stopPrice != null ? formatJPY(order.stopPrice) : "-"}</td>
                 <td className="py-2 text-right">{order.createdAtTurn}</td>
+                <td className="py-2 text-right">
+                  {order.expiresAtTurn === Number.MAX_SAFE_INTEGER || order.expiresAtTurn >= 2147483647
+                    ? "∞"
+                    : Math.max(0, order.expiresAtTurn - currentTurn)}
+                </td>
                 <td className="py-2">{order.traderId}</td>
               </tr>
             ))}

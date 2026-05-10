@@ -99,6 +99,58 @@ public class GameApiTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public async Task POST_orders_expiresInTurnsが0以下で400(int expiresInTurns)
+    {
+        var created = await CreateGame();
+
+        var response = await _client.PostAsJsonAsync(
+            $"/api/games/{created.GameId}/orders",
+            new OrderRequest(Side: OrderSide.Buy, InstrumentId: 1, Quantity: 1, Price: 1, ExpiresInTurns: expiresInTurns));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task POST_orders_expiresInTurns未指定でデフォルト2が適用される()
+    {
+        var created = await CreateGame();
+
+        // 約定しない低価格で指値買い → 板に残る。ExpiresAtTurn = 1 + 2 = 3
+        var response = await _client.PostAsJsonAsync(
+            $"/api/games/{created.GameId}/orders",
+            new OrderRequest(Side: OrderSide.Buy, InstrumentId: 1, Quantity: 1, Price: 1));
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var orderBook = await _client.GetFromJsonAsync<OrderBookResponse>(
+            $"/api/admin/games/{created.GameId}/orderbook");
+        Assert.NotNull(orderBook);
+        var playerOrder = orderBook.Orders.FirstOrDefault(o => o.TraderId == "player");
+        Assert.NotNull(playerOrder);
+        Assert.Equal(3, playerOrder.ExpiresAtTurn);
+    }
+
+    [Fact]
+    public async Task POST_orders_expiresInTurns指定でExpiresAtTurnに反映される()
+    {
+        var created = await CreateGame();
+
+        // ターン1で expiresInTurns=5 → ExpiresAtTurn = 1 + 5 = 6
+        var response = await _client.PostAsJsonAsync(
+            $"/api/games/{created.GameId}/orders",
+            new OrderRequest(Side: OrderSide.Buy, InstrumentId: 1, Quantity: 1, Price: 1, ExpiresInTurns: 5));
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var orderBook = await _client.GetFromJsonAsync<OrderBookResponse>(
+            $"/api/admin/games/{created.GameId}/orderbook");
+        Assert.NotNull(orderBook);
+        var playerOrder = orderBook.Orders.FirstOrDefault(o => o.TraderId == "player");
+        Assert.NotNull(playerOrder);
+        Assert.Equal(6, playerOrder.ExpiresAtTurn);
+    }
+
     [Fact]
     public async Task POST_sell_保有なし売り注文でwarning付きだがターンは進む()
     {

@@ -23,6 +23,7 @@ function makeOrder(id: number): OrderDto {
     price: 100 + id,
     stopPrice: null,
     createdAtTurn: 1,
+    expiresAtTurn: 3,
   };
 }
 
@@ -36,7 +37,7 @@ describe("OrderBookPanel", () => {
   });
 
   test("注文がない場合はメッセージを表示", () => {
-    render(<OrderBookPanel gameId="g1" orderBook={makeBook([], 0)} />);
+    render(<OrderBookPanel gameId="g1" currentTurn={1} orderBook={makeBook([], 0)} />);
     expect(screen.getByText("注文なし")).toBeInTheDocument();
   });
 
@@ -52,9 +53,10 @@ describe("OrderBookPanel", () => {
         price: 1500,
         stopPrice: null,
         createdAtTurn: 1,
+        expiresAtTurn: 3,
       },
     ];
-    render(<OrderBookPanel gameId="g1" orderBook={makeBook(orders, 1)} />);
+    render(<OrderBookPanel gameId="g1" currentTurn={1} orderBook={makeBook(orders, 1)} />);
 
     expect(screen.getByText("買")).toBeInTheDocument();
     expect(screen.getByText("指値")).toBeInTheDocument();
@@ -75,9 +77,10 @@ describe("OrderBookPanel", () => {
         price: null,
         stopPrice: null,
         createdAtTurn: 2,
+        expiresAtTurn: 4,
       },
     ];
-    render(<OrderBookPanel gameId="g1" orderBook={makeBook(orders, 1)} />);
+    render(<OrderBookPanel gameId="g1" currentTurn={1} orderBook={makeBook(orders, 1)} />);
 
     expect(screen.getByText("売")).toBeInTheDocument();
     expect(screen.getByText("成行")).toBeInTheDocument();
@@ -85,7 +88,7 @@ describe("OrderBookPanel", () => {
 
   test("totalCountが1ページに収まるときは前/次ボタンが両方disabled", () => {
     const orders = [makeOrder(1), makeOrder(2)];
-    render(<OrderBookPanel gameId="g1" orderBook={makeBook(orders, 2)} pageSize={20} />);
+    render(<OrderBookPanel gameId="g1" currentTurn={1} orderBook={makeBook(orders, 2)} pageSize={20} />);
 
     expect(screen.getByRole("button", { name: "前へ" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "次へ" })).toBeDisabled();
@@ -93,7 +96,7 @@ describe("OrderBookPanel", () => {
 
   test("複数ページある場合の初期表示で「1–20 / 45」のようなページ情報が出る", () => {
     const orders = Array.from({ length: 20 }, (_, i) => makeOrder(i + 1));
-    render(<OrderBookPanel gameId="g1" orderBook={makeBook(orders, 45, 1, 20)} pageSize={20} />);
+    render(<OrderBookPanel gameId="g1" currentTurn={1} orderBook={makeBook(orders, 45, 1, 20)} pageSize={20} />);
 
     expect(screen.getByText("1–20 / 45")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "前へ" })).toBeDisabled();
@@ -106,7 +109,7 @@ describe("OrderBookPanel", () => {
     const page2 = [makeOrder(21), makeOrder(22)];
     getOrderBookMock.mockResolvedValueOnce(makeBook(page2, 22, 2, 20));
 
-    render(<OrderBookPanel gameId="g1" orderBook={makeBook(page1, 22, 1, 20)} pageSize={20} />);
+    render(<OrderBookPanel gameId="g1" currentTurn={1} orderBook={makeBook(page1, 22, 1, 20)} pageSize={20} />);
 
     await user.click(screen.getByRole("button", { name: "次へ" }));
 
@@ -132,7 +135,7 @@ describe("OrderBookPanel", () => {
       .mockResolvedValueOnce(makeBook(page2, 22, 2, 20))
       .mockResolvedValueOnce(makeBook(page1, 22, 1, 20));
 
-    render(<OrderBookPanel gameId="g1" orderBook={makeBook(page1, 22, 1, 20)} pageSize={20} />);
+    render(<OrderBookPanel gameId="g1" currentTurn={1} orderBook={makeBook(page1, 22, 1, 20)} pageSize={20} />);
 
     await user.click(screen.getByRole("button", { name: "次へ" }));
     await waitFor(() => expect(screen.getByText("21–22 / 22")).toBeInTheDocument());
@@ -149,7 +152,7 @@ describe("OrderBookPanel", () => {
     const page1 = Array.from({ length: 20 }, (_, i) => makeOrder(i + 1));
     getOrderBookMock.mockRejectedValueOnce(new Error("boom"));
 
-    render(<OrderBookPanel gameId="g1" orderBook={makeBook(page1, 45, 1, 20)} pageSize={20} />);
+    render(<OrderBookPanel gameId="g1" currentTurn={1} orderBook={makeBook(page1, 45, 1, 20)} pageSize={20} />);
 
     await user.click(screen.getByRole("button", { name: "次へ" }));
 
@@ -167,7 +170,7 @@ describe("OrderBookPanel", () => {
     getOrderBookMock.mockResolvedValueOnce(makeBook(page2, 22, 2, 20));
 
     const { rerender } = render(
-      <OrderBookPanel gameId="g1" orderBook={makeBook(page1, 22, 1, 20)} pageSize={20} />,
+      <OrderBookPanel gameId="g1" currentTurn={1} orderBook={makeBook(page1, 22, 1, 20)} pageSize={20} />,
     );
 
     // ページ 2 に移動
@@ -177,7 +180,7 @@ describe("OrderBookPanel", () => {
     // clientAction 後を模擬: 新しい orderBook が props で降ってくる
     const newFirstPage = [makeOrder(100)];
     rerender(
-      <OrderBookPanel gameId="g1" orderBook={makeBook(newFirstPage, 1, 1, 20)} pageSize={20} />,
+      <OrderBookPanel gameId="g1" currentTurn={1} orderBook={makeBook(newFirstPage, 1, 1, 20)} pageSize={20} />,
     );
 
     await waitFor(() => {

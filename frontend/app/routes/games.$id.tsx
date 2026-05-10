@@ -65,9 +65,13 @@ export async function clientAction({ params, request }: ClientActionFunctionArgs
       const quantity = Number(formData.get("quantity"));
       const priceRaw = formData.get("price");
       const price = priceRaw ? Number(priceRaw) : null;
+      const expiresInTurns = Number(formData.get("expiresInTurns"));
 
-      if (Number.isNaN(instrumentId) || Number.isNaN(quantity) || (price !== null && Number.isNaN(price))) {
+      if (Number.isNaN(instrumentId) || Number.isNaN(quantity) || (price !== null && Number.isNaN(price)) || Number.isNaN(expiresInTurns)) {
         return { error: "入力値が不正です。数値を入力してください。", lastSubmission: submission };
+      }
+      if (expiresInTurns < 1) {
+        return { error: "有効期限は1ターン以上を指定してください。", lastSubmission: submission };
       }
 
       const side =
@@ -78,7 +82,7 @@ export async function clientAction({ params, request }: ClientActionFunctionArgs
         return { error: `Invalid intent: ${intent}`, lastSubmission: submission };
       }
 
-      const order: OrderRequest = { side, instrumentId, quantity, price };
+      const order: OrderRequest = { side, instrumentId, quantity, price, expiresInTurns };
       game = await placeOrder(id, order);
     }
 
@@ -160,7 +164,7 @@ export default function GamePage() {
         onInstrumentChange={setSelectedInstrumentId}
       />
       <TradeHistory trades={game.recentTrades} />
-      <OrderBookPanel gameId={game.gameId} orderBook={orderBook} />
+      <OrderBookPanel gameId={game.gameId} orderBook={orderBook} currentTurn={game.turn} />
     </main>
   );
 }

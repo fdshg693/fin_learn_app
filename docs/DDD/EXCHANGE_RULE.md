@@ -49,16 +49,19 @@
 
 ## 注文の有効期限
 
-注文には `CreatedAtTurn`（作成ターン）が記録され、一定ターン経過後に自動的に板から除去される。
+注文ごとに `ExpiresAtTurn`（有効期限ターン番号・絶対値）を持ち、ターン進行時に自動的に板から除去される。
 
-| 項目 | 変数名 | デフォルト値 |
-|---|---|---|
-| コンピューター注文の有効期限 | `ComputerTtl` | `int.MaxValue`（実質無期限） |
-| プレイヤー注文の有効期限 | `PlayerTtl` | `int.MaxValue`（実質無期限） |
+| 項目 | 値 |
+|---|---|
+| デフォルト有効ターン数 | `GameRules.DefaultOrderTtl = 2`（生成ターンと次のターンまで有効） |
+| `ExpiresAtTurn` の計算 | `CreatedAtTurn + expiresInTurns` |
+| 期限切れ判定 | `currentTurn >= ExpiresAtTurn` |
+| 実行タイミング | ターン進行時（`TurnProcessor.AdvanceTurn`）に `OrderBook.ExpireOrders(currentTurn)` を呼び出す |
+| API 指定 | `OrderRequest.expiresInTurns`（未指定時はサーバー側でデフォルト 2 を適用、`<= 0` は 400 BadRequest） |
 
-- **期限切れ判定**: `currentTurn - createdAtTurn >= ttl` で期限切れ
-- **実行タイミング**: ターン進行時（`TurnProcessor.AdvanceTurn`）に `OrderBook.ExpireOrders` を呼び出す
-- TTL は `TurnProcessor` のコンストラクタで設定
+- コンピューター注文・プレイヤー注文ともに同じデフォルト（2 ターン）を使用
+- ユーザーは画面の「有効期限（ターン）」入力で各注文ごとに値を指定可能
+- `Order` の `ExpiresAtTurn` のデフォルトは `int.MaxValue`（実質無期限）。プロダクションパス（`Player.CreateOrder`・`ComputerTrader`）は明示的に値を渡す
 
 ## 約定ロジック（`OrderBook.Match`）
 

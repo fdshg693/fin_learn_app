@@ -43,15 +43,12 @@ public sealed class OrderBook
 
     /// <summary>
     /// 有効期限を超過した注文を除去する。
-    /// コンピューター注文とプレイヤー注文で異なるTTLを適用する。
+    /// 各注文が持つ <see cref="Order.ExpiresAtTurn"/> を基準に判定する
+    /// (currentTurn &gt;= ExpiresAtTurn で期限切れ)。
     /// </summary>
-    public OrderBook ExpireOrders(int currentTurn, int computerTtl, int playerTtl)
+    public OrderBook ExpireOrders(int currentTurn)
     {
-        var remaining = _orders.Where(o =>
-        {
-            var ttl = ComputerTrader.IsComputerTrader(o.TraderId) ? computerTtl : playerTtl;
-            return currentTurn - o.CreatedAtTurn < ttl;
-        }).ToImmutableList();
+        var remaining = _orders.Where(o => currentTurn < o.ExpiresAtTurn).ToImmutableList();
 
         if (remaining.Count == _orders.Count)
             return this;

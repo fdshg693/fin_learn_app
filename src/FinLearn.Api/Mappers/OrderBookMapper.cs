@@ -23,7 +23,8 @@ public static class OrderBookMapper
                 Quantity: o.Quantity,
                 Price: o.Price,
                 StopPrice: o.StopPrice,
-                CreatedAtTurn: o.CreatedAtTurn
+                CreatedAtTurn: o.CreatedAtTurn,
+                ExpiresAtTurn: o.ExpiresAtTurn
             ))
             .ToList();
 

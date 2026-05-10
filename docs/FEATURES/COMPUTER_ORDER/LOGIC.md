@@ -16,7 +16,8 @@
 
 - `IExchange.TryGetPrice` が `false` の銘柄はスキップ
 - `Random` インスタンスを外部注入（シード固定でテスト決定性を確保）
-- TraderId は `ComputerTrader.IsComputerTrader(string)` で識別する（`OrderBook.ExpireOrders` のTTL判定で使用）
+- TraderId は `ComputerTrader.IsComputerTrader(string)` で識別（`computer{i}` プレフィックス）
+- コンピューター注文は `GameRules.DefaultOrderTtl`（デフォルト 2 ターン）で `ExpiresAtTurn` を設定（`createdAtTurn + DefaultOrderTtl`）
 
 ## マッチング方式
 
