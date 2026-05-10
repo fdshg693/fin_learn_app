@@ -24,7 +24,18 @@ const server = new McpServer({
 
 let latestSelection: { choice: string; timestamp: string } | null = null;
 
-// ── interactive-select: LLMが呼ぶ → UIが表示される ─────────────────
+// ── 保留中の選択待ち（interactive-select が resolve 待ち）─────────────
+
+type PendingSelection = {
+  resolve: (choice: string) => void;
+  reject: (reason: Error) => void;
+  timer: NodeJS.Timeout;
+};
+let pending: PendingSelection | null = null;
+
+const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000;
+
+// ── interactive-select: LLMが呼ぶ → UIが表示される → クリック待機 ─
 
 registerAppTool(
   server,
@@ -32,8 +43,8 @@ registerAppTool(
   {
     title: "Interactive Select",
     description:
-      "選択肢をインタラクティブなUIで表示し、ユーザーに選ばせる。" +
-      "choices に選択肢の配列、prompt に表示メッセージを渡す。",
+      "選択肢をインタラクティブなUIで表示し、ユーザーがクリックするまで待機して選択値を返す。" +
+      "timeoutMs を超えるとタイムアウトエラーを返す。",
     inputSchema: {
       choices: z
         .array(z.string())
@@ -43,20 +54,55 @@ registerAppTool(
         .string()
         .optional()
         .describe("選択肢の上に表示するメッセージ"),
+      timeoutMs: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe(`待機タイムアウト（ミリ秒）。既定: ${DEFAULT_TIMEOUT_MS}`),
     },
     _meta: {
       ui: { resourceUri: "ui://simple-app/view.html" },
     },
   },
-  async ({ choices, prompt }) => {
-    return {
-      content: [
-        {
-          type: "text" as const,
-          text: `選択肢を表示しました: ${choices.join(", ")}${prompt ? ` (${prompt})` : ""}`,
-        },
-      ],
-    };
+  async ({ timeoutMs }) => {
+    // 直前の待機があれば打ち切る（新しい選択肢に置き換える）
+    if (pending) {
+      clearTimeout(pending.timer);
+      pending.reject(new Error("新しい interactive-select に置き換えられました"));
+      pending = null;
+    }
+
+    const limit = timeoutMs ?? DEFAULT_TIMEOUT_MS;
+
+    try {
+      const choice = await new Promise<string>((resolve, reject) => {
+        const timer = setTimeout(() => {
+          pending = null;
+          reject(new Error(`タイムアウト: ${limit}ms 以内にユーザーの選択がありませんでした`));
+        }, limit);
+        pending = { resolve, reject, timer };
+      });
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `ユーザーが選択した値: ${choice}`,
+          },
+        ],
+      };
+    } catch (err) {
+      return {
+        isError: true,
+        content: [
+          {
+            type: "text" as const,
+            text: err instanceof Error ? err.message : String(err),
+          },
+        ],
+      };
+    }
   },
 );
 
@@ -80,6 +126,14 @@ registerAppTool(
   },
   async ({ choice }) => {
     latestSelection = { choice, timestamp: new Date().toISOString() };
+
+    // interactive-select の待機を解放
+    if (pending) {
+      clearTimeout(pending.timer);
+      pending.resolve(choice);
+      pending = null;
+    }
+
     return {
       content: [
         {

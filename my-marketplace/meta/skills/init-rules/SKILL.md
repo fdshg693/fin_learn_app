@@ -4,6 +4,8 @@ name: init-rules
 # 全体を捜査するため、かなりの時間がかかる。既存で使えるドキュメントなどがあれば、一緒に渡して効率を上げる余地がある。
 # フォルダ数が多い場合は、サブエージェントに分担させる。
 description: Generate `.claude/rules/<topic>.md` rule files that give an AI coding agent the context it cannot efficiently derive from reading individual files. Use sub-agent delegation for large codebases to speed up the process.
+# 高コストスキルでかつ、最初くらいしか実行されないため、ユーザーが手動で呼び出す場合だけに限定
+disable-model-invocation: true
 # 前提スキル: writing-rules
 # - RULEファイルの書き方の学習のために利用
 # 出力ファイル: `.claude/rules/` 以下のルールファイル群

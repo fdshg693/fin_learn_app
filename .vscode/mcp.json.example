@@ -8,3 +8,15 @@
 	},
 	"inputs": []
 }
+
+{
+	"servers": {
+		"simple-mcp-app": {
+			"cwd": "${workspaceFolder}/mcps",
+			"type": "stdio",
+			"command": "npx",
+            "args": ["tsx", "simple-mcp-app/index.ts"]
+		}
+	},
+	"inputs": []
+}

@@ -38,8 +38,8 @@ Host (Claude Desktop 等)
 
 | ツール名 | 呼び出し元 | 説明 |
 |---|---|---|
-| `interactive-select` | LLM | 選択肢をUIで表示しユーザーに選ばせる。引数: `choices`（配列）, `prompt`（任意） |
-| `process-choice` | App のみ | ユーザーが選んだ値を処理し、サーバー側に保存する。引数: `choice` |
+| `interactive-select` | LLM | 選択肢をUIで表示し、ユーザーのクリックを待機して選択値を返す。引数: `choices`（配列）, `prompt`（任意）, `timeoutMs`（任意, 既定 300000ms）。タイムアウト時は `isError: true` で返す |
+| `process-choice` | App のみ | ユーザーが選んだ値を処理し、サーバー側に保存しつつ `interactive-select` の待機を解放する。引数: `choice` |
 | `get-latest-selection` | LLM | 最新のユーザー選択結果（値と時刻）を取得する。引数なし |
 
 ### App ツール（`src/main.ts` — クライアント側）
@@ -51,10 +51,13 @@ Host (Claude Desktop 等)
 ## フロー
 
 1. **`ontoolinput`** — ツールが呼ばれたとき引数 (`choices`, `prompt`) を受信し、選択肢をボタンとして表示
-2. **`callServerTool`** — ユーザーがボタンをクリックすると `process-choice` ツールを呼び出し、サーバー側に選択結果を保存
-3. **`ontoolresult`** — 元のツールの実行結果を受信し、画面を更新
-4. **`oncalltool`** — App 自身が提供するツール (`get-current-selection`) をホスト/LLM から呼び出し可能
-5. **`get-latest-selection`** — LLM がいつでも呼び出し、最新の選択結果を取得できる（未選択なら「まだ選択が行われていません」を返す）
+2. **待機** — `interactive-select` ハンドラはサーバー側で Promise を保留にし、ユーザーのクリック（= `process-choice` の呼び出し）または `timeoutMs` の経過まで戻らない
+3. **`callServerTool`** — ユーザーがボタンをクリックすると `process-choice` を呼び出す。サーバーは `latestSelection` を更新し、保留中の `interactive-select` を resolve して選択値を LLM へ返す
+4. **`ontoolresult`** — 元のツールの実行結果を受信し、画面を更新
+5. **`oncalltool`** — App 自身が提供するツール (`get-current-selection`) をホスト/LLM から呼び出し可能
+6. **`get-latest-selection`** — LLM がいつでも呼び出し、最新の選択結果を取得できる（未選択なら「まだ選択が行われていません」を返す）
+
+`interactive-select` が待機中に再度呼ばれた場合は、前の待機を「新しい interactive-select に置き換えられました」エラーで打ち切り、新しい選択肢を表示する。
 
 ## セットアップ
 
