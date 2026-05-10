@@ -68,6 +68,11 @@ public sealed record ActionWaitRequestDto
     public Guid InvestorId { get; }
     public int ExpectedTurn { get; }
 
+    /// <summary>
+    /// Waitアクション（見送り）用のリクエスト。
+    /// </summary>
+    /// <param name="investorId">対象投資家ID。</param>
+    /// <param name="expectedTurn">期待ターン番号。</param>
     public ActionWaitRequestDto(Guid investorId, int expectedTurn)
     {
         InvestorId = investorId;
@@ -85,6 +90,13 @@ public sealed record ActionResultDto
     public PortfolioDto Portfolio { get; }
     public int CurrentTurn { get; }
 
+    /// <summary>
+    /// アクション実行結果。
+    /// </summary>
+    /// <param name="success">実行成否。</param>
+    /// <param name="message">実行メッセージ。</param>
+    /// <param name="portfolio">実行後ポートフォリオ。</param>
+    /// <param name="currentTurn">実行後の現在ターン番号。</param>
     public ActionResultDto(bool success, string message, PortfolioDto portfolio, int currentTurn)
     {
         Success = success;
