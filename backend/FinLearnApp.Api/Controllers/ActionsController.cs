@@ -28,103 +28,47 @@ public sealed class ActionsController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>
-    /// 指定銘柄を現在価格で即時購入する。
-    /// 現金不足時は失敗結果を返し、状態は変更しない。
-    /// </summary>
-    /// <param name="request">投資家ID・銘柄ID・数量。</param>
-    /// <returns>実行結果と最新ポートフォリオ。</returns>
-    [HttpPost("buy-now")]
-    public async Task<ActionResult<ActionResultDto>> BuyNow(ActionTradeRequestDto request)
-    {
-        _logger.LogInformation(
-            "Execute action={Action} investorId={InvestorId} tickerId={TickerId} quantity={Quantity} expectedTurn={ExpectedTurn}",
-            "BuyNow",
-            request.InvestorId,
-            request.TickerId,
-            request.Quantity,
-            request.ExpectedTurn);
-
-        var command = new BuyNowCommand(request.InvestorId, request.TickerId, request.Quantity, request.ExpectedTurn);
-        var response = await _mediator.Send(command);
-
-        LogActionResult("BuyNow", request.InvestorId, request.TickerId, request.Quantity, response);
-
-        return ToHttpResult(response);
-    }
-
-    /// <summary>
-    /// 指定銘柄を現在価格で即時売却する。
-    /// 保有なし/数量不足時は失敗結果を返し、状態は変更しない。
-    /// </summary>
-    /// <param name="request">投資家ID・銘柄ID・数量。</param>
-    /// <returns>実行結果と最新ポートフォリオ。</returns>
-    [HttpPost("sell-now")]
-    public async Task<ActionResult<ActionResultDto>> SellNow(ActionTradeRequestDto request)
-    {
-        _logger.LogInformation(
-            "Execute action={Action} investorId={InvestorId} tickerId={TickerId} quantity={Quantity} expectedTurn={ExpectedTurn}",
-            "SellNow",
-            request.InvestorId,
-            request.TickerId,
-            request.Quantity,
-            request.ExpectedTurn);
-
-        var command = new SellNowCommand(request.InvestorId, request.TickerId, request.Quantity, request.ExpectedTurn);
-        var response = await _mediator.Send(command);
-
-        LogActionResult("SellNow", request.InvestorId, request.TickerId, request.Quantity, response);
-
-        return ToHttpResult(response);
-    }
-
-    [HttpPost("buy-limit")]
-    public async Task<ActionResult<ActionResultDto>> BuyLimit(ActionLimitRequestDto request)
+    [HttpPost("buy")]
+    public async Task<ActionResult<ActionResultDto>> Buy(ActionBuyRequestDto request)
     {
         _logger.LogInformation(
             "Execute action={Action} investorId={InvestorId} tickerId={TickerId} quantity={Quantity} limitPrice={LimitPrice} expectedTurn={ExpectedTurn}",
-            "BuyLimit",
+            "Buy",
             request.InvestorId,
             request.TickerId,
             request.Quantity,
-            request.LimitPriceAmount,
+            request.LimitPrice,
             request.ExpectedTurn);
 
-        var command = new BuyLimitCommand(
-            request.InvestorId,
-            request.TickerId,
-            request.Quantity,
-            request.LimitPriceAmount,
-            request.ExpectedTurn);
+        IRequest<ActionExecutionResult> command = request.LimitPrice.HasValue
+            ? new BuyLimitCommand(request.InvestorId, request.TickerId, request.Quantity, request.LimitPrice.Value, request.ExpectedTurn)
+            : new BuyNowCommand(request.InvestorId, request.TickerId, request.Quantity, request.ExpectedTurn);
+
         var response = await _mediator.Send(command);
 
-        LogActionResult("BuyLimit", request.InvestorId, request.TickerId, request.Quantity, response);
-
+        LogActionResult("Buy", request.InvestorId, request.TickerId, request.Quantity, response);
         return ToHttpResult(response);
     }
 
-    [HttpPost("sell-limit")]
-    public async Task<ActionResult<ActionResultDto>> SellLimit(ActionLimitRequestDto request)
+    [HttpPost("sell")]
+    public async Task<ActionResult<ActionResultDto>> Sell(ActionSellRequestDto request)
     {
         _logger.LogInformation(
             "Execute action={Action} investorId={InvestorId} tickerId={TickerId} quantity={Quantity} limitPrice={LimitPrice} expectedTurn={ExpectedTurn}",
-            "SellLimit",
+            "Sell",
             request.InvestorId,
             request.TickerId,
             request.Quantity,
-            request.LimitPriceAmount,
+            request.LimitPrice,
             request.ExpectedTurn);
 
-        var command = new SellLimitCommand(
-            request.InvestorId,
-            request.TickerId,
-            request.Quantity,
-            request.LimitPriceAmount,
-            request.ExpectedTurn);
+        IRequest<ActionExecutionResult> command = request.LimitPrice.HasValue
+            ? new SellLimitCommand(request.InvestorId, request.TickerId, request.Quantity, request.LimitPrice.Value, request.ExpectedTurn)
+            : new SellNowCommand(request.InvestorId, request.TickerId, request.Quantity, request.ExpectedTurn);
+
         var response = await _mediator.Send(command);
 
-        LogActionResult("SellLimit", request.InvestorId, request.TickerId, request.Quantity, response);
-
+        LogActionResult("Sell", request.InvestorId, request.TickerId, request.Quantity, response);
         return ToHttpResult(response);
     }
 
