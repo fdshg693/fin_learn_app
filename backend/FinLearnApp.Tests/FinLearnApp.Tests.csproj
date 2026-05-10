@@ -15,8 +15,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Application\FinLearnApp.Application.csproj" />
-    <ProjectReference Include="..\..\src\Domain\FinLearnApp.Domain.csproj" />
+    <ProjectReference Include="..\..\library\Application\FinLearnApp.Application.csproj" />
+    <ProjectReference Include="..\..\library\Domain\FinLearnApp.Domain.csproj" />
     <ProjectReference Include="..\FinLearnApp.Api\FinLearnApp.Api.csproj" />
   </ItemGroup>
 

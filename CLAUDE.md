@@ -29,8 +29,8 @@ pnpm lint         # ESLint
 ### レイヤー構成（Clean Architecture）
 
 ```
-src/Domain/           # エンティティ・値オブジェクト（ビジネスルールのコア）
-src/Application/      # CQRS コマンド・ハンドラ（MediatR）
+library/Domain/           # エンティティ・値オブジェクト（ビジネスルールのコア）
+library/Application/      # CQRS コマンド・ハンドラ（MediatR）
 backend/FinLearnApp.Api/  # ASP.NET Core Web API（Controllers, InMemoryStore）
 frontend/src/         # React + TypeScript フロントエンド
 ```
