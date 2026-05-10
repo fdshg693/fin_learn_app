@@ -35,18 +35,19 @@ export type PortfolioDto = {
   holdings: HoldingDto[]
 }
 
-export type ActionTradeRequestDto = {
+export type ActionBuyRequestDto = {
   investorId: string
   tickerId: string
   quantity: number
+  limitPrice?: number
   expectedTurn: number
 }
 
-export type ActionLimitRequestDto = {
+export type ActionSellRequestDto = {
   investorId: string
   tickerId: string
   quantity: number
-  limitPriceAmount: number
+  limitPrice?: number
   expectedTurn: number
 }
 

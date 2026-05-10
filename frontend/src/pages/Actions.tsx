@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
-import { buyLimit, buyNow, sellLimit, sellNow, waitAction } from '../api/actions'
+import { buy, sell, waitAction } from '../api/actions'
 import { fetchMarketSnapshot } from '../api/market'
 import { fetchJson } from '../api/client'
 import type {
-  ActionLimitRequestDto,
-  ActionTradeRequestDto,
+  ActionBuyRequestDto,
+  ActionSellRequestDto,
   ActionWaitRequestDto,
   MarketSnapshotDto,
   PortfolioDto,
@@ -124,7 +124,7 @@ export default function Actions() {
       .finally(() => setIsLoading(false))
   }, [])
 
-  const executeTradeAction = async (actionType: 'buy' | 'sell') => {
+  const executeAction = async (side: 'buy' | 'sell', limitPrice?: number) => {
     setError(null)
     setResultMessage(null)
 
@@ -138,61 +138,24 @@ export default function Actions() {
       return
     }
 
-    const payload: ActionTradeRequestDto = {
-      investorId: demoInvestorId,
-      tickerId,
-      quantity,
-      expectedTurn: currentTurn,
-    }
-
-    setIsSubmitting(true)
-    try {
-      const result =
-        actionType === 'buy' ? await buyNow(payload) : await sellNow(payload)
-
-      const latestSnapshot = await fetchMarketSnapshot()
-      setResultMessage(result.message)
-      setPortfolio(result.portfolio)
-      setCurrentTurn(result.currentTurn)
-      setMarketSnapshot(latestSnapshot)
-    } catch (err) {
-      setError((err as Error).message)
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const executeLimitAction = async (actionType: 'buy' | 'sell') => {
-    setError(null)
-    setResultMessage(null)
-
-    if (!tickerId) {
-      setError('銘柄を選択してください。')
-      return
-    }
-
-    if (quantity <= 0) {
-      setError('数量は1以上を指定してください。')
-      return
-    }
-
-    if (limitPriceAmount <= 0) {
+    if (limitPrice !== undefined && limitPrice <= 0) {
       setError('指値価格は1以上を指定してください。')
       return
     }
 
-    const payload: ActionLimitRequestDto = {
+    const payload = {
       investorId: demoInvestorId,
       tickerId,
       quantity,
-      limitPriceAmount,
+      limitPrice,
       expectedTurn: currentTurn,
     }
 
     setIsSubmitting(true)
     try {
-      const result =
-        actionType === 'buy' ? await buyLimit(payload) : await sellLimit(payload)
+      const result = side === 'buy'
+        ? await buy(payload as ActionBuyRequestDto)
+        : await sell(payload as ActionSellRequestDto)
 
       const latestSnapshot = await fetchMarketSnapshot()
       setResultMessage(result.message)
@@ -268,11 +231,11 @@ export default function Actions() {
             </label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.25rem' }}>
               {[
-                { label: 'BuyNow', action: () => executeTradeAction('buy'), color: '#16a34a' },
-                { label: 'SellNow', action: () => executeTradeAction('sell'), color: '#dc2626' },
-                { label: 'Wait', action: executeWaitAction, color: '#475569' },
-                { label: 'BuyLimit', action: () => executeLimitAction('buy'), color: '#065f46' },
-                { label: 'SellLimit', action: () => executeLimitAction('sell'), color: '#7f1d1d' },
+                { label: 'BuyNow',    action: () => executeAction('buy'),                    color: '#16a34a' },
+                { label: 'SellNow',   action: () => executeAction('sell'),                   color: '#dc2626' },
+                { label: 'Wait',      action: executeWaitAction,                             color: '#475569' },
+                { label: 'BuyLimit',  action: () => executeAction('buy', limitPriceAmount),  color: '#065f46' },
+                { label: 'SellLimit', action: () => executeAction('sell', limitPriceAmount), color: '#7f1d1d' },
               ].map(({ label, action, color }) => (
                 <button key={label} type="button" disabled={isSubmitting || isLoading} onClick={action}
                   style={{ background: color, color: '#fff', border: 'none', borderRadius: '6px', padding: '0.45rem 0.9rem', cursor: 'pointer', fontSize: '0.875rem', opacity: isSubmitting ? 0.6 : 1 }}>
