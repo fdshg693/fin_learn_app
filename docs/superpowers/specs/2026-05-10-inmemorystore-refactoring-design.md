@@ -21,8 +21,8 @@
 ## 設計方針（アプローチA）
 
 - **マッチングロジック** → `Exchange` ドメインエンティティのメソッドへ（「取引所がどう注文を捌くか」はドメインの振る舞い）
-- **ターン処理ロジック** → Application 層の `TurnService` クラスへ（`Random` を使うため Domain 層ではなく Application 層が適切）
-- **`InMemoryStore`** → 薄いデリゲーター：Execute 系は `Exchange` に転送、`AdvanceTurn` は `TurnService` を呼ぶだけ
+- **ターン処理ロジック** → Domain 層の `TurnDomainService` クラスへ（価格変動・注文生成・板寄せはシミュレーションのドメインルールそのもの。`Random` はメソッド引数で受け取ることで Domain 層が生成に依存しない設計にする）
+- **`InMemoryStore`** → 薄いデリゲーター：Execute 系は `Exchange` に転送、`AdvanceTurn` は `TurnDomainService` を呼ぶだけ
 - **`IActionExecutionStore` インターフェース** → 変更なし（Handler 側の変更ゼロ）
 
 ---
@@ -32,10 +32,10 @@
 | ファイル | 変更種別 | 内容 |
 |---|---|---|
 | `library/Domain/Entities/Exchange.cs` | 修正 | マッチングメソッド + `Trades` プロパティを追加 |
-| `library/Application/Turn/TurnService.cs` | 新規作成 | ターン処理ロジック（価格変動・注文生成・板寄せ） |
+| `library/Domain/Services/TurnDomainService.cs` | 新規作成 | ターン処理ロジック（価格変動・注文生成・板寄せ） |
 | `backend/FinLearnApp.Api/Data/InMemoryStore.cs` | 修正 | Execute系・AdvanceTurn を薄いデリゲーターに変更 |
 | `backend/FinLearnApp.Api/Controllers/MarketController.cs` | 修正 | `_store.Trades` → `_store.Exchange.Trades` |
-| テスト | 追加 | `TurnService` と `Exchange` のマッチングを単体テスト |
+| テスト | 追加 | `TurnDomainService` と `Exchange` のマッチングを単体テスト |
 
 ---
 
@@ -107,14 +107,15 @@ public OrderMatchResult ExecuteBuyNow(TickerId tickerId, int quantity, Money ava
 
 ---
 
-### 2. `library/Application/Turn/TurnService.cs`
+### 2. `library/Domain/Services/TurnDomainService.cs`
 
-ターン進行に必要な3ステップを静的メソッドとして実装する。
+ターン進行に必要な3ステップをドメインサービスの静的メソッドとして実装する。
+`Random` はメソッド引数で受け取ることで、Domain 層が乱数生成の仕組みに依存しない設計にする。
 
 ```csharp
-namespace FinLearnApp.Application.Turn;
+namespace FinLearnApp.Domain.Services;
 
-public static class TurnService
+public static class TurnDomainService
 {
     private const int MaxTargetTickersPerTurn = 3;
     private const int SystemOrderQuantity = 10;
@@ -134,7 +135,7 @@ public static class TurnService
 }
 ```
 
-定数（`MaxTargetTickersPerTurn` 等）は `InMemoryStore` から `TurnService` に移動する。
+定数（`MaxTargetTickersPerTurn` 等）は `InMemoryStore` から `TurnDomainService` に移動する。
 
 ---
 
@@ -151,7 +152,7 @@ public static class TurnService
 - `NextDecimal`
 - `_trades` フィールドおよび `Trades` プロパティ
 
-定数 6 本（`MaxTargetTickersPerTurn` 等）も削除（`TurnService` に移動）。
+定数 6 本（`MaxTargetTickersPerTurn` 等）も削除（`TurnDomainService` に移動）。
 
 変更後の `AdvanceTurn`：
 
@@ -161,9 +162,9 @@ public int AdvanceTurn(InvestorId investorId)
     var nextTurn = GetCurrentTurn(investorId) + 1;
     _turnByInvestor[investorId] = nextTurn;
 
-    TurnService.ApplyPriceFluctuation(Tickers, _random, nextTurn);
-    TurnService.GenerateSystemOrders(Exchange, Tickers, _random);
-    TurnService.MatchCrossedOrdersForAllTickers(Exchange, Tickers);
+    TurnDomainService.ApplyPriceFluctuation(Tickers, _random, nextTurn);
+    TurnDomainService.GenerateSystemOrders(Exchange, Tickers, _random);
+    TurnDomainService.MatchCrossedOrdersForAllTickers(Exchange, Tickers);
 
     return nextTurn;
 }
@@ -205,7 +206,7 @@ var trades = _store.Exchange.Trades
 - `ExecuteBuyLimit`: 指値以下の売り注文があれば約定する
 - `MatchCrossedOrders`: 買い値 ≥ 売り値のクロスが解消される
 
-### `TurnService` のテスト
+### `TurnDomainService` のテスト
 
 - `ApplyPriceFluctuation`: 全ティッカーの価格が変動する（固定 Random で検証）
 - `GenerateSystemOrders`: 最大 `MaxTargetTickersPerTurn` 銘柄分の注文が生成される
@@ -217,8 +218,7 @@ var trades = _store.Exchange.Trades
 
 ```
 Api (InMemoryStore)
-  → Application (TurnService)
-      → Domain (Exchange, Ticker, OrderBook)
+  → Domain (TurnDomainService, Exchange, Ticker, OrderBook)
 ```
 
 `IActionExecutionStore` を通じた依存は変わらず：
