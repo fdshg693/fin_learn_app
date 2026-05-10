@@ -7,11 +7,16 @@ using FinLearn.Core;
 /// </summary>
 public sealed class NoOpOrderPlacer : IOrderPlacer
 {
-    public (OrderBook UpdatedBook, int NextOrderId, IReadOnlyList<Order> PlacedOrders, IReadOnlyDictionary<string, Portfolio> UpdatedComputerPortfolios) PlaceOrders(
+    public OrderPlacementResult PlaceOrders(
         OrderBook book, IExchange exchange,
         IReadOnlyList<Instrument> instruments, int startOrderId, int currentTurn,
-        IReadOnlyDictionary<string, Portfolio> computerPortfolios)
+        IReadOnlyDictionary<string, Portfolio> traderPortfolios)
     {
-        return (book, startOrderId, Array.Empty<Order>(), computerPortfolios);
+        return new OrderPlacementResult(
+            UpdatedBook: book,
+            NextOrderId: startOrderId,
+            PlacedOrders: Array.Empty<Order>(),
+            Fills: Array.Empty<OrderFill>(),
+            UpdatedTraderPortfolios: traderPortfolios);
     }
 }

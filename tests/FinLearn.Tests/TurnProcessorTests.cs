@@ -268,8 +268,9 @@ public class TurnProcessorTests
 
         Assert.Null(turn.Warning);
         Assert.Equal(2, turn.Game.Turn);
-        // ポートフォリオは変わらない
-        Assert.Equal(10000, turn.Game.Player.Portfolio.Cash);
+        // 予約モデル: Cash は available のみ。発注時に price*qty=2 が available → reserved に移る
+        Assert.Equal(10000 - 2, turn.Game.Player.Portfolio.Cash);
+        Assert.Equal(2, turn.Game.Player.Portfolio.ReservedCash);
         Assert.Equal(0, turn.Game.Player.Portfolio.QuantityOf(instrumentId: 1));
         // 指値注文が板に残っている
         var buyOrders = turn.Game.OrderBook.BuyOrders(1);
@@ -282,15 +283,15 @@ public class TurnProcessorTests
         var game = CreateGame();
         var processor = CreateProcessor();
 
-        // 高い指値 + 大量の数量で部分約定を確認
-        var turn = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 100, price: 115);
+        // 予約モデルでは事前予約分の現金が必要。115×80 = 9200 で初期 10000 内に収まる量で部分約定を狙う。
+        var turn = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 80, price: 115);
 
         Assert.Null(turn.Warning);
         Assert.Equal(2, turn.Game.Turn);
         // 何かしら約定している
         Assert.True(turn.Game.Player.Portfolio.QuantityOf(instrumentId: 1) > 0);
         // 全量は約定していない（コンピューター売り注文は最大10件で各1株）
-        Assert.True(turn.Game.Player.Portfolio.QuantityOf(instrumentId: 1) < 100);
+        Assert.True(turn.Game.Player.Portfolio.QuantityOf(instrumentId: 1) < 80);
         // 未約定分が板に残っている
         var buyOrders = turn.Game.OrderBook.BuyOrders(1);
         Assert.Contains(buyOrders, o => o.TraderId == "player" && o.Price == 115);
@@ -485,5 +486,106 @@ public class TurnProcessorTests
         Assert.NotNull(result.Warning);
         Assert.Equal(Messages.ExpiresInTurnsMustBePositive, result.Warning);
         Assert.Equal(1, result.Game.Turn); // ターン進行しない
+    }
+
+    // --- 予約モデル（指値発注時の資源予約）テスト ---
+
+    [Fact]
+    public void 指値買い発注で即座にreservedCashが増えavailableCashが減る()
+    {
+        var game = CreateGame();
+        // 約定しない低価格で発注（板の売り注文と交差しない）
+        var processor = new TurnProcessor(new NoOpOrderPlacer(), new NoPriceFluctuator());
+
+        var result = processor.Buy(game, fee: 50, instrumentId: 1, quantity: 3, price: 100);
+
+        Assert.Null(result.Warning);
+        // 予約 = 3*100 + 50 = 350
+        Assert.Equal(10000 - 350, result.Game.Player.Portfolio.Cash);
+        Assert.Equal(350, result.Game.Player.Portfolio.ReservedCash);
+    }
+
+    [Fact]
+    public void 指値売り発注でreservedPositionsが増えavailableQuantityが減る()
+    {
+        // プレイヤーは銘柄1を10株保有した状態でスタート
+        var basePlayer = new Player();
+        var withPosition = basePlayer.WithPortfolio(new Portfolio(cash: 10000, positions: new[] { new Position(new Instrument(1), 10) }));
+        var game = new Game(withPosition, turn: 1, new OrderBook(), nextOrderId: 1, Instruments, Prices);
+        var processor = new TurnProcessor(new NoOpOrderPlacer(), new NoPriceFluctuator());
+
+        var result = processor.Sell(game, fee: 0, instrumentId: 1, quantity: 4, price: 200);
+
+        Assert.Null(result.Warning);
+        Assert.Equal(10, result.Game.Player.Portfolio.QuantityOf(1));            // 全保有不変
+        Assert.Equal(4, result.Game.Player.Portfolio.ReservedQuantityOf(1));
+        Assert.Equal(6, result.Game.Player.Portfolio.AvailableQuantityOf(1));
+    }
+
+    [Fact]
+    public void 指値が失効すると予約が_available_に戻る()
+    {
+        var game = CreateGame();
+        var processor = new TurnProcessor(new NoOpOrderPlacer(), new NoPriceFluctuator());
+
+        // ターン1で指値買い発注（expiresInTurns=2 → ExpiresAtTurn=3）
+        var afterBuy = processor.Buy(game, fee: 50, instrumentId: 1, quantity: 3, price: 100, expiresInTurns: 2).Game;
+        Assert.Equal(350, afterBuy.Player.Portfolio.ReservedCash);
+
+        // ターン2で Wait（同じ fee=50 で消費的に整合）→ ExpireOrders(3) で player 注文が失効、予約が解放される
+        var afterWait1 = processor.Wait(afterBuy, fee: 50).Game;
+        Assert.Equal(0, afterWait1.Player.Portfolio.ReservedCash);
+        Assert.Equal(10000, afterWait1.Player.Portfolio.Cash);
+    }
+
+    [Fact]
+    public void 指値で予約失敗_残高不足_はターン進行_warning_Fills空_player注文も含む()
+    {
+        var game = CreateGame();
+        var processor = new TurnProcessor(new NoOpOrderPlacer(), new NoPriceFluctuator());
+
+        // 初期 cash 10000 を超える予約: 50000
+        var result = processor.Buy(game, fee: 0, instrumentId: 1, quantity: 500, price: 100);
+
+        Assert.Equal(Messages.InsufficientCashToBuy, result.Warning);
+        Assert.Equal(2, result.Game.Turn);                          // ターンは進む
+        Assert.Empty(result.Fills);
+        Assert.Single(result.SubmittedOrders);                       // player 注文は submitted に含まれる
+        Assert.Equal("player", result.SubmittedOrders[0].TraderId);
+        // 予約は実行されていない
+        Assert.Equal(10000, result.Game.Player.Portfolio.Cash);
+        Assert.Equal(0, result.Game.Player.Portfolio.ReservedCash);
+    }
+
+    /// <summary>
+    /// バグ修正検証: プレイヤーの過去ターン resting 指値が当ターンの computer 注文と約定すると
+    /// player Portfolio に正しく反映される（旧コードでは反映されなかった）。
+    /// </summary>
+    [Fact]
+    public void プレイヤーの過去ターン_resting_指値が_computer_注文と約定するとPortfolioに反映される()
+    {
+        // プレイヤーは銘柄1を 5 株保有
+        var basePlayer = new Player();
+        var withPosition = basePlayer.WithPortfolio(new Portfolio(cash: 10000, positions: new[] { new Position(new Instrument(1), 5) }));
+        var game = new Game(withPosition, turn: 1, new OrderBook(), nextOrderId: 1, Instruments, Prices);
+
+        // ターン1で売り指値を発注（プレイヤー以外と約定するように低めの価格 50）。
+        // computer 買い注文の範囲は株価100×85〜105% = 85〜105 なので、50 は確実に交差して約定する。
+        var processor = new TurnProcessor(new ComputerTrader(new Random(42)), new NoPriceFluctuator());
+        var afterSell = processor.Sell(game, fee: 0, instrumentId: 1, quantity: 1, price: 50, expiresInTurns: 5);
+        var gameAfterSell = afterSell.Game;
+
+        // 発注時点では未約定なら板に残り、reservedPositions に1株移動 + cash は変わらない
+        // （computer 注文がそのターンで約定する可能性もあるが、それも player Portfolio に反映される）
+
+        // ターン2で Wait → computer の新しい買い注文が player の resting sell @50 と確実に約定
+        var afterWait = processor.Wait(gameAfterSell, fee: 0);
+        var finalGame = afterWait.Game;
+
+        // 過去ターンの resting 売りが約定 → 全保有 5→4、reserved 1→0、cash は 10000 + 50 = 10050
+        Assert.Equal(4, finalGame.Player.Portfolio.QuantityOf(1));
+        Assert.Equal(0, finalGame.Player.Portfolio.ReservedQuantityOf(1));
+        Assert.True(finalGame.Player.Portfolio.Cash >= 10050,
+            $"player の resting sell 約定で cash が 10050 以上に増えるはず。実際: {finalGame.Player.Portfolio.Cash}");
     }
 }

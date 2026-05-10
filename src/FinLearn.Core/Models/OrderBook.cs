@@ -42,19 +42,21 @@ public sealed class OrderBook
             .ToList();
 
     /// <summary>
-    /// 有効期限を超過した注文を除去する。
+    /// 有効期限を超過した注文を除去し、除去した注文リストを併せて返す。
     /// 各注文が持つ <see cref="Order.ExpiresAtTurn"/> を基準に判定する
     /// (currentTurn &gt;= ExpiresAtTurn で期限切れ)。
+    /// 失効注文の予約解放を呼び出し側で行うため、Expired リストを公開する。
     /// </summary>
-    public OrderBook ExpireOrders(int currentTurn)
+    public (OrderBook Updated, IReadOnlyList<Order> Expired) ExpireOrders(int currentTurn)
     {
+        var expired = _orders.Where(o => currentTurn >= o.ExpiresAtTurn).ToList();
+
+        if (expired.Count == 0)
+            return (this, Array.Empty<Order>());
+
         var remaining = _orders.Where(o => currentTurn < o.ExpiresAtTurn).ToImmutableList();
-
-        if (remaining.Count == _orders.Count)
-            return this;
-
         var remainingIds = remaining.Select(o => o.Id).ToImmutableHashSet();
-        return new OrderBook(remaining, remainingIds);
+        return (new OrderBook(remaining, remainingIds), expired);
     }
 
     /// <summary>

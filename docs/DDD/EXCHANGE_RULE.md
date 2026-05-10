@@ -6,9 +6,10 @@
 
 - **固定手数料制**: 1取引あたり固定額（JPY）を徴収
 - 手数料は `TurnProcessor` の各メソッド (`Buy`/`Sell`/`Wait`) に `int fee` パラメータとして注入
-- **買い**: `新キャッシュ = 現金 - 約定金額 - 手数料`
-- **売り**: `新キャッシュ = 現金 + 約定金額 - 手数料`
-- 残高チェックは手数料込み（`現金 < 約定金額 + 手数料` で拒否）
+- **per-order セマンティクス**: 注文1件につき手数料1回。指値の部分約定では fee=0、最終約定（残数量0）の fill で fee 全額を計上
+- **買い指値**: 発注時に `数量 × 指値価格 + 手数料` を予約 → 約定で確定（差額は available に返金） → 失効時は残予約を解放
+- **売り指値**: 発注時は cash を予約しない（保有株のみ予約）。約定時に `数量 × 約定価格 - 手数料` を available に加算
+- **成行注文**: 予約しない。`Portfolio.ApplyTrade` で `現金 - 約定金額 - 手数料`（買い）/ `現金 + 約定金額 - 手数料`（売り）の同期適用
 
 ## 注文の種類
 
@@ -29,9 +30,35 @@
 
 > 注文の入力バリデーション（数量・価格・ストップ価格 > 0）は [docs/FEATURES/VALIDATION/LOGIC.md](../FEATURES/VALIDATION/LOGIC.md) を参照。
 
+## 発注時資源予約モデル（Reservation Model）
+
+実取引所と同じく、**指値注文は発注時に必要資源を予約**する。これにより約定の settlement は失敗しない（残高/数量不足は発注時バリデーションで弾かれる）。
+
+| 注文種別 | 発注時の予約 | 約定時の挙動 | 失効時の挙動 |
+|---|---|---|---|
+| 買い指値 | `available cash` から `qty × price + fee` を `reserved cash` に移動 | `reserved cash` から `qty × actualPrice + feeIfFinal` を確定。差額（指値 − 約定価格 + 未計上 fee）は `available` に返金 | 残予約 cash を `available` に解放 |
+| 売り指値 | `available positions` から `qty` 株を `reserved positions` に移動（全保有数は不変） | `reserved positions` から `qty` 減算、`available cash` に proceeds 加算 | `reserved positions` のみ減算（全保有数は不変） |
+| 買い成行 | 予約なし | `Portfolio.ApplyTrade` で同期適用。残高不足ならロールバック（`Fills` を空に） | （板に乗らないので失効なし） |
+| 売り成行 | 予約なし | `Portfolio.ApplyTrade` で同期適用 | （板に乗らないので失効なし） |
+
+- `Portfolio.Cash` は **available cash** のみを表す（`ReservedCash` は別フィールド）。総資産 `TotalAmount = Cash + ReservedCash + 全保有評価`
+- `Portfolio.QuantityOf` は全保有を表す。売却可能な数量は `AvailableQuantityOf`、予約中は `ReservedQuantityOf`
+- 発注時の予約失敗（残高/数量不足）は warning + `Fills` 空でターンを進める（コンピューター注文の settlement は確定維持）
+- `Portfolio.CreateInfinite()` は予約系メソッドも全て no-op（computer 用）
+
+### Settlement の責務統一（`SettlementProcessor`）
+
+注文生成（intent）と settlement（マーケット結果反映）を分離。当ターンに発生した全 `OrderFill` を `traderId → Portfolio` 統一マップに対して `SettlementProcessor.SettleFills` で適用する。これにより以下のすべてが同じ仕組みで反映される：
+
+- computer 同士の約定（同ターン中の computer 注文交差）
+- computer 注文と player の **過去ターンの resting 指値** の約定 ← 旧コードで未反映だったケース
+- player の incoming 注文と既存 resting 注文の約定
+
+失効注文の予約解放は `SettlementProcessor.ReleaseExpired` が担う。
+
 ## コンピューター注文生成（`ComputerTrader`）
 
-毎ターン、プレイヤー注文の**前**に自動生成される。注文は1件ずつ `OrderBook.Match` を通し、約定しなかった残りだけ板に追加する。
+毎ターン、プレイヤー注文の**前**に自動生成される。注文は1件ずつ `OrderBook.Match` を通し、約定しなかった残りだけ板に追加する。発注時に `Portfolio.ReserveBuy` / `ReserveSell` を呼ぶ（Infinite なので no-op）。約定の Portfolio 反映は `SettlementProcessor.SettleFills` に委譲。
 
 > 詳細: [docs/FEATURES/COMPUTER_ORDER/CURRENT.md](../FEATURES/COMPUTER_ORDER/CURRENT.md)
 
@@ -72,38 +99,55 @@
 - 部分約定あり。指値の未約定分は板に追加、成行の未約定分は消滅
 - 約定ゼロ時: 成行は警告、指値は全数量を板に追加。いずれもターンは進行する
 
-## ポートフォリオ更新（`Portfolio.ApplyTrade`）
+## ポートフォリオ更新
 
 > 失敗時の Warning 設計は [docs/FEATURES/VALIDATION/LOGIC.md](../FEATURES/VALIDATION/LOGIC.md) 参照。
 
-### 買い
+### 指値の予約・確定・解放
 
+- **`ReserveBuy(instrumentId, quantity, price, fee)`**: `available cash` 不足なら `InsufficientCashToBuy`、成功なら `available → reserved` へ移動
+- **`ReserveSell(instrumentId, quantity)`**: `available 数量` 不足なら `InsufficientQuantityToSell`、成功なら `_reservedPositions` に加算（全保有数は不変）
+- **`SettleReservedBuy(...)`**: `reserved cash` から `qty × reservedPrice + feeIfFinal` を消費、差額は `available cash` に返金、保有を加算
+- **`SettleReservedSell(...)`**: 全保有と `_reservedPositions` から filled 数量を減算、`available cash` に proceeds を加算
+- **`ReleaseBuyReservation` / `ReleaseSellReservation`**: 失効・全約定時に残予約を `available` に戻す
+
+### 成行の `ApplyTrade`
+
+板に乗らない成行 fill 専用。指値の settlement は `SettleReserved*` を使うこと。
+
+#### 買い
 1. `FilledQuantity > 0` チェック（0以下で拒否）
-2. `現金 >= 約定金額 + 手数料` チェック（不足で拒否）
-3. ポジション数量加算、キャッシュ減算
+2. `available cash >= 約定金額 + 手数料` チェック（不足で拒否 → ロールバック）
+3. ポジション数量加算、`available cash` 減算
 
-### 売り
-
+#### 売り
 1. `FilledQuantity > 0` チェック（0以下で拒否）
 2. `保有数量 >= FilledQuantity` チェック（超過で拒否）
-3. ポジション数量減算、キャッシュ加算（手数料差引）
+3. ポジション数量減算、`available cash` 加算（手数料差引）
 4. 数量0のポジションは `SetQuantity` により自動除去
 
 ## ターン進行フロー（`TurnProcessor.PlaceOrder`）
 
 ```
-1. IExchangeFactory.Create(Prices, fee)    — 取引所生成
-2. IOrderPlacer.PlaceOrders(...)           — コンピューター注文20件を1件ずつMatch＋残りAdd
-3. Player.CreateOrder(nextId, ...)         — プレイヤー注文を生成
-4. IMarket.Execute(book, order, exchange)  — 板でマッチング → MatchResult
-5. Portfolio.ApplyTrade(trade)             — ポートフォリオ更新
-6. AddRemainingLimitOrder(...)             — 指値未約定分を板に追加
-7. IPriceFluctuator.Fluctuate(prices)      — 株価変動（±5%）
-8. OrderBook.ExpireOrders(...)             — 期限切れ注文を除去
-9. Turn + 1                                — ターン番号インクリメント
+1. IExchangeFactory.Create(Prices, fee)
+2. BuildAllPortfolios(game)                — Player + ComputerPortfolios の統合 view
+3. IOrderPlacer.PlaceOrders(...)           — computer 注文の発注 + 約定 + SettlementProcessor で全 trader に反映
+4. Player.CreateOrder(nextId, ...)         — プレイヤー注文を生成
+5. (指値のみ) Portfolio.ReserveBuy/Sell    — 失敗なら Wait 化 + warning（computer settlement は確定維持）
+6. IMarket.Execute(book, order, exchange)
+7. fills の settlement
+   - 指値 → SettlementProcessor.SettleFills（予約消費 + 差額返金、失敗パス無し）
+   - 成行 → Portfolio.ApplyTrade（残高不足ならロールバック: Fills 破棄）
+8. AddRemainingLimitOrder(...)             — 指値未約定分を板に追加
+9. AdvanceTurn:
+     a. IPriceFluctuator.Fluctuate(prices)
+     b. (newBook, expired) = OrderBook.ExpireOrders(turn+1)
+     c. SettlementProcessor.ReleaseExpired(expired, ..., fee)  — 失効注文の予約を解放
+     d. SplitPortfolios → Player / ComputerPortfolios に分解して新 Game を構築
 ```
 
-- **Wait**: コンピューター注文生成 + 株価変動のみ（プレイヤー注文なし）
+- **Wait**: コンピューター注文生成 + settlement + 株価変動 + 失効処理（プレイヤー注文なし）
+- **ロールバック対象**は **player の市場注文 fill のみ**。Computer 同士・computer-vs-player resting の settlement は確定事実として維持される
 - **失敗時のターン進行ルール**（形式不正／約定ゼロ／状態依存失敗）: [docs/FEATURES/VALIDATION/LOGIC.md](../FEATURES/VALIDATION/LOGIC.md) 「失敗時のターン進行ルール」表を参照
 
 ## 株価変動（`RandomPriceFluctuator`）
