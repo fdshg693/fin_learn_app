@@ -60,7 +60,7 @@ public sealed class Exchange
             executedQuantity += fillQuantity;
             remaining -= fillQuantity;
 
-            // 成行注文は OrderBook に登録されないため、約定記録用に仮 ID を振る
+            // この場で受け付けた執行要求は OrderBook に登録されないため、約定記録用に仮 ID を振る
             RegisterTrade(tickerId, new OrderId(Guid.NewGuid()), order.Id, order.Price, fillQuantity);
             OrderBook.ReplaceWithRemaining(order, order.Quantity - fillQuantity);
         }
@@ -93,7 +93,7 @@ public sealed class Exchange
             executedQuantity += fillQuantity;
             remaining -= fillQuantity;
 
-            // 成行注文は OrderBook に登録されないため、約定記録用に仮 ID を振る
+            // この場で受け付けた執行要求は OrderBook に登録されないため、約定記録用に仮 ID を振る
             RegisterTrade(tickerId, order.Id, new OrderId(Guid.NewGuid()), order.Price, fillQuantity);
             OrderBook.ReplaceWithRemaining(order, order.Quantity - fillQuantity);
         }

@@ -33,6 +33,21 @@ public static class TurnDomainService
     private const decimal MaxPriceFluctuationRate = 1.03m;
 
     /// <summary>
+    /// 1 ターン分の市場進行を実行する。
+    /// 価格変動、システム注文生成、クロス注文解消をこの順で適用する。
+    /// </summary>
+    /// <param name="exchange">対象の取引所。</param>
+    /// <param name="tickers">市場に存在する銘柄一覧。</param>
+    /// <param name="random">乱数生成器。</param>
+    /// <param name="turn">進行後のターン番号。</param>
+    public static void AdvanceTurn(Exchange exchange, IReadOnlyList<Ticker> tickers, Random random, int turn)
+    {
+        ApplyPriceFluctuation(tickers, random, turn);
+        GenerateSystemOrders(exchange, tickers, random);
+        MatchCrossedOrdersForAllTickers(exchange, tickers);
+    }
+
+    /// <summary>
     /// 全銘柄の価格をランダムに変動させる。
     /// 変動率は MinPriceFluctuationRate 〜 MaxPriceFluctuationRate の一様分布。
     /// 変動後の価格が 1 円未満になる場合は 1 円にクランプする。

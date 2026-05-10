@@ -35,6 +35,54 @@ public class TurnDomainServiceTests
     // ================================================================
 
     [Fact]
+    public void TurnDomainService_AdvanceTurn_OneTicker_UpdatesPriceHistoryAndGeneratesOrders()
+    {
+        // Arrange: 1 銘柄なら必ずシステム注文生成対象になる
+        var tickers = CreateTickers(1, price: 1_000m);
+        var exchange = CreateExchange();
+        var initialHistoryCount = tickers[0].PriceHistory.Count;
+
+        // Act
+        TurnDomainService.AdvanceTurn(exchange, tickers, new Random(42), turn: 1);
+
+        // Assert: 価格履歴が増え、買い 1 件・売り 1 件が積まれる
+        Assert.Equal(initialHistoryCount + 1, tickers[0].PriceHistory.Count);
+        Assert.Single(exchange.OrderBook.FindByTickerAndSide(tickers[0].Id, OrderSide.Buy));
+        Assert.Single(exchange.OrderBook.FindByTickerAndSide(tickers[0].Id, OrderSide.Sell));
+    }
+
+    [Fact]
+    public void TurnDomainService_AdvanceTurn_CrossedOrders_AreResolvedByEndOfTurn()
+    {
+        // Arrange: 既存のクロス注文を入れておく
+        var tickers = CreateTickers(1, price: 1_000m);
+        var exchange = CreateExchange();
+        exchange.OrderBook.Add(new Order(
+            new OrderId(Guid.NewGuid()), tickers[0].Id, OrderSide.Buy,
+            Money.Jpy(1_000m), 5, OrderOrigin.System, DateTimeOffset.UtcNow));
+        exchange.OrderBook.Add(new Order(
+            new OrderId(Guid.NewGuid()), tickers[0].Id, OrderSide.Sell,
+            Money.Jpy(950m), 5, OrderOrigin.System, DateTimeOffset.UtcNow));
+
+        // Act
+        TurnDomainService.AdvanceTurn(exchange, tickers, new Random(42), turn: 1);
+
+        // Assert: ターン終了時点で最良買い < 最良売り になっている
+        var bestBuy = exchange.OrderBook
+            .FindByTickerAndSide(tickers[0].Id, OrderSide.Buy)
+            .OrderByDescending(order => order.Price.Amount)
+            .FirstOrDefault();
+        var bestSell = exchange.OrderBook
+            .FindByTickerAndSide(tickers[0].Id, OrderSide.Sell)
+            .OrderBy(order => order.Price.Amount)
+            .FirstOrDefault();
+
+        Assert.NotNull(bestBuy);
+        Assert.NotNull(bestSell);
+        Assert.True(bestBuy!.Price.Amount < bestSell!.Price.Amount);
+    }
+
+    [Fact]
     public void TurnDomainService_ApplyPriceFluctuation_ChangesAllTickerPrices()
     {
         // Arrange: 3 銘柄、初期価格 1,000 円
