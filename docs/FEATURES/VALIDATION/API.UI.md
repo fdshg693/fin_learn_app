@@ -138,4 +138,4 @@ API クライアント [`frontend/app/api/gameApi.ts`](../../../frontend/app/api
 
 - [LOGIC.md](LOGIC.md) — バリデーションの 3 層モデル・エラー分類
 - [取引ルール](../../DDD/EXCHANGE_RULE.md) — ターン進行と失敗時の挙動
-- [API.md](../../API.md) — エンドポイント・DTO 一覧
+- [API/](../../API/) — エンドポイント・DTO 一覧

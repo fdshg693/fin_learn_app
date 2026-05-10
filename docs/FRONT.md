@@ -173,28 +173,3 @@ placeOrder(id, order)    → POST /api/games/:id/orders   // order.side: "Buy" |
 wait(id)                 → POST /api/games/:id/wait
 getOrderBook(id, page?, pageSize?)  → GET  /api/admin/games/:id/orderbook
 ```
-
----
-
-## ファイル構成
-
-```
-frontend/app/
-├── root.tsx                    # 共通レイアウト（既存）
-├── routes.ts                   # ルート定義
-├── routes/
-│   ├── home.tsx                # HomePage
-│   └── games.$id.tsx           # GamePage (clientLoader + clientAction)
-├── components/
-│   ├── GameHeader.tsx
-│   ├── PlayerPanel.tsx
-│   ├── MarketBoard.tsx
-│   ├── PositionList.tsx
-│   ├── TradeForm.tsx
-│   ├── TradeHistory.tsx
-│   └── WarningMessage.tsx
-├── api/
-│   └── gameApi.ts              # API クライアント
-└── types/
-    └── game.ts                 # 型定義（API DTO ミラー）
-```
