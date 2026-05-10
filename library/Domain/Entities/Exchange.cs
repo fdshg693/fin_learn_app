@@ -34,6 +34,7 @@ public sealed class Exchange
     /// 成行買い注文を執行する。
     /// 市場価格以下の売り注文を価格優先・時間優先で照合し、約定可能な分を即時約定させる。
     /// 現金残高を超える約定は行わない。
+    /// 現金残高チェックは最初にオーバーする注文で打ち切る（より安い後続注文があっても続行しない）。
     /// </summary>
     /// <param name="tickerId">対象銘柄 ID。</param>
     /// <param name="quantity">購入希望株数。</param>
@@ -59,6 +60,7 @@ public sealed class Exchange
             executedQuantity += fillQuantity;
             remaining -= fillQuantity;
 
+            // 成行注文は OrderBook に登録されないため、約定記録用に仮 ID を振る
             RegisterTrade(tickerId, new OrderId(Guid.NewGuid()), order.Id, order.Price, fillQuantity);
             OrderBook.ReplaceWithRemaining(order, order.Quantity - fillQuantity);
         }
@@ -91,6 +93,7 @@ public sealed class Exchange
             executedQuantity += fillQuantity;
             remaining -= fillQuantity;
 
+            // 成行注文は OrderBook に登録されないため、約定記録用に仮 ID を振る
             RegisterTrade(tickerId, order.Id, new OrderId(Guid.NewGuid()), order.Price, fillQuantity);
             OrderBook.ReplaceWithRemaining(order, order.Quantity - fillQuantity);
         }
@@ -102,6 +105,7 @@ public sealed class Exchange
     /// 指値買い注文を執行する。
     /// 指値以下の売り注文を価格優先・時間優先で照合し、約定可能な分を即時約定させる。
     /// 現金残高を超える約定は行わない。
+    /// 現金残高チェックは最初にオーバーする注文で打ち切る（より安い後続注文があっても続行しない）。
     /// </summary>
     /// <param name="tickerId">対象銘柄 ID。</param>
     /// <param name="quantity">購入希望株数。</param>
@@ -127,6 +131,7 @@ public sealed class Exchange
             executedQuantity += fillQuantity;
             remaining -= fillQuantity;
 
+            // 成行注文は OrderBook に登録されないため、約定記録用に仮 ID を振る
             RegisterTrade(tickerId, new OrderId(Guid.NewGuid()), order.Id, order.Price, fillQuantity);
             OrderBook.ReplaceWithRemaining(order, order.Quantity - fillQuantity);
         }
@@ -159,6 +164,7 @@ public sealed class Exchange
             executedQuantity += fillQuantity;
             remaining -= fillQuantity;
 
+            // 成行注文は OrderBook に登録されないため、約定記録用に仮 ID を振る
             RegisterTrade(tickerId, order.Id, new OrderId(Guid.NewGuid()), order.Price, fillQuantity);
             OrderBook.ReplaceWithRemaining(order, order.Quantity - fillQuantity);
         }
