@@ -14,12 +14,12 @@ Pure domain layer with zero external dependencies. All types are **immutable sea
 | `Instrument.cs` | 銘柄 | Stock identifier (value equality by ID) |
 | `Position.cs` | ポジション | Instrument + quantity, evaluation amount |
 | `PositionSet.cs` | ポジション集合 | Immutable collection, auto-aggregates same instrument via `+` |
-| `Portfolio.cs` | ポートフォリオ | Cash + PositionSet, fill-based Buy/Sell logic |
+| `Portfolio.cs` | ポートフォリオ | Cash + PositionSet, fill-based Buy/Sell logic. `Portfolio.CreateInfinite()` returns a no-op portfolio (cash/positions invariant under add/sub) used by computer traders |
 | `Player.cs` | プレイヤー | Game participant identity (Name), order creation, profit/loss. Portfolio updates via `WithPortfolio` |
 | `IExchange.cs` | 取引所 | Interface: price lookup + fee |
 | `IOrderPlacer.cs` | 注文生成戦略 | Interface for order generation (DI point for testing) |
-| `Game.cs` | ゲーム | State snapshot: turn, player, order book, instruments, **prices** |
-| `ComputerTrader.cs` | コンピュータートレーダー | Implements `IOrderPlacer`. 10 traders (`computer1`〜`computer10`) each place 1 buy (85-105%) + 1 sell (95-115%) per turn (20 orders total). `IsComputerTrader(string)` identifies any computer trader id |
+| `Game.cs` | ゲーム | State snapshot: turn, player, order book, instruments, **prices**, **computerPortfolios** (computer1〜10 の Portfolio) |
+| `ComputerTrader.cs` | コンピュータートレーダー | Implements `IOrderPlacer`. 10 仮想プレイヤー (`computer1`〜`computer10`) each place 1 buy (85-105%) + 1 sell (95-115%) per turn (20 orders total). 約定時は当事者の Portfolio に `ApplyTrade`（初期は ∞ で不変）。`IsComputerTrader(string)` identifies any computer trader id |
 | `Order.cs` | 注文 | ID, trader, instrument, side, quantity, price, stopPrice, createdAtTurn (作成ターン), expiresAtTurn (有効期限ターン・絶対値) |
 | `OrderSide.cs` | 売買区分 | `Buy` / `Sell` enum |
 | `OrderBook.cs` | 注文帳 | Order management + symmetric matching via `Match(Order)` + `ExpireOrders(currentTurn)` (per-order `ExpiresAtTurn` based) |
@@ -52,7 +52,7 @@ Sell orders are sorted ascending (cheapest first), buy orders descending (highes
 
 Each turn follows this sequence:
 1. `IExchangeFactory.Create` constructs exchange from `Game.Prices` + `fee` parameter
-2. `IOrderPlacer.PlaceOrders` generates computer orders using current prices
+2. `IOrderPlacer.PlaceOrders` generates computer orders using current prices, takes/returns `IReadOnlyDictionary<string, Portfolio>` for computer-side `ApplyTrade` on each fill
 3. `Player.CreateOrder` creates the player's order (expressing intent)
 4. `IMarket.Execute` matches the order against the OrderBook, returns `MatchResult`
 5. `Portfolio.ApplyTrade` updates the portfolio, then `Player.WithPortfolio` creates updated player

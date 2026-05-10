@@ -52,4 +52,18 @@ public class GameTests
         Assert.Equal(200, game.Prices[2]);
         Assert.Equal(300, game.Prices[3]);
     }
+
+    [Fact]
+    public void 初期状態のComputerPortfoliosはcomputer1からcomputer10で全員無限()
+    {
+        var game = CreateGame();
+
+        Assert.Equal(10, game.ComputerPortfolios.Count);
+        for (int i = 1; i <= 10; i++)
+        {
+            var key = $"computer{i}";
+            Assert.True(game.ComputerPortfolios.ContainsKey(key));
+            Assert.True(game.ComputerPortfolios[key].IsInfinite);
+        }
+    }
 }

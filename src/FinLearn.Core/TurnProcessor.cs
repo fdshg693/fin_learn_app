@@ -69,9 +69,10 @@ public sealed class TurnProcessor
     public TurnResult Wait(Game game, int fee)
     {
         var exchange = ExchangeFactory.Create(game.Prices, fee);
-        var (bookWithOrders, nextId, placedOrders) = OrderPlacer.PlaceOrders(game.OrderBook, exchange, game.Instruments, game.NextOrderId, game.Turn);
+        var (bookWithOrders, nextId, placedOrders, computerPortfolios) =
+            OrderPlacer.PlaceOrders(game.OrderBook, exchange, game.Instruments, game.NextOrderId, game.Turn, game.ComputerPortfolios);
 
-        var nextGame = AdvanceTurn(game, game.Player, bookWithOrders, nextId);
+        var nextGame = AdvanceTurn(game, game.Player, bookWithOrders, nextId, computerPortfolios);
         return new TurnResult(
             Game: nextGame,
             Trade: null,
@@ -88,17 +89,22 @@ public sealed class TurnProcessor
         var exchange = ExchangeFactory.Create(game.Prices, fee);
 
         // 1. コンピューター注文を生成 → プレイヤー注文を生成 → 市場で約定
-        var (bookWithOrders, nextId, placedOrders) = OrderPlacer.PlaceOrders(game.OrderBook, exchange, game.Instruments, game.NextOrderId, game.Turn);
+        var (bookWithOrders, nextId, placedOrders, computerPortfolios) =
+            OrderPlacer.PlaceOrders(game.OrderBook, exchange, game.Instruments, game.NextOrderId, game.Turn, game.ComputerPortfolios);
         var expiresAtTurn = game.Turn + expiresInTurns;
         var order = game.Player.CreateOrder(nextId, instrument, side, quantity, price, stopPrice, game.Turn, expiresAtTurn);
         var matchResult = Market.Execute(bookWithOrders, order, exchange);
+
+        // プレイヤー注文が板上の computer の resting order と約定した分を、その computer の Portfolio に反映
+        var updatedComputerPortfolios = ApplyMatchToComputerPortfolios(
+            matchResult.Fills, bookWithOrders, computerPortfolios, exchange.Fee, excludeOrderId: order.Id);
 
         var submittedOrders = Combine(placedOrders, order);
 
         // 2. 成行注文で約定ゼロ → コンピューター注文は板に残し、Waitと同じ挙動でターンを進める
         if (price is null && matchResult.Trade.FilledQuantity == 0)
         {
-            var nextGameNoMatch = AdvanceTurn(game, game.Player, bookWithOrders, nextId);
+            var nextGameNoMatch = AdvanceTurn(game, game.Player, bookWithOrders, nextId, updatedComputerPortfolios);
             return new TurnResult(nextGameNoMatch, null, noMatchMessage, game.Turn, submittedOrders, Array.Empty<OrderFill>());
         }
 
@@ -107,7 +113,7 @@ public sealed class TurnProcessor
         if (warning is not null)
         {
             // 残高不足等で約定をロールバック → Fills は空にしてログ＝確定事実の対応関係を保つ
-            var rolledBack = AdvanceTurn(game, game.Player, bookWithOrders, nextId);
+            var rolledBack = AdvanceTurn(game, game.Player, bookWithOrders, nextId, computerPortfolios);
             return new TurnResult(rolledBack, null, warning, game.Turn, submittedOrders, Array.Empty<OrderFill>());
         }
 
@@ -115,7 +121,7 @@ public sealed class TurnProcessor
         var updatedBook = AddRemainingLimitOrder(matchResult.UpdatedBook, order, quantity, matchResult.Trade.FilledQuantity, price);
 
         // 5. 株価変動を適用して新しいゲーム状態を返す
-        var nextGame = AdvanceTurn(game, resultPlayer, updatedBook, nextId + 1);
+        var nextGame = AdvanceTurn(game, resultPlayer, updatedBook, nextId + 1, updatedComputerPortfolios);
         return new TurnResult(nextGame, matchResult.Trade, null, game.Turn, submittedOrders, matchResult.Fills);
     }
 
@@ -142,6 +148,46 @@ public sealed class TurnProcessor
         return (player.WithPortfolio(resultPortfolio), null);
     }
 
+    /// <summary>
+    /// プレイヤー注文の Match 結果のうち、板側の computer resting order に対する各 OrderFill を
+    /// その computer の Portfolio に反映する。incoming のプレイヤー注文（excludeOrderId）は除外。
+    /// </summary>
+    private static IReadOnlyDictionary<string, Portfolio> ApplyMatchToComputerPortfolios(
+        IReadOnlyList<OrderFill> fills,
+        OrderBook preMatchBook,
+        IReadOnlyDictionary<string, Portfolio> computerPortfolios,
+        int fee,
+        int excludeOrderId)
+    {
+        if (fills.Count == 0)
+            return computerPortfolios;
+
+        var ordersById = new Dictionary<int, Order>();
+        foreach (var o in preMatchBook.Orders)
+            ordersById[o.Id] = o;
+
+        var portfolios = new Dictionary<string, Portfolio>(computerPortfolios);
+        foreach (var fill in fills)
+        {
+            if (fill.OrderId == excludeOrderId) continue;
+            if (fill.FilledQuantity <= 0) continue;
+            if (!ordersById.TryGetValue(fill.OrderId, out var restingOrder)) continue;
+            if (!ComputerTrader.IsComputerTrader(restingOrder.TraderId)) continue;
+            if (!portfolios.TryGetValue(restingOrder.TraderId, out var portfolio)) continue;
+
+            var trade = new TradeResult(
+                InstrumentId: restingOrder.Instrument.Id,
+                Side: restingOrder.Side,
+                FilledQuantity: fill.FilledQuantity,
+                TotalAmount: fill.TotalAmount,
+                Fee: fee);
+            var (updated, _) = portfolio.ApplyTrade(trade);
+            portfolios[restingOrder.TraderId] = updated;
+        }
+
+        return portfolios;
+    }
+
     private static OrderBook AddRemainingLimitOrder(OrderBook book, Order order, int requestedQty, int filledQty, int? price)
     {
         if (price is null)
@@ -154,10 +200,11 @@ public sealed class TurnProcessor
         return book.Add(order.WithQuantity(remainingQty));
     }
 
-    private Game AdvanceTurn(Game game, Player player, OrderBook book, int nextOrderId)
+    private Game AdvanceTurn(Game game, Player player, OrderBook book, int nextOrderId,
+        IReadOnlyDictionary<string, Portfolio> computerPortfolios)
     {
         var newPrices = Fluctuator.Fluctuate(game.Prices);
         var expiredBook = book.ExpireOrders(game.Turn + 1);
-        return new Game(player, game.Turn + 1, expiredBook, nextOrderId, game.Instruments, newPrices);
+        return new Game(player, game.Turn + 1, expiredBook, nextOrderId, game.Instruments, newPrices, computerPortfolios);
     }
 }

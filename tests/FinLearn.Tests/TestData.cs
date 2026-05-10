@@ -24,4 +24,12 @@ internal static class TestData
         }
         return new TestExchange(dict, fee);
     }
+
+    public static IReadOnlyDictionary<string, Portfolio> CreateInfiniteComputerPortfolios()
+    {
+        var dict = new Dictionary<string, Portfolio>(GameRules.ComputerTraders.Count);
+        for (int i = 1; i <= GameRules.ComputerTraders.Count; i++)
+            dict[$"{ComputerTrader.TraderIdPrefix}{i}"] = Portfolio.CreateInfinite();
+        return dict;
+    }
 }

@@ -173,6 +173,32 @@ public class PortfolioTests
     }
 
     [Fact]
+    public void Infinite_PortfolioはBuyで現金も保有数量も変わらない()
+    {
+        var portfolio = Portfolio.CreateInfinite();
+        var trade = new TradeResult(InstrumentId: 1, Side: OrderSide.Buy, FilledQuantity: 100, TotalAmount: 10000, Fee: 50);
+        var (result, warning) = portfolio.ApplyTrade(trade);
+
+        Assert.Null(warning);
+        Assert.Equal(int.MaxValue, result.Cash);
+        Assert.Equal(0, result.QuantityOf(1));
+        Assert.True(result.IsInfinite);
+    }
+
+    [Fact]
+    public void Infinite_PortfolioはSellで保有数量0でも警告なしで不変()
+    {
+        var portfolio = Portfolio.CreateInfinite();
+        var trade = new TradeResult(InstrumentId: 1, Side: OrderSide.Sell, FilledQuantity: 5, TotalAmount: 500, Fee: 0);
+        var (result, warning) = portfolio.ApplyTrade(trade);
+
+        Assert.Null(warning);
+        Assert.Equal(int.MaxValue, result.Cash);
+        Assert.Equal(0, result.QuantityOf(1));
+        Assert.True(result.IsInfinite);
+    }
+
+    [Fact]
     public void 手数料込みで現金が不足する購入は警告して何もしない()
     {
         var portfolio = new Portfolio(cash: 70, positions: new Position[] { });
