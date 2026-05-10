@@ -17,6 +17,10 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
 
+    // preserveStaticLogger: true keeps the bootstrap logger as static Log.Logger so multiple
+    // WebApplicationFactory<Program> fixtures don't collide on ReloadableLogger.Freeze().
+    // Footgun: production code must resolve ILogger<T> from DI — calling Serilog.Log.* directly
+    // hits only the bootstrap console sink and silently misses the OrderLog rolling file sink.
     builder.Host.UseSerilog((ctx, services, lc) =>
     {
         var retainedFileCountLimit = ctx.Configuration.GetValue<int?>("OrderLog:RetainedFileCountLimit") ?? 7;
