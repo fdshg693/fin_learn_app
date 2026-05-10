@@ -17,7 +17,7 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
 
-    builder.Host.UseSerilog((ctx, lc) =>
+    builder.Host.UseSerilog((ctx, services, lc) =>
     {
         var retainedFileCountLimit = ctx.Configuration.GetValue<int?>("OrderLog:RetainedFileCountLimit") ?? 7;
         lc.MinimumLevel.Information()
@@ -31,7 +31,7 @@ try
                     path: "logs/orders-.log",
                     rollingInterval: RollingInterval.Day,
                     retainedFileCountLimit: retainedFileCountLimit));
-    });
+    }, preserveStaticLogger: true);
 
     builder.Services.ConfigureHttpJsonOptions(options =>
     {
@@ -69,9 +69,13 @@ try
         });
     });
 
+    builder.Services.AddRazorPages();
+
     var app = builder.Build();
 
     app.UseCors();
+    app.UseStaticFiles();
+    app.MapRazorPages();
     app.MapGameEndpoints();
     app.MapAdminEndpoints();
 
