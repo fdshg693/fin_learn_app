@@ -1,5 +1,18 @@
 # フロントエンド画面設計
 
+## バリエーション
+
+このアプリには 2 種類のフロントエンドがある:
+
+| 名称 | 場所 | プロセス | 配信 |
+|---|---|---|---|
+| React 版 | `frontend/` | 別プロセス（`npm run dev` で `localhost:5173`） | React Router v7 |
+| HTMX 版 | `src/FinLearn.Api/Pages/` | API と同一プロセス（`localhost:5088/play`） | Razor Pages |
+
+両者は独立しており並存可能。本ドキュメント以下は **React 版**の画面設計を記述する。HTMX 版の画面構成は React 版と同じパネル群（GameHeader / PlayerPanel / PendingOrders / MarketBoard / PositionList / TradeForm / TradeHistory / OrderBookPanel / WarningMessage）を Razor 部分ビューで実装している。
+
+---
+
 ## 技術構成
 
 - **React 19** + **React Router v7**（フレームワークモード、SSR 有効）

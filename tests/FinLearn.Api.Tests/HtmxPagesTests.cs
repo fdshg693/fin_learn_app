@@ -16,6 +16,16 @@ public class HtmxPagesTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
+    public async Task GET_root_は_play_へのリンクを含むHTMLを返す()
+    {
+        var response = await _client.GetAsync("/");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains("/play", body);
+    }
+
+    [Fact]
     public async Task GET_play_でゲーム開始ボタンを含むHTMLを返す()
     {
         var response = await _client.GetAsync("/play");

@@ -83,6 +83,18 @@ try
     app.MapGameEndpoints();
     app.MapAdminEndpoints();
 
+    app.MapGet("/", () => Results.Content("""
+        <!DOCTYPE html>
+        <html lang="ja"><head><meta charset="utf-8"><title>FinLearn</title></head>
+        <body style="font-family:system-ui;padding:2rem;">
+            <h1>株売買シミュレーター</h1>
+            <ul>
+                <li><a href="/play">HTMX 版（同一プロセス）</a></li>
+                <li>React 版: 別途 <code>npm run dev</code> 起動 → http://localhost:5173</li>
+            </ul>
+        </body></html>
+        """, "text/html"));
+
     app.Run();
 }
 finally

@@ -1,1 +1,14 @@
-body { font-family: system-ui, -apple-system, sans-serif; margin: 1rem; }
+body { font-family: system-ui, -apple-system, sans-serif; margin: 1rem; max-width: 1100px; }
+section { margin: 1.5rem 0; padding: 1rem; border: 1px solid #ddd; border-radius: 6px; }
+h1, h2 { margin: 0 0 0.5rem; }
+table { border-collapse: collapse; width: 100%; }
+th, td { padding: 0.25rem 0.5rem; border-bottom: 1px solid #eee; text-align: left; }
+button { padding: 0.4rem 1rem; cursor: pointer; }
+button[disabled] { opacity: 0.5; cursor: not-allowed; }
+.warning { background: #fff3cd; border: 1px solid #f0c36d; padding: 0.5rem 1rem; border-radius: 4px; }
+.buy { color: #c0392b; font-weight: bold; }
+.sell { color: #2c5fa8; font-weight: bold; }
+.profit { color: #27ae60; }
+.loss { color: #c0392b; }
+form label { display: inline-block; margin-right: 1rem; }
+form input, form select { margin-left: 0.25rem; }
