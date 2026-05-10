@@ -37,7 +37,7 @@ You MUST create a task for each of these items and complete them in order:
 
 ## Process Flow
 
-see `./flow.dot`
+see @flow.dot
 
 **The terminal state is completing the written spec handoff.** Do NOT invoke any implementation skill from this workflow.
 

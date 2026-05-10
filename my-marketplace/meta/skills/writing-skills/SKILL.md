@@ -1,5 +1,7 @@
 ---
+# superpowersを元にした高機能、高オーバーヘッドなスキル構築のためのメタスキル
 name: writing-skills
+# サブエージェントにスキルを実行させて挙動を確認するTDDを取り入れているため、非常に高コスト
 description: Use when creating new skills, editing existing skills, or verifying skills work before deployment
 ---
 
@@ -9,7 +11,7 @@ description: Use when creating new skills, editing existing skills, or verifying
 
 **Writing skills IS Test-Driven Development applied to process documentation.**
 
-**Personal skills live in agent-specific directories (`~/.claude/skills` for Claude Code, `~/.agents/skills/` for Codex)** 
+**Personal skills live in agent-specific directories (`~/.claude/skills`)** 
 
 You write test cases (pressure scenarios with subagents), watch them fail (baseline behavior), write the skill (documentation), watch tests pass (agents comply), and refactor (close loopholes).
 

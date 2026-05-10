@@ -1,14 +1,19 @@
 ---
+# 新プロジェクト開始時などに、Claudeコンテキスト（Ruleファイル）を効率的に構築するためのスキル。
 name: init-rules
+# 全体を捜査するため、かなりの時間がかかる。既存で使えるドキュメントなどがあれば、一緒に渡して効率を上げる余地がある。
+# フォルダ数が多い場合は、サブエージェントに分担させる。
 description: Generate `.claude/rules/<topic>.md` rule files that give an AI coding agent the context it cannot efficiently derive from reading individual files. Use sub-agent delegation for large codebases to speed up the process.
 # 前提スキル: writing-rules
+# - RULEファイルの書き方の学習のために利用
+# 出力ファイル: `.claude/rules/` 以下のルールファイル群
 ---
 
 # Generate or Update Rule Files for AI Coding Agents
 
 Analyze this codebase and produce **rule files under `.claude/rules/<topic>.md`** that give an AI coding agent context it cannot efficiently derive from individual files.
 
-## Prerequisite: Follow `writing-rules`
+## Prerequisite: Follow by invoking `writing-rules` SKILL
 
 All file format, frontmatter spec, scoping rules (narrowest topic scope, ~30 line cap, no `folder/CLAUDE.md`, no root `CLAUDE.md`), topic-naming conventions, and existing examples are defined in the **`writing-rules`** skill. Read and follow it before producing any rule file. This skill only adds the *discovery* and *delegation* strategy on top.
 

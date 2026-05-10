@@ -1,9 +1,10 @@
 ---
+# RULEファイルの書き方をコンテキストに埋め込むためのスキル
 name: writing-rules
+# スキルの作成・修正に用いる
+# プロジェクトで1から、もしくは大規模に変更する場合は同階層の`init-rules`が推奨
 description: Use when creating new rules, editing existing rules
-context: fork
-agent: general-purpose
-model: sonnet
+# Required by: `init-rules`スキル
 ---
 
 
