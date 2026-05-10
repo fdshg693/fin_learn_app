@@ -35,9 +35,9 @@ Pure domain layer with zero external dependencies. All types are **immutable sea
 | `RandomPriceFluctuator.cs` | ランダム株価変動 | ±5% per turn, floor of 1. Takes `Random` for deterministic tests |
 | `SimpleExchange.cs` | 簡易取引所 | `IExchange` impl from price dictionary + fee. Used internally by `TurnProcessor` |
 | `World.cs` | 世界スナップショット | (internal) Book / Portfolios / NextOrderId / Exchange / Fee / PlayerName / Turn / Instruments / Prices を保持する immutable record。`PlayerPortfolio` プロパティと `WithBook` / `WithPortfolios` / `WithPlayerPortfolio` / `WithNextOrderId` 更新メソッド、static `FromGame(Game, int fee, IExchange)` ファクトリを持つ。Pipeline と Handler は World → World の関数として動く |
-| `Services/IPlayerOrderHandler.cs` | プレイヤー注文戦略 | (internal) `Receive(World, Order) → (World, string?)` (受付) と `Settle(World, Order, MatchResult) → (World, string?)` (約定反映) の 2 メソッドで限値/成行を分離。Match は pipeline 共通で実行され Handler の責務外 |
-| `Services/LimitOrderHandler.cs` | 限値戦略 | (internal) Receive: `Portfolio.ReserveBuy` / `ReserveSell` で予約。Settle: `SettlementProcessor.SettleFills` (限値の予約成功 → 約定 settlement は失敗しない不変条件、失敗パス無し) |
-| `Services/MarketOrderHandler.cs` | 成行戦略 | (internal) Receive は no-op。Settle: `Portfolio.ApplyTrade`。fill=0 で `NoMatchingSell/BuyOrders` warning、`ApplyTrade` 失敗 (残高不足) で warning。warning 時は世界不変 |
+| `Abstractions/IPlayerOrderHandler.cs` | プレイヤー注文戦略 | (internal) `Receive(World, Order) → (World, string?)` (受付) と `Settle(World, Order, MatchResult) → (World, string?)` (約定反映) の 2 メソッドで限値/成行を分離。Match は pipeline 共通で実行され Handler の責務外 |
+| `Services/OrderHandlers/LimitOrderHandler.cs` | 限値戦略 | (internal) Receive: `Portfolio.ReserveBuy` / `ReserveSell` で予約。Settle: `SettlementProcessor.SettleFills` (限値の予約成功 → 約定 settlement は失敗しない不変条件、失敗パス無し) |
+| `Services/OrderHandlers/MarketOrderHandler.cs` | 成行戦略 | (internal) Receive は no-op。Settle: `Portfolio.ApplyTrade`。fill=0 で `NoMatchingSell/BuyOrders` warning、`ApplyTrade` 失敗 (残高不足) で warning。warning 時は世界不変 |
 
 ### OrderBook Matching Rules
 
