@@ -73,7 +73,9 @@ public class HtmxPagesTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Contains("銘柄一覧", body);
         Assert.Contains("保有ポジション", body);
         Assert.Contains("注文入力", body);
-        Assert.Contains("注文板", body);
+        // 「注文板」見出しは hx-trigger="load" の遅延注入で初回 HTML には含まれないため、
+        // プレースホルダ div の存在のみを確認する
+        Assert.Contains("id=\"orderbook\"", body);
     }
 
     [Fact]
@@ -132,6 +134,30 @@ public class HtmxPagesTests : IClassFixture<WebApplicationFactory<Program>>
             ["quantity"] = "0",
         });
         var response = await _client.PostAsync($"/play/{gameId}?handler=Buy", form);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GET_play_id_orderbook_は注文板パネルだけのHTMLを返す()
+    {
+        var gameId = await CreateGameViaApi();
+
+        var response = await _client.GetAsync($"/play/{gameId}?handler=OrderBook&page=1");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains("id=\"orderbook\"", body);
+        Assert.DoesNotContain("id=\"game\"", body);
+        Assert.DoesNotContain("注文入力", body);
+    }
+
+    [Fact]
+    public async Task GET_play_id_orderbook_pageは1未満で400()
+    {
+        var gameId = await CreateGameViaApi();
+
+        var response = await _client.GetAsync($"/play/{gameId}?handler=OrderBook&page=0");
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }

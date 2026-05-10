@@ -122,6 +122,8 @@
         </section>
     }
 
-    <partial name="_OrderBookPanel"
-             model="@(new FinLearn.Api.Pages.Shared.OrderBookPanelViewModel(Model.GameId, 1, 20))" />
+    <div id="orderbook"
+         hx-get="/play/@Model.GameId?handler=OrderBook&page=1"
+         hx-trigger="load"
+         hx-swap="outerHTML"></div>
 </div>

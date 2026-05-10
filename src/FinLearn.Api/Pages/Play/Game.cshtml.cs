@@ -17,6 +17,7 @@ public class GameModel : PageModel
     private readonly TurnProcessor _processor;
     private readonly IExchangeFactory _exchangeFactory;
     private readonly GameConfig _config;
+    private readonly AdminConfig _admin;
     private readonly ILogger<OrderLog> _logger;
 
     public GameModel(
@@ -24,12 +25,14 @@ public class GameModel : PageModel
         TurnProcessor processor,
         IExchangeFactory exchangeFactory,
         GameConfig config,
+        AdminConfig admin,
         ILogger<OrderLog> logger)
     {
         _store = store;
         _processor = processor;
         _exchangeFactory = exchangeFactory;
         _config = config;
+        _admin = admin;
         _logger = logger;
     }
 
@@ -45,6 +48,19 @@ public class GameModel : PageModel
         if (game is null) return NotFound();
         Game = BuildResponse(id, game, warning: null);
         return Page();
+    }
+
+    public IActionResult OnGetOrderBook(string id, [FromQuery] int page = 1)
+    {
+        if (page < 1) return BadRequest("page must be >= 1");
+
+        var game = _store.GetGame(id);
+        if (game is null) return NotFound();
+
+        var book = FinLearn.Api.Mappers.OrderBookMapper.ToResponse(
+            game.OrderBook, page, _admin.DefaultPageSize);
+        return Partial("_OrderBookPanel",
+            new FinLearn.Api.Pages.Shared.OrderBookPanelViewModel(id, book));
     }
 
     public IActionResult OnPostBuy(string id) => HandleTrade(id, OrderSide.Buy);

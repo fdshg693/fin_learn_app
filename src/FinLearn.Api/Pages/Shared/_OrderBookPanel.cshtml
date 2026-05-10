@@ -1,5 +1,49 @@
 @model FinLearn.Api.Pages.Shared.OrderBookPanelViewModel
+@{
+    var book = Model.Book;
+    var totalPages = Math.Max(1, (int)Math.Ceiling(book.TotalCount / (double)book.PageSize));
+    var hasPrev = book.Page > 1;
+    var hasNext = book.Page < totalPages;
+    var rangeStart = book.TotalCount == 0 ? 0 : (book.Page - 1) * book.PageSize + 1;
+    var rangeEnd = Math.Min(book.TotalCount, book.Page * book.PageSize);
+}
 <section id="orderbook">
     <h2>注文板</h2>
-    <p>ページ @Model.Page（実装は次タスク）</p>
+    @if (book.TotalCount == 0)
+    {
+        <p>注文なし</p>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr><th>ID</th><th>トレーダー</th><th>銘柄</th><th>売買</th><th>種類</th><th>数量</th><th>価格</th></tr>
+            </thead>
+            <tbody>
+            @foreach (var o in book.Orders)
+            {
+                <tr>
+                    <td>@o.Id</td>
+                    <td>@o.TraderId</td>
+                    <td>@o.InstrumentId</td>
+                    <td class="@(o.Side == "Buy" ? "buy" : "sell")">@o.Side</td>
+                    <td>@o.Type</td>
+                    <td>@o.Quantity</td>
+                    <td>@(o.Price?.ToString() ?? "-")</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+        <p>@rangeStart–@rangeEnd / @book.TotalCount</p>
+        <button
+            hx-get="/play/@Model.GameId?handler=OrderBook&page=@(book.Page - 1)"
+            hx-target="#orderbook"
+            hx-swap="outerHTML"
+            @(hasPrev ? "" : "disabled")>前へ</button>
+        <button
+            hx-get="/play/@Model.GameId?handler=OrderBook&page=@(book.Page + 1)"
+            hx-target="#orderbook"
+            hx-swap="outerHTML"
+            @(hasNext ? "" : "disabled")>次へ</button>
+    }
 </section>
