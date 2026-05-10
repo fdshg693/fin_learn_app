@@ -31,8 +31,8 @@
 | `totalAmount` | int | 約定金額 |
 | `fee` | int | 手数料 |
 
-- `TurnProcessor` が `TradeResult?` を返却 → 約定成功時のみ `GameStore.AddTrade` で履歴に追加
-- 待機（Wait）や失敗時は `TradeResult` が `null` のため履歴に追加されない
+- `TurnProcessor` が `TurnResult.Trade` を返却 → API 層で `Trade is not null && FilledQuantity > 0` のときのみ `GameStore.AddTrade` で履歴に追加
+- 待機（Wait）や指値注文の不成立など、約定数量がゼロのケースは履歴に追加されない（指値が板に残っただけのものは取引履歴には現れず、`player.pendingOrders` で確認する）
 - 4 件目以降は古い順に破棄（FIFO）
 
 ### 約定操作を伴うエンドポイント

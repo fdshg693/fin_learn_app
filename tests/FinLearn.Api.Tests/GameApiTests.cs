@@ -403,6 +403,92 @@ public class GameApiTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
+    [Fact]
+    public async Task POST_orders_約定ゼロの指値注文はrecentTradesに含まれない()
+    {
+        var created = await CreateGame();
+
+        // 約定しない低価格指値買い → 板に残るが約定数量0
+        var response = await _client.PostAsJsonAsync(
+            $"/api/games/{created.GameId}/orders",
+            new OrderRequest(Side: OrderSide.Buy, InstrumentId: 1, Quantity: 1, Price: 1));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var game = await response.Content.ReadFromJsonAsync<GameResponse>();
+        Assert.NotNull(game);
+        Assert.Empty(game.RecentTrades);
+    }
+
+    [Fact]
+    public async Task POST_orders_未約定の指値注文がpendingOrdersに含まれる()
+    {
+        var created = await CreateGame();
+
+        var response = await _client.PostAsJsonAsync(
+            $"/api/games/{created.GameId}/orders",
+            new OrderRequest(Side: OrderSide.Buy, InstrumentId: 1, Quantity: 5, Price: 1, ExpiresInTurns: 3));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var game = await response.Content.ReadFromJsonAsync<GameResponse>();
+        Assert.NotNull(game);
+        var pending = Assert.Single(game.Player.PendingOrders);
+        Assert.Equal(1, pending.InstrumentId);
+        Assert.Equal("Buy", pending.Side);
+        Assert.Equal("Limit", pending.Type);
+        Assert.Equal(5, pending.Quantity);
+        Assert.Equal(1, pending.Price);
+        Assert.Null(pending.StopPrice);
+        Assert.Equal(1, pending.CreatedAtTurn);
+        Assert.Equal(1 + 3, pending.ExpiresAtTurn);
+    }
+
+    [Fact]
+    public async Task POST_orders_新規ゲームではpendingOrdersは空()
+    {
+        var created = await CreateGame();
+        Assert.Empty(created.Player.PendingOrders);
+    }
+
+    [Fact]
+    public async Task POST_orders_pendingOrdersにはコンピューター注文は含まれない()
+    {
+        var created = await CreateGame();
+
+        // プレイヤー注文を出す。コンピューター注文も同時に板に積まれるが、
+        // PendingOrders はプレイヤー本人のものに限る
+        await _client.PostAsJsonAsync(
+            $"/api/games/{created.GameId}/orders",
+            new OrderRequest(Side: OrderSide.Buy, InstrumentId: 1, Quantity: 1, Price: 1));
+
+        var game = await _client.GetFromJsonAsync<GameResponse>($"/api/games/{created.GameId}");
+        Assert.NotNull(game);
+        Assert.Single(game.Player.PendingOrders);
+
+        // 板上にはコンピューター注文も含まれているはず
+        var orderBook = await _client.GetFromJsonAsync<OrderBookResponse>(
+            $"/api/admin/games/{created.GameId}/orderbook");
+        Assert.NotNull(orderBook);
+        Assert.True(orderBook.Orders.Count > 1);
+    }
+
+    [Fact]
+    public async Task POST_orders_期限切れ後はpendingOrdersから消える()
+    {
+        var created = await CreateGame();
+
+        // ExpiresInTurns=1 → ターン1で発注、ExpiresAtTurn=2
+        await _client.PostAsJsonAsync(
+            $"/api/games/{created.GameId}/orders",
+            new OrderRequest(Side: OrderSide.Buy, InstrumentId: 1, Quantity: 1, Price: 1, ExpiresInTurns: 1));
+
+        // Wait でターン進めると expire される
+        var waitResponse = await _client.PostAsync($"/api/games/{created.GameId}/wait", null);
+        Assert.Equal(HttpStatusCode.OK, waitResponse.StatusCode);
+        var game = await waitResponse.Content.ReadFromJsonAsync<GameResponse>();
+        Assert.NotNull(game);
+        Assert.Empty(game.Player.PendingOrders);
+    }
+
     private async Task<GameResponse> CreateGame()
     {
         var response = await _client.PostAsync("/api/games", null);

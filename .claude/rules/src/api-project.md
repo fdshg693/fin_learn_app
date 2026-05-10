@@ -14,7 +14,7 @@ ASP.NET Core Minimal API layer. Translates HTTP requests into `TurnProcessor` ca
 | `Program.cs` | DI registration, CORS, `JsonStringEnumConverter` global config, Serilog setup |
 | `Endpoints/GameEndpoints.cs` | 4 ゲーム系ルート定義 + `ProcessOrder` / `PlaceOrder` ヘルパー |
 | `Endpoints/AdminEndpoints.cs` | 管理用ルート（`/api/admin/games/{id}/orderbook` 等） |
-| `Dtos/GameResponse.cs` | Response DTOs: `GameResponse`, `PlayerDto`, `PositionDto`, `InstrumentDto` |
+| `Dtos/GameResponse.cs` | Response DTOs: `GameResponse`, `PlayerDto`, `PositionDto`, `PendingOrderDto`, `InstrumentDto`, `TradeResultDto` |
 | `Dtos/OrderRequest.cs` | Request DTO: `OrderRequest` (side, instrumentId, quantity, price?, stopPrice?) |
 | `Services/GameConfig.cs` | Game defaults (銘柄数, 初期株価, 手数料) |
 | `Services/GameStore.cs` | In-memory game state (`ConcurrentDictionary<string, Game>`) |

@@ -20,13 +20,25 @@ public sealed record PlayerDto(
     int Cash,
     IReadOnlyList<PositionDto> Positions,
     int TotalAssets,
-    int ProfitLoss);
+    int ProfitLoss,
+    IReadOnlyList<PendingOrderDto> PendingOrders);
 
 public sealed record PositionDto(
     int InstrumentId,
     int Quantity,
     int CurrentPrice,
     int Amount);
+
+public sealed record PendingOrderDto(
+    int Id,
+    int InstrumentId,
+    string Side,
+    string Type,
+    int Quantity,
+    int? Price,
+    int? StopPrice,
+    int CreatedAtTurn,
+    int ExpiresAtTurn);
 
 public sealed record InstrumentDto(
     int Id,

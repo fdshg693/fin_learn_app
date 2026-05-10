@@ -27,6 +27,7 @@ App (root.tsx)
 └── GamePage (/games/:id)
     ├── GameHeader         ← ターン数・プレイヤー名
     ├── PlayerPanel        ← 現金・総資産・損益
+    ├── PendingOrders      ← プレイヤー本人の未約定注文一覧
     ├── MarketBoard        ← 銘柄一覧と現在価格
     ├── PositionList       ← 保有ポジション一覧
     ├── TradeForm          ← 注文入力（銘柄・数量・価格）+ アクションボタン
@@ -83,6 +84,21 @@ React Router の `clientLoader` / `clientAction` でデータ取得・アクシ�
 | 現金 | `player.cash` | JPY 表記 |
 | 総資産 | `player.totalAssets` | 現金 + 全評価額 |
 | 損益 | `player.profitLoss` | 正負で色分け |
+
+### PendingOrders
+
+`GameResponse.player.pendingOrders` をテーブル表示。プレイヤーが発注して板に残っている未約定注文（指値注文の未約定分など）を一覧する。空のときも `<h2>未約定注文</h2>` と「未約定注文はありません」を常設表示し、機能の存在を明示する。
+
+| 列 | データソース | 備考 |
+|---|---|---|
+| 売買 | `order.side` | 買=赤、売=青 |
+| 銘柄 ID | `order.instrumentId` | |
+| 種類 | `order.type` | 指値 / 成行 |
+| 数量 | `order.quantity` | 部分約定後は残数量 |
+| 価格 | `order.price` | 成行は `-` |
+| 残ターン | `order.expiresAtTurn - currentTurn` | 0 で下限クランプ |
+
+`OrderBookPanel`（全トレーダーの板を見せるデバッグパネル）と異なり、こちらはプレイヤー本人の注文だけが対象。
 
 ### MarketBoard
 

@@ -21,6 +21,19 @@ export type PlayerDto = {
   positions: PositionDto[];
   totalAssets: number;
   profitLoss: number;
+  pendingOrders: PendingOrderDto[];
+};
+
+export type PendingOrderDto = {
+  id: number;
+  instrumentId: number;
+  side: string;
+  type: string;
+  quantity: number;
+  price: number | null;
+  stopPrice: number | null;
+  createdAtTurn: number;
+  expiresAtTurn: number;
 };
 
 export type PositionDto = {

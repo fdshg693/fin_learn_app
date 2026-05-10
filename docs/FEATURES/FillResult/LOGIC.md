@@ -49,24 +49,7 @@ FillResult
 
 ### 2. Fill ループ
 
-```
-remaining = incoming.Quantity
-
-for each matchingOrder:
-    if remaining <= 0: break
-    fill     = Min(remaining, matchingOrder.Quantity)
-    amount   = fill × matchingOrder.Price        ← 常に待機注文の価格
-    remaining -= fill
-
-    fills.Add(OrderFill(matchingOrder.Id, fill, amount))
-
-    if fill == matchingOrder.Quantity:
-        板から除去（完全約定）
-    else:
-        WithQuantity(残数量) で更新（部分約定）
-
-fills.Add(OrderFill(incoming.Id, 約定数量, 合計金額))   ← incoming 分を末尾に追加
-```
+`src\FinLearn.Core\Models\OrderBook.cs`の`Fill`メソッド参照
 
 ### 3. 重要ルール
 

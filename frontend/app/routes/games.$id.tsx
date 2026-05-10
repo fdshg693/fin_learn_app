@@ -19,6 +19,7 @@ import { PositionList } from "~/components/PositionList";
 import { TradeForm } from "~/components/TradeForm";
 import { WarningMessage } from "~/components/WarningMessage";
 import { TradeHistory } from "~/components/TradeHistory";
+import { PendingOrders } from "~/components/PendingOrders";
 import { OrderBookPanel } from "~/components/OrderBookPanel";
 import { ORDERBOOK_PAGE_SIZE } from "~/config";
 import { TradeIntent, OrderSide } from "~/lib/enums";
@@ -150,6 +151,7 @@ export default function GamePage() {
         totalAssets={game.player.totalAssets}
         profitLoss={game.player.profitLoss}
       />
+      <PendingOrders orders={game.player.pendingOrders} currentTurn={game.turn} />
       <div className="grid grid-cols-2 gap-4">
         <MarketBoard
           instruments={game.instruments}

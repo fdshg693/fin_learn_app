@@ -99,7 +99,7 @@ public static class GameEndpoints
         if (turn.Warning is null)
         {
             store.UpdateGame(id, turn.Game);
-            if (turn.Trade is not null) store.AddTrade(id, turn.Trade);
+            if (turn.Trade is not null && turn.Trade.FilledQuantity > 0) store.AddTrade(id, turn.Trade);
         }
         LogTurnEvents(logger, id, turn);
 

@@ -24,6 +24,7 @@ cash          : int
 positions     : PositionDto[]
 totalAssets   : int             # cash + 全ポジション評価額
 profitLoss    : int             # totalAssets - 初期資金
+pendingOrders : PendingOrderDto[]  # プレイヤー本人の未約定注文（板に残っているもの）
 ```
 
 ## PositionDto
@@ -33,6 +34,22 @@ instrumentId  : int
 quantity      : int
 currentPrice  : int
 amount        : int             # quantity * currentPrice
+```
+
+## PendingOrderDto
+
+プレイヤーが発注し、まだ約定していない注文（指値注文の未約定分など）。`Game.OrderBook.Orders` のうち `TraderId == player.name` のものをマップ。期限切れは `OrderBook.ExpireOrders` でターン進行時に自動的に取り除かれる。
+
+```
+id              : int
+instrumentId    : int
+side            : string        # "Buy" | "Sell"
+type            : string        # "Limit" | "Market"
+quantity        : int           # 残数量（部分約定後は未約定分のみ）
+price           : int?          # 成行注文では null
+stopPrice       : int?
+createdAtTurn   : int
+expiresAtTurn   : int           # 絶対ターン番号
 ```
 
 ## InstrumentDto

@@ -13,6 +13,7 @@ const mockGame: GameResponse = {
     positions: [{ instrumentId: 1, quantity: 10, currentPrice: 1500, amount: 15000 }],
     totalAssets: 115000,
     profitLoss: 15000,
+    pendingOrders: [],
   },
   instruments: [
     { id: 1, price: 1500 },

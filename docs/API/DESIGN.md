@@ -17,6 +17,12 @@ API 層で形式不正を弾いた上で、`TurnProcessor.Buy/Sell` も同条件
 
 ドメインの `Game` は取引履歴を持たない。`GameStore` が直近の `TradeResult` を最大 `MaxRecentTrades`（=3）件キャッシュし、レスポンスに同梱する。
 
+`GameEndpoints.ProcessOrder` では `turn.Trade is not null && turn.Trade.FilledQuantity > 0` のときのみ `GameStore.AddTrade` を呼ぶ。指値注文がマッチせず板に残った場合 `TurnResult.Trade` は `FilledQuantity=0` の `TradeResult` を持つが、これは取引履歴には積まない（実際の約定ではないため）。
+
+## 未約定注文はプレイヤー情報として露出
+
+板に残っているプレイヤー本人の注文は `PlayerDto.pendingOrders` として返す。`GameMapper` が `game.OrderBook.Orders` を `TraderId == game.Player.Name` で絞り込んで `PendingOrderDto` に変換する。コンピュータートレーダーの注文は `/api/admin/games/{id}/orderbook` 側でしか見えない。
+
 ## DTO マッピング
 
 `GameMapper.ToResponse` で `Game` + `IExchange` → `GameResponse` 変換。`IExchangeFactory` 経由で `game.Prices` から評価用の `IExchange` を生成。

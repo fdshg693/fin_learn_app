@@ -20,12 +20,27 @@ public static class GameMapper
             .Cast<PositionDto>()
             .ToList();
 
+        var pendingOrders = game.OrderBook.Orders
+            .Where(o => o.TraderId == game.Player.Name)
+            .Select(o => new PendingOrderDto(
+                Id: o.Id,
+                InstrumentId: o.Instrument.Id,
+                Side: o.Side.ToString(),
+                Type: o.Type.ToString(),
+                Quantity: o.Quantity,
+                Price: o.Price,
+                StopPrice: o.StopPrice,
+                CreatedAtTurn: o.CreatedAtTurn,
+                ExpiresAtTurn: o.ExpiresAtTurn))
+            .ToList();
+
         var playerDto = new PlayerDto(
             Name: game.Player.Name,
             Cash: game.Player.Portfolio.Cash,
             Positions: positions,
             TotalAssets: game.Player.Portfolio.TotalAmount(exchange),
-            ProfitLoss: game.Player.ProfitLoss(exchange));
+            ProfitLoss: game.Player.ProfitLoss(exchange),
+            PendingOrders: pendingOrders);
 
         var instruments = game.Instruments
             .Select(i =>
