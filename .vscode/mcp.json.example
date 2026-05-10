@@ -1,13 +1,9 @@
 {
 	"servers": {
-		"add-server": {
+		"task-server": {
 			"type": "stdio",
-            "cwd": "${workspaceFolder}/mcps",
-			"command": "npx",
-			"args": [
-				"tsx",
-				"add-server/index.ts"
-			]
+			"command": "node",
+            "args": ["mcps/passthrough.mjs", "task-server"]
 		}
 	},
 	"inputs": []

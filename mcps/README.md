@@ -6,7 +6,12 @@ TypeScript で記述された、MCPサーバー・クライアント をまと�
 
 ## MCPサーバー
 
-- `add-server` : シンプルな Add ツールだけを公開する、テスト用の MCP サーバー
+- `task-server` : stateless な MCP サーバー。ツールを通してタスク CRUD を受け付け、常駐 daemon に gRPC で委譲する
+- `simple-mcp-app` : UI リソース付きのサンプル MCP サーバー
+
+## 常駐サーバー
+
+- `task-daemon` : SQLite を唯一の永続化層として持ち、gRPC API と HTTP Web アプリを同じ Node プロセスで公開する
 
 ## MCPクライアント
 

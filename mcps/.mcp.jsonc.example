@@ -1,0 +1,17 @@
+// `.mcp.json`にリネームすること
+
+// ルート直下の`.mcp.json`から、passthrough.mjsによるパススルーを通じて実行される
+// そのため、Claude Code実行時にCDを変えることなく、この`mcps`フォルダ配下にあるMCPサーバーを呼び出せる
+{
+  "mcpServers": {
+    "task-server": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "tsx",
+        "task-server/index.ts"
+      ],
+      "env": {}
+    }
+  }
+}

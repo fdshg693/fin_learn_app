@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "add-server": "tsx add-server/index.ts",
+    "task-daemon": "tsx task-daemon/index.ts",
+    "task-server": "tsx task-server/index.ts",
     "notion-client": "tsx notion-client/index.ts",
     "notion-custom-server": "tsx notion-custom-server/index.ts",
     "build:simple-app": "vite build --config simple-mcp-app/vite.config.ts",
@@ -12,12 +13,16 @@
     "simple-app": "tsx simple-mcp-app/index.ts"
   },
   "dependencies": {
+    "@grpc/grpc-js": "^1.14.1",
+    "@grpc/proto-loader": "^0.8.0",
     "@modelcontextprotocol/ext-apps": "^1.3.2",
     "@modelcontextprotocol/sdk": "^1.28.0",
+    "better-sqlite3": "^12.4.1",
     "oauth": "^0.10.2",
     "zod": "^3.24.4"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^25.5.0",

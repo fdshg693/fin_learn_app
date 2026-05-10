@@ -2,10 +2,10 @@
 // Claude Codeの環境で npx tsx が解決される必要があるため、　node 環境は当然として、tsx をグローバルインストールしておく必要があります。
 {
   "mcpServers": {
-    "test-server": {
+    "task-server": {
 			"command": "tsx",
 			"args": [
-				"C:/CodeRoot/fin_learn_app/mcps/simple-mcp-app/index.ts"
+        "C:/CodeRoot/fin_learn_app/mcps/task-server/index.ts"
 			]
 		}
   },
