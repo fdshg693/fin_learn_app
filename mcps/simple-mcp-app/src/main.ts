@@ -9,37 +9,75 @@ const container = document.getElementById("app")!;
 
 // ── 状態管理 ──────────────────────────────────────────────────────────
 
-let choices: string[] = [];
-let prompt = "";
+type Question = { choices: string[]; prompt?: string };
+let questions: Question[] = [];
+let answerInputs: HTMLInputElement[] = [];
 
 // ── UI 描画 ───────────────────────────────────────────────────────────
 
-function renderChoices() {
+function renderQuestions() {
   container.innerHTML = "";
+  answerInputs = [];
 
-  if (prompt) {
+  questions.forEach((q, idx) => {
+    const block = document.createElement("div");
+    block.className = "question";
+
+    const promptText = q.prompt ?? `質問 ${idx + 1}`;
     const p = document.createElement("p");
     p.className = "prompt";
-    p.textContent = prompt;
-    container.appendChild(p);
-  }
+    p.textContent = `${idx + 1}. ${promptText}`;
+    block.appendChild(p);
 
-  const choicesDiv = document.createElement("div");
-  choicesDiv.className = "choices";
+    const choicesDiv = document.createElement("div");
+    choicesDiv.className = "choices";
 
-  for (const choice of choices) {
-    const btn = document.createElement("button");
-    btn.className = "choice-btn";
-    btn.textContent = choice;
-    btn.addEventListener("click", () => handleSelect(choice, btn));
-    choicesDiv.appendChild(btn);
-  }
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "answer-input";
+    input.placeholder = "選択肢から選ぶ、または自由入力";
+    answerInputs.push(input);
 
-  container.appendChild(choicesDiv);
+    for (const choice of q.choices) {
+      const btn = document.createElement("button");
+      btn.className = "choice-btn";
+      btn.type = "button";
+      btn.textContent = choice;
+      btn.addEventListener("click", () => {
+        input.value = choice;
+        choicesDiv
+          .querySelectorAll(".choice-btn")
+          .forEach((b) => b.classList.remove("selected"));
+        btn.classList.add("selected");
+      });
+      choicesDiv.appendChild(btn);
+    }
+
+    input.addEventListener("input", () => {
+      // 自由入力されたら選択ボタンのハイライトを外す
+      choicesDiv.querySelectorAll(".choice-btn").forEach((b) => {
+        if ((b as HTMLButtonElement).textContent !== input.value) {
+          b.classList.remove("selected");
+        } else {
+          b.classList.add("selected");
+        }
+      });
+    });
+
+    block.appendChild(choicesDiv);
+    block.appendChild(input);
+    container.appendChild(block);
+  });
+
+  const submitBtn = document.createElement("button");
+  submitBtn.className = "submit-btn";
+  submitBtn.type = "button";
+  submitBtn.textContent = "送信";
+  submitBtn.addEventListener("click", () => handleSubmit(submitBtn));
+  container.appendChild(submitBtn);
 }
 
 function showResult(text: string, isError = false) {
-  // 既存の result があれば削除
   container.querySelector(".result")?.remove();
 
   const div = document.createElement("div");
@@ -56,23 +94,30 @@ function showLoading() {
   container.appendChild(div);
 }
 
-// ── ユーザー選択 → callServerTool ────────────────────────────────────
+function setInteractive(enabled: boolean) {
+  answerInputs.forEach((i) => (i.disabled = !enabled));
+  container
+    .querySelectorAll(".choice-btn, .submit-btn")
+    .forEach((b) => ((b as HTMLButtonElement).disabled = !enabled));
+}
 
-async function handleSelect(choice: string, btn: HTMLButtonElement) {
-  // 選択状態を反映
-  container.querySelectorAll(".choice-btn").forEach((b) => {
-    (b as HTMLButtonElement).disabled = true;
-    b.classList.remove("selected");
-  });
-  btn.classList.add("selected");
+// ── ユーザー送信 → callServerTool ────────────────────────────────────
 
+async function handleSubmit(submitBtn: HTMLButtonElement) {
+  const answers = answerInputs.map((i) => i.value.trim());
+  const missing = answers.findIndex((a) => a.length === 0);
+  if (missing !== -1) {
+    showResult(`質問 ${missing + 1} に回答してください`, true);
+    return;
+  }
+
+  setInteractive(false);
   showLoading();
 
   try {
-    // callServerTool: サーバー側ツールを呼び出す
     const result = await app.callServerTool({
       name: "process-choice",
-      arguments: { choice },
+      arguments: { answers },
     });
 
     if (result.isError) {
@@ -90,21 +135,19 @@ async function handleSelect(choice: string, btn: HTMLButtonElement) {
     showResult(`ツール呼び出し失敗: ${err}`, true);
   }
 
-  // ボタンを再有効化
-  container.querySelectorAll(".choice-btn").forEach((b) => {
-    (b as HTMLButtonElement).disabled = false;
-  });
+  // 結果表示後は再編集を許可しない（送信ボタンのみ無効のまま）
+  answerInputs.forEach((i) => (i.disabled = true));
+  submitBtn.disabled = true;
 }
 
-// ── ontoolinput: ツールが呼ばれたときの引数を受信 → 選択肢を表示 ──
+// ── ontoolinput: ツールが呼ばれたときの引数を受信 → 質問群を表示 ──
 
 app.ontoolinput = (params) => {
   const args = params.arguments as
-    | { choices?: string[]; prompt?: string }
+    | { questions?: Question[] }
     | undefined;
-  choices = args?.choices ?? [];
-  prompt = args?.prompt ?? "";
-  renderChoices();
+  questions = args?.questions ?? [];
+  renderQuestions();
 };
 
 // ── ontoolresult: 元のツールの実行結果を受信 → 画面を更新 ──────────
@@ -127,10 +170,16 @@ app.ontoolresult = (params) => {
 
 app.oncalltool = async (params) => {
   if (params.name === "get-current-selection") {
-    const selected = container.querySelector(".choice-btn.selected");
-    const selectedText = selected?.textContent ?? "(未選択)";
+    const current = answerInputs.map((i) => i.value);
     return {
-      content: [{ type: "text" as const, text: selectedText }],
+      content: [
+        {
+          type: "text" as const,
+          text: current.length === 0
+            ? "(未表示)"
+            : current.map((v, i) => `${i + 1}. ${v || "(未入力)"}`).join("\n"),
+        },
+      ],
     };
   }
 
