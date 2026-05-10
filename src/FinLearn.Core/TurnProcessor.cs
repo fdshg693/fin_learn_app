@@ -89,77 +89,82 @@ public sealed class TurnProcessor
     {
         var exchange = ExchangeFactory.Create(game.Prices, fee);
 
-        // 1. 統合 Portfolio map を構築
-        var allPortfolios = BuildAllPortfolios(game);
+        // computer 注文の発注 + 約定 + settlement（player resting への約定もここで反映される）
+        var placement = OrderPlacer.PlaceOrders(
+            game.OrderBook, exchange, game.Instruments, game.NextOrderId, game.Turn, BuildAllPortfolios(game));
+        var portfolios = new Dictionary<string, Portfolio>(placement.UpdatedTraderPortfolios);
 
-        // 2. computer 注文の発注 + 約定 + settlement（player resting への約定も含む）
-        var placement = OrderPlacer.PlaceOrders(game.OrderBook, exchange, game.Instruments, game.NextOrderId, game.Turn, allPortfolios);
-        allPortfolios = new Dictionary<string, Portfolio>(placement.UpdatedTraderPortfolios);
-
-        // 3. プレイヤー注文を作成
         var expiresAtTurn = game.Turn + expiresInTurns;
         var order = game.Player.CreateOrder(placement.NextOrderId, instrument, side, quantity, price, stopPrice, game.Turn, expiresAtTurn);
         var submittedOrders = Combine(placement.PlacedOrders, order);
 
-        // 4. 指値の場合のみ事前予約（available チェック兼ねる）
-        if (price is not null)
+        // 受付（予約）→ マッチング → 反映 → 板更新 を 1 ヶ所に集約。
+        // 失敗パスでも outcome は computer settlement を確定維持した状態を返すので、
+        // 終端の AdvanceTurn / TurnResult 構築は成功・失敗で共通化できる。
+        var outcome = ExecutePlayerOrder(
+            game.Player.Name, order, fee, portfolios, placement.UpdatedBook, exchange, noMatchMessage);
+
+        var nextGame = AdvanceTurn(game, outcome.Book, placement.NextOrderId + 1, outcome.Portfolios, fee);
+        return new TurnResult(nextGame, outcome.Trade, outcome.Warning, game.Turn, submittedOrders, outcome.Fills);
+    }
+
+    /// <summary>
+    /// プレイヤー注文の受付・マッチング・反映・板更新を一括処理して outcome を返す。
+    /// 失敗時（予約失敗 / 成行未約定 / 成行残高不足）は board と portfolios を
+    /// computer settlement 直後の状態に固定したまま warning を載せる。
+    /// </summary>
+    private PlayerOrderOutcome ExecutePlayerOrder(
+        string playerName, Order order, int fee,
+        Dictionary<string, Portfolio> portfolios, OrderBook bookAfterComputerPlacement,
+        IExchange exchange, string noMatchMessage)
+    {
+        // 指値: 事前予約（available 残高/数量チェック兼ねる）
+        if (order.Price is int limitPrice)
         {
-            var playerPf = allPortfolios[game.Player.Name];
-            var (reserved, reserveWarn) = side == OrderSide.Buy
-                ? playerPf.ReserveBuy(instrument.Id, quantity, price.Value, fee)
-                : playerPf.ReserveSell(instrument.Id, quantity);
+            var (reserved, reserveWarn) = order.Side == OrderSide.Buy
+                ? portfolios[playerName].ReserveBuy(order.Instrument.Id, order.Quantity, limitPrice, fee)
+                : portfolios[playerName].ReserveSell(order.Instrument.Id, order.Quantity);
             if (reserveWarn is not null)
-            {
-                // 予約失敗（残高/数量不足）→ Wait 化、computer 注文の settlement は確定維持。
-                // SubmittedOrders は player 注文も含む（旧来挙動）。
-                var rejectedGame = AdvanceTurn(game, placement.UpdatedBook, placement.NextOrderId + 1, allPortfolios, fee);
-                return new TurnResult(rejectedGame, null, reserveWarn, game.Turn, submittedOrders, Array.Empty<OrderFill>());
-            }
-            allPortfolios[game.Player.Name] = reserved;
+                return Failed(bookAfterComputerPlacement, portfolios, reserveWarn);
+            portfolios[playerName] = reserved;
         }
 
-        // 5. プレイヤー注文をマッチング
-        var matchResult = Market.Execute(placement.UpdatedBook, order, exchange);
+        var matchResult = Market.Execute(bookAfterComputerPlacement, order, exchange);
 
-        // 6. 成行で約定ゼロ → Wait と同じ進行
-        if (price is null && matchResult.Trade.FilledQuantity == 0)
-        {
-            var nextGameNoMatch = AdvanceTurn(game, placement.UpdatedBook, placement.NextOrderId + 1, allPortfolios, fee);
-            return new TurnResult(nextGameNoMatch, null, noMatchMessage, game.Turn, submittedOrders, Array.Empty<OrderFill>());
-        }
+        // 成行で約定ゼロ → Wait と同じ進行
+        if (order.Price is null && matchResult.Trade.FilledQuantity == 0)
+            return Failed(bookAfterComputerPlacement, portfolios, noMatchMessage);
 
-        // 7. プレイヤー注文の fills を settlement に通す
-        if (price is null)
+        if (order.Price is null)
         {
-            // 成行: 同期 ApplyTrade で player Portfolio に適用。残高不足ならロールバック。
-            var trade = matchResult.Trade;
-            var playerPf = allPortfolios[game.Player.Name];
-            var (afterTrade, applyWarn) = playerPf.ApplyTrade(trade);
+            // 成行: 同期 ApplyTrade。残高不足なら matchResult.UpdatedBook を捨ててロールバック。
+            var (afterTrade, applyWarn) = portfolios[playerName].ApplyTrade(matchResult.Trade);
             if (applyWarn is not null)
-            {
-                // ロールバック: matchResult.UpdatedBook は捨てて placement.UpdatedBook を使う。
-                // computer settlement（placement 内で適用済み）は確定維持する。
-                var rolledBack = AdvanceTurn(game, placement.UpdatedBook, placement.NextOrderId + 1, allPortfolios, fee);
-                return new TurnResult(rolledBack, null, applyWarn, game.Turn, submittedOrders, Array.Empty<OrderFill>());
-            }
-            allPortfolios[game.Player.Name] = afterTrade;
+                return Failed(bookAfterComputerPlacement, portfolios, applyWarn);
+            portfolios[playerName] = afterTrade;
         }
         else
         {
-            // 指値: SettlementProcessor で予約消費 + 差額返金。失敗パスは無い。
-            var ordersById = BuildOrdersByIdSnapshot(placement.UpdatedBook, order);
+            // 指値: 予約消費 + 差額返金。事前予約が成功しているので失敗パスは無い。
+            var ordersById = BuildOrdersByIdSnapshot(bookAfterComputerPlacement, order);
             var postFillRemaining = SettlementProcessor.ComputePostFillRemainingQty(matchResult.Fills, ordersById);
-            var settled = SettlementProcessor.SettleFills(matchResult.Fills, ordersById, postFillRemaining, allPortfolios, fee);
-            allPortfolios = new Dictionary<string, Portfolio>(settled);
+            var settled = SettlementProcessor.SettleFills(matchResult.Fills, ordersById, postFillRemaining, portfolios, fee);
+            portfolios = new Dictionary<string, Portfolio>(settled);
         }
 
-        // 8. 指値の未約定分を板に追加
-        var updatedBook = AddRemainingLimitOrder(matchResult.UpdatedBook, order, quantity, matchResult.Trade.FilledQuantity, price);
-
-        // 9. ターン進行（株価変動 + 失効処理 + 失効注文の予約解放）
-        var nextGame = AdvanceTurn(game, updatedBook, placement.NextOrderId + 1, allPortfolios, fee);
-        return new TurnResult(nextGame, matchResult.Trade, null, game.Turn, submittedOrders, matchResult.Fills);
+        var updatedBook = AddRemainingLimitOrder(matchResult.UpdatedBook, order, matchResult.Trade.FilledQuantity);
+        return new PlayerOrderOutcome(updatedBook, portfolios, matchResult.Trade, matchResult.Fills, null);
     }
+
+    private static PlayerOrderOutcome Failed(OrderBook book, IReadOnlyDictionary<string, Portfolio> portfolios, string warning) =>
+        new(book, portfolios, null, Array.Empty<OrderFill>(), warning);
+
+    private readonly record struct PlayerOrderOutcome(
+        OrderBook Book,
+        IReadOnlyDictionary<string, Portfolio> Portfolios,
+        TradeResult? Trade,
+        IReadOnlyList<OrderFill> Fills,
+        string? Warning);
 
     private static TurnResult Rejected(Game game, string warning) =>
         new(game, null, warning, game.Turn, Array.Empty<Order>(), Array.Empty<OrderFill>());
@@ -172,12 +177,12 @@ public sealed class TurnProcessor
         return combined;
     }
 
-    private static OrderBook AddRemainingLimitOrder(OrderBook book, Order order, int requestedQty, int filledQty, int? price)
+    private static OrderBook AddRemainingLimitOrder(OrderBook book, Order order, int filledQty)
     {
-        if (price is null)
+        if (order.Price is null)
             return book;
 
-        var remainingQty = requestedQty - filledQty;
+        var remainingQty = order.Quantity - filledQty;
         if (remainingQty <= 0)
             return book;
 
