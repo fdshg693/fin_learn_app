@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace FinLearn.Api.Pages.Play;
 
+// HTMX 経由の POST は <form> に antiforgery トークンを自動挿入できないため無効化。
+// CSRF リスクは JSON API（CORS で localhost:5173 開放済み）と同等のプロト段階トレードオフ。
 [IgnoreAntiforgeryToken]
 public class GameModel : PageModel
 {
