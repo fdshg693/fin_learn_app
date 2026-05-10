@@ -90,6 +90,76 @@ public class HtmxPagesTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
+    [Fact]
+    public async Task POST_play_id_buy_は更新済みコンテナHTMLを返す()
+    {
+        var gameId = await CreateGameViaApi();
+
+        var form = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["instrumentId"] = "1",
+            ["quantity"] = "1",
+        });
+        var response = await _client.PostAsync($"/play/{gameId}?handler=Buy", form);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains("id=\"game\"", body);
+        Assert.Contains("ターン 2", body); // Buy で 1 ターン進む
+    }
+
+    [Fact]
+    public async Task POST_play_id_wait_は更新済みコンテナHTMLを返す()
+    {
+        var gameId = await CreateGameViaApi();
+
+        var response = await _client.PostAsync($"/play/{gameId}?handler=Wait",
+            new FormUrlEncodedContent(new Dictionary<string, string>()));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains("ターン 2", body);
+    }
+
+    [Fact]
+    public async Task POST_play_id_buy_quantity0は400()
+    {
+        var gameId = await CreateGameViaApi();
+
+        var form = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["instrumentId"] = "1",
+            ["quantity"] = "0",
+        });
+        var response = await _client.PostAsync($"/play/{gameId}?handler=Buy", form);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task POST_play_id_sell_保有なしはwarning付きで200を返す()
+    {
+        var gameId = await CreateGameViaApi();
+
+        var form = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["instrumentId"] = "1",
+            ["quantity"] = "10",
+        });
+        var response = await _client.PostAsync($"/play/{gameId}?handler=Sell", form);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains("class=\"warning\"", body);
+    }
+
+    private async Task<string> CreateGameViaApi()
+    {
+        var create = await _client.PostAsync("/api/games", null);
+        var created = await create.Content.ReadFromJsonAsync<FinLearn.Api.Dtos.GameResponse>();
+        return created!.GameId;
+    }
+
     private static string ExtractAntiforgeryToken(string html)
     {
         var marker = "name=\"__RequestVerificationToken\" type=\"hidden\" value=\"";

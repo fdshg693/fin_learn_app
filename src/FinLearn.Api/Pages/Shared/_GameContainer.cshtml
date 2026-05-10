@@ -83,7 +83,7 @@
 
     <section>
         <h2>注文入力</h2>
-        <form>
+        <form id="trade-form" hx-target="#game" hx-swap="outerHTML">
             <label>銘柄
                 <select name="instrumentId">
                     @foreach (var i in Model.Instruments)
@@ -94,9 +94,9 @@
             </label>
             <label>数量 <input type="number" name="quantity" min="1" value="1" /></label>
             <label>価格 <input type="number" name="price" min="1" placeholder="空欄=成行" /></label>
-            <button type="button" disabled>買う</button>
-            <button type="button" disabled>売る</button>
-            <button type="button" disabled>待つ</button>
+            <button type="button" hx-post="/play/@Model.GameId?handler=Buy" hx-include="#trade-form">買う</button>
+            <button type="button" hx-post="/play/@Model.GameId?handler=Sell" hx-include="#trade-form">売る</button>
+            <button type="button" hx-post="/play/@Model.GameId?handler=Wait">待つ</button>
         </form>
     </section>
 
