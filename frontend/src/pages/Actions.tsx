@@ -3,8 +3,6 @@ import { buy, sell, waitAction } from '../api/actions'
 import { fetchMarketSnapshot } from '../api/market'
 import { fetchJson } from '../api/client'
 import type {
-  ActionBuyRequestDto,
-  ActionSellRequestDto,
   ActionWaitRequestDto,
   MarketSnapshotDto,
   PortfolioDto,
@@ -154,8 +152,8 @@ export default function Actions() {
     setIsSubmitting(true)
     try {
       const result = side === 'buy'
-        ? await buy(payload as ActionBuyRequestDto)
-        : await sell(payload as ActionSellRequestDto)
+        ? await buy(payload)
+        : await sell(payload)
 
       const latestSnapshot = await fetchMarketSnapshot()
       setResultMessage(result.message)
