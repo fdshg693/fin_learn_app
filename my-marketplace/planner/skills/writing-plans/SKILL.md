@@ -1,5 +1,9 @@
 ---
+# スペックを元に実装プランを作るスキル。
 name: writing-plans
+# 複数ファイルに分けた実装プランを作れるため、後続でタスク分割しやすい
+# スペックから実装プランを作るので、所要時間はスペックの内容次第。曖昧・複雑なスペックほど時間がかかる。
+# セルフレビュー＋サブエージェントレビューを行うオーバーヘッドあり
 description: Use when you have a spec or requirements for a multi-step task, before touching code
 # 前段スキル: brainstorming (必須ではなく、spec等が出来ていればOK)
 # 入力ファイル: docs/specs/<topic>-design.md (必須ではない。brainstorming スキルの後続として使う場合は、brainstorming の出力がこれになるはず)
@@ -183,49 +187,47 @@ Use this template when dispatching a plan document reviewer subagent.
 
 **Dispatch after:** The complete plan is written.
 
-```
-Task tool (general-purpose):
-  description: "Review plan document"
-  prompt: |
-    You are a plan document reviewer. Verify this plan is complete and ready for implementation.
+#### prompt for review subagent:
+```markdown
+You are a plan document reviewer. Verify this plan is complete and ready for implementation.
 
-    **Plan entry point:** [ENTRY_POINT_FILE_PATH] (e.g. docs/writing-plans/<feature-name>.md)
-    **Task files directory:** [TASK_DIR_PATH] (e.g. docs/writing-plans/<feature-name>/)
-    **Spec for reference:** [SPEC_FILE_PATH] or [TEXT_OF_SPEC]
+**Plan entry point:** [ENTRY_POINT_FILE_PATH] (e.g. docs/writing-plans/<feature-name>.md)
+**Task files directory:** [TASK_DIR_PATH] (e.g. docs/writing-plans/<feature-name>/)
+**Spec for reference:** [SPEC_FILE_PATH] or [TEXT_OF_SPEC]
 
-    Read the entry point first to get the TOC, then read every linked task file.
-    The plan is the entry point + all task files together.
+Read the entry point first to get the TOC, then read every linked task file.
+The plan is the entry point + all task files together.
 
-    ## What to Check
+## What to Check
 
-    | Category | What to Look For |
-    |----------|------------------|
-    | Completeness | TODOs, placeholders, incomplete tasks, missing steps |
-    | Spec Alignment | Plan covers spec requirements, no major scope creep |
-    | Task Decomposition | Tasks have clear boundaries, steps are actionable |
-    | Buildability | Could an engineer follow this plan without getting stuck? |
-    | File Layout | Entry point is thin (no inlined task bodies). Every TOC link resolves. Every task file is linked from the TOC. Names used across task files are consistent. |
+| Category | What to Look For |
+|----------|------------------|
+| Completeness | TODOs, placeholders, incomplete tasks, missing steps |
+| Spec Alignment | Plan covers spec requirements, no major scope creep |
+| Task Decomposition | Tasks have clear boundaries, steps are actionable |
+| Buildability | Could an engineer follow this plan without getting stuck? |
+| File Layout | Entry point is thin (no inlined task bodies). Every TOC link resolves. Every task file is linked from the TOC. Names used across task files are consistent. |
 
-    ## Calibration
+## Calibration
 
-    **Only flag issues that would cause real problems during implementation.**
-    An implementer building the wrong thing or getting stuck is an issue.
-    Minor wording, stylistic preferences, and "nice to have" suggestions are not.
+**Only flag issues that would cause real problems during implementation.**
+An implementer building the wrong thing or getting stuck is an issue.
+Minor wording, stylistic preferences, and "nice to have" suggestions are not.
 
-    Approve unless there are serious gaps — missing requirements from the spec,
-    contradictory steps, placeholder content, or tasks so vague they can't be acted on.
+Approve unless there are serious gaps — missing requirements from the spec,
+contradictory steps, placeholder content, or tasks so vague they can't be acted on.
 
-    ## Output Format
+## Output Format
 
-    ## Plan Review
+## Plan Review
 
-    **Status:** Approved | Issues Found
+**Status:** Approved | Issues Found
 
-    **Issues (if any):**
-    - [Task X, Step Y]: [specific issue] - [why it matters for implementation]
+**Issues (if any):**
+- [Task X, Step Y]: [specific issue] - [why it matters for implementation]
 
-    **Recommendations (advisory, do not block approval):**
-    - [suggestions for improvement]
+**Recommendations (advisory, do not block approval):**
+- [suggestions for improvement]
 ```
 
 **Reviewer returns:** Status, Issues (if any), Recommendations

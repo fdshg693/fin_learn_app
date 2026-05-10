@@ -34,6 +34,10 @@ Pure domain layer with zero external dependencies. All types are **immutable sea
 | `IPriceFluctuator.cs` | 株価変動戦略 | Interface: price fluctuation strategy (DI point) |
 | `RandomPriceFluctuator.cs` | ランダム株価変動 | ±5% per turn, floor of 1. Takes `Random` for deterministic tests |
 | `SimpleExchange.cs` | 簡易取引所 | `IExchange` impl from price dictionary + fee. Used internally by `TurnProcessor` |
+| `World.cs` | 世界スナップショット | (internal) Book / Portfolios / NextOrderId / Exchange / Fee / PlayerName / Turn / Instruments / Prices を保持する immutable record。`PlayerPortfolio` プロパティと `WithBook` / `WithPortfolios` / `WithPlayerPortfolio` / `WithNextOrderId` 更新メソッド、static `FromGame(Game, int fee, IExchange)` ファクトリを持つ。Pipeline と Handler は World → World の関数として動く |
+| `Services/IPlayerOrderHandler.cs` | プレイヤー注文戦略 | (internal) `Receive(World, Order) → (World, string?)` (受付) と `Settle(World, Order, MatchResult) → (World, string?)` (約定反映) の 2 メソッドで限値/成行を分離。Match は pipeline 共通で実行され Handler の責務外 |
+| `Services/LimitOrderHandler.cs` | 限値戦略 | (internal) Receive: `Portfolio.ReserveBuy` / `ReserveSell` で予約。Settle: `SettlementProcessor.SettleFills` (限値の予約成功 → 約定 settlement は失敗しない不変条件、失敗パス無し) |
+| `Services/MarketOrderHandler.cs` | 成行戦略 | (internal) Receive は no-op。Settle: `Portfolio.ApplyTrade`。fill=0 で `NoMatchingSell/BuyOrders` warning、`ApplyTrade` 失敗 (残高不足) で warning。warning 時は世界不変 |
 
 ### OrderBook Matching Rules
 
@@ -51,17 +55,22 @@ Sell orders are sorted ascending (cheapest first), buy orders descending (highes
 
 `TurnProcessor` depends on `IOrderPlacer`, `IMarket`, and `IPriceFluctuator` (all DI points). Method signatures use `int fee` instead of `IExchange` — prices come from `Game.Prices`.
 
-各ターンは「注文生成（intent）」と「マーケット結果反映（settlement）」を分離した形で進行する：
+`TurnProcessor.Buy` / `Sell` / `Wait` は共通 private pipeline `RunTurn(Game, int fee, IPlayerOrderHandler? handler, Func<int, Order>? intentFactory)` を呼ぶ。`intentFactory` が null = Wait。各ターンは以下の Phase で進む：
 
-1. `IExchangeFactory.Create` で exchange を構築
-2. `BuildAllPortfolios` で `traderId → Portfolio` 統合 view を作る（player + computer1〜10）
-3. `IOrderPlacer.PlaceOrders` が computer 注文の発注 + 約定 + settlement を完結（`SettlementProcessor.SettleFills` 経由で player resting への約定も反映）
-4. `Player.CreateOrder` で player 注文を作成
-5. **指値**の場合のみ `Portfolio.ReserveBuy` / `ReserveSell` で事前予約。失敗（残高/数量不足）なら Wait 化 + warning（computer settlement は確定維持）
-6. `IMarket.Execute` で player 注文を約定
-7. **指値** fill は `SettlementProcessor.SettleFills`（予約消費 + 差額返金、失敗パス無し）。**成行** fill は同期 `ApplyTrade`（残高不足時は `matchResult.Fills` を破棄してロールバック、computer settlement は確定維持）
-8. 指値の未約定分を板に追加
-9. `OrderBook.ExpireOrders` で失効注文を抽出 → `SettlementProcessor.ReleaseExpired` で予約解放 → `IPriceFluctuator.Fluctuate` で価格変動 → `SplitPortfolios` で Player/ComputerPortfolios に分解
+1. **Computer** — `ExchangeFactory.Create` で exchange を構築し、`World.FromGame` で世界スナップショットを構築。`IOrderPlacer.PlaceOrders` が computer 注文の発注 + 約定 + settlement を完結（`SettlementProcessor.SettleFills` 経由で player resting への約定もここで反映）。結果を World に反映
+2. **Player Intent** — `intentFactory(world.NextOrderId)` で Order を作成（Wait なら null）。`submittedOrders = placedOrders + playerOrder` を組み立て
+3. **Receive** — `handler.Receive(world, order)`。**指値**: `Portfolio.ReserveBuy` / `ReserveSell` で available → reserved に移す（失敗 → warning + 以降スキップで Wait 化、computer settlement は確定維持）。**成行**: no-op
+4. **Match** — `IMarket.Execute(world.Book, order, exchange)` で player 注文を約定（pipeline 共通）
+5. **Settle** — `handler.Settle(world, order, match)`。**指値**: `SettlementProcessor.SettleFills`（予約消費 + 差額返金、失敗パス無し）。**成行**: 同期 `Portfolio.ApplyTrade`。fill=0 で `NoMatching*Orders` warning、残高不足で warning。warning 時は `match.UpdatedBook` を捨てて `world.Book` に書き戻さない（= ロールバック、computer settlement は確定維持）
+6. **BookUpdate** — 指値の未約定残量を `AddRemainingLimitOrder(match.UpdatedBook, order, ...)` で板に追加
+7. **TurnAdvance** — `AdvanceTurn(inputGame, world)`: `IPriceFluctuator.Fluctuate` → `OrderBook.ExpireOrders` → `SettlementProcessor.ReleaseExpired` で予約解放 → `SplitPortfolios` で Player/ComputerPortfolios に分解 → 新 Game
+
+**設計の核:**
+- "World → World の関数型シグネチャ" で transition 操作の境界が明確
+- `world.PlayerPortfolio` の 1 プロパティで player portfolio を観察 (旧 `portfolios[playerName]` の散在が消えた)
+- `LimitOrderHandler` / `MarketOrderHandler` の戦略分離で `if (price is null)` の散在が消えた
+- Match が Pipeline 共通で Handler 間に重複しない (DRY)
+- Wait は `intentFactory == null` で同一 pipeline に統一
 
 **責務分離（Reservation Model）:**
 - **注文生成（intent）** — 当ターンの新規注文を作る入力依存処理
@@ -73,7 +82,9 @@ Sell orders are sorted ascending (cheapest first), buy orders descending (highes
 - **SettlementProcessor** — 全 fill を統一的に Portfolio へ反映 + 失効注文の予約解放
 - **ComputerTrader** — 注文生成 + 自身の予約呼び出し + その場の matching → settlement 委譲
 - **Market** — thin wrapper: calls `OrderBook.Match`, extracts the incoming order's `OrderFill`, builds `TradeResult`
-- **TurnProcessor** — turn flow オーケストレーション、player の予約と settlement の橋渡し、失効処理
+- **TurnProcessor** — `RunTurn` pipeline オーケストレーション (Computer/Receive/Match/Settle/BookUpdate/TurnAdvance)、`IPlayerOrderHandler` への dispatch、`World` 経由での状態遷移、失効処理
+- **World** — 世界スナップショット型。Pipeline / Handler が World → World の関数として動く
+- **IPlayerOrderHandler** (`LimitOrderHandler` / `MarketOrderHandler`) — プレイヤー注文の Receive / Settle を限値/成行戦略で分離
 
 **重要な不変条件:**
 - 指値発注時に予約成功 → 約定の settlement は決して失敗しない（残高不足等の Warning は出ない）

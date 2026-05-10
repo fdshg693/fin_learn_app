@@ -1,5 +1,8 @@
 ---
+# 新機能追加などの際に、アイデアからスペックファイルに起こすためのスキル。
 name: brainstorming
+# サブエージェントを多用したりせず（レビューくらい）、オーバーヘッド少なめのシンプルなフロー
+# ただし、確実にコンテキストを理解するための探索を行うので、そこのコストはかかる
 description: "You MUST use this before any creative work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements, and design before implementation, and ends after writing the approved spec."
 # 必要エージェント: code-reviewer
 # 後続スキル: writing-plans
@@ -34,30 +37,7 @@ You MUST create a task for each of these items and complete them in order:
 
 ## Process Flow
 
-```dot
-digraph brainstorming {
-    "Explore project context" [shape=box];
-    "Ask clarifying questions" [shape=box];
-    "Propose 2-3 approaches" [shape=box];
-    "Present design sections" [shape=box];
-    "User approves design?" [shape=diamond];
-    "Write design doc" [shape=box];
-    "Spec review (subagent)\n(fix findings inline)" [shape=box];
-    "User reviews spec?" [shape=diamond];
-  "Complete" [shape=doublecircle];
-
-  "Explore project context" -> "Ask clarifying questions";
-    "Ask clarifying questions" -> "Propose 2-3 approaches";
-    "Propose 2-3 approaches" -> "Present design sections";
-    "Present design sections" -> "User approves design?";
-    "User approves design?" -> "Present design sections" [label="no, revise"];
-    "User approves design?" -> "Write design doc" [label="yes"];
-    "Write design doc" -> "Spec review (subagent)\n(fix findings inline)";
-    "Spec review (subagent)\n(fix findings inline)" -> "User reviews spec?";
-    "User reviews spec?" -> "Write design doc" [label="changes requested"];
-  "User reviews spec?" -> "Complete" [label="approved"];
-}
-```
+see `./flow.dot`
 
 **The terminal state is completing the written spec handoff.** Do NOT invoke any implementation skill from this workflow.
 
