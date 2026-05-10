@@ -1,0 +1,127 @@
+@model FinLearn.Api.Dtos.GameResponse
+<div id="game">
+    <header>
+        <h1>ターン @Model.Turn — @Model.Player.Name</h1>
+    </header>
+
+    @if (!string.IsNullOrEmpty(Model.Warning))
+    {
+        <div class="warning" role="alert">@Model.Warning</div>
+    }
+
+    <section>
+        <h2>プレイヤー情報</h2>
+        <dl>
+            <dt>現金</dt><dd>@Model.Player.Cash JPY</dd>
+            <dt>総資産</dt><dd>@Model.Player.TotalAssets JPY</dd>
+            <dt>損益</dt>
+            <dd class="@(Model.Player.ProfitLoss >= 0 ? "profit" : "loss")">@Model.Player.ProfitLoss JPY</dd>
+        </dl>
+    </section>
+
+    <section>
+        <h2>未約定注文</h2>
+        @if (Model.Player.PendingOrders.Count == 0)
+        {
+            <p>未約定注文はありません</p>
+        }
+        else
+        {
+            <table>
+                <thead>
+                    <tr><th>売買</th><th>銘柄</th><th>種類</th><th>数量</th><th>価格</th><th>残ターン</th></tr>
+                </thead>
+                <tbody>
+                @foreach (var o in Model.Player.PendingOrders)
+                {
+                    <tr>
+                        <td class="@(o.Side == "Buy" ? "buy" : "sell")">@o.Side</td>
+                        <td>@o.InstrumentId</td>
+                        <td>@o.Type</td>
+                        <td>@o.Quantity</td>
+                        <td>@(o.Price?.ToString() ?? "-")</td>
+                        <td>@(Math.Max(0, o.ExpiresAtTurn - Model.Turn))</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+    </section>
+
+    <section>
+        <h2>銘柄一覧</h2>
+        <table>
+            <thead><tr><th>銘柄ID</th><th>現在価格</th></tr></thead>
+            <tbody>
+            @foreach (var i in Model.Instruments)
+            {
+                <tr><td>@i.Id</td><td>@i.Price</td></tr>
+            }
+            </tbody>
+        </table>
+    </section>
+
+    <section>
+        <h2>保有ポジション</h2>
+        @if (Model.Player.Positions.Count == 0)
+        {
+            <p>保有ポジションはありません</p>
+        }
+        else
+        {
+            <table>
+                <thead><tr><th>銘柄ID</th><th>数量</th><th>現在価格</th><th>評価額</th></tr></thead>
+                <tbody>
+                @foreach (var p in Model.Player.Positions)
+                {
+                    <tr><td>@p.InstrumentId</td><td>@p.Quantity</td><td>@p.CurrentPrice</td><td>@p.Amount</td></tr>
+                }
+                </tbody>
+            </table>
+        }
+    </section>
+
+    <section>
+        <h2>注文入力</h2>
+        <form>
+            <label>銘柄
+                <select name="instrumentId">
+                    @foreach (var i in Model.Instruments)
+                    {
+                        <option value="@i.Id">@i.Id</option>
+                    }
+                </select>
+            </label>
+            <label>数量 <input type="number" name="quantity" min="1" value="1" /></label>
+            <label>価格 <input type="number" name="price" min="1" placeholder="空欄=成行" /></label>
+            <button type="button" disabled>買う</button>
+            <button type="button" disabled>売る</button>
+            <button type="button" disabled>待つ</button>
+        </form>
+    </section>
+
+    @if (Model.RecentTrades.Count > 0)
+    {
+        <section>
+            <h2>最近の約定</h2>
+            <table>
+                <thead><tr><th>売買</th><th>銘柄</th><th>数量</th><th>金額</th><th>手数料</th></tr></thead>
+                <tbody>
+                @foreach (var t in Model.RecentTrades.Reverse())
+                {
+                    <tr>
+                        <td class="@(t.Side == "Buy" ? "buy" : "sell")">@t.Side</td>
+                        <td>@t.InstrumentId</td>
+                        <td>@t.FilledQuantity</td>
+                        <td>@t.TotalAmount</td>
+                        <td>@t.Fee</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </section>
+    }
+
+    <partial name="_OrderBookPanel"
+             model="@(new FinLearn.Api.Pages.Shared.OrderBookPanelViewModel(Model.GameId, 1, 20))" />
+</div>

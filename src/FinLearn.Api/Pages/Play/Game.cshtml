@@ -1,0 +1,6 @@
+@page "/play/{id}"
+@model FinLearn.Api.Pages.Play.GameModel
+@{
+    ViewData["Title"] = $"ゲーム {Model.Game.GameId}";
+}
+<partial name="_GameContainer" model="Model.Game" />

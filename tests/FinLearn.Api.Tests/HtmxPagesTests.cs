@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace FinLearn.Api.Tests;
@@ -53,6 +54,33 @@ public class HtmxPagesTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         Assert.NotNull(response.Headers.Location);
         Assert.StartsWith("/play/", response.Headers.Location!.ToString());
+    }
+
+    [Fact]
+    public async Task GET_play_id_でゲーム画面の全パネル見出しを含むHTMLを返す()
+    {
+        var create = await _client.PostAsync("/api/games", null);
+        var created = await create.Content.ReadFromJsonAsync<FinLearn.Api.Dtos.GameResponse>();
+
+        var response = await _client.GetAsync($"/play/{created!.GameId}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains("id=\"game\"", body);
+        Assert.Contains("ターン", body);
+        Assert.Contains("現金", body);
+        Assert.Contains("未約定注文", body);
+        Assert.Contains("銘柄一覧", body);
+        Assert.Contains("保有ポジション", body);
+        Assert.Contains("注文入力", body);
+        Assert.Contains("注文板", body);
+    }
+
+    [Fact]
+    public async Task GET_play_id_存在しないゲームは404()
+    {
+        var response = await _client.GetAsync("/play/nonexistent");
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]
