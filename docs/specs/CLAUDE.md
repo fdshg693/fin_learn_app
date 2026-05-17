@@ -7,10 +7,10 @@
 
 | ファイル | 機能 | APIエンドポイント |
 |---|---|---|
-| [01-buy-now.md](./01-buy-now.md) | 即時買い（BuyNow） | POST /api/actions/buy-now |
-| [02-sell-now.md](./02-sell-now.md) | 即時売り（SellNow） | POST /api/actions/sell-now |
-| [03-buy-limit.md](./03-buy-limit.md) | 指値買い（BuyLimit） | POST /api/actions/buy-limit |
-| [04-sell-limit.md](./04-sell-limit.md) | 指値売り（SellLimit） | POST /api/actions/sell-limit |
+| [01-buy-now.md](./01-buy-now.md) | 即時買い（BuyNow） | POST /api/actions/buy |
+| [02-sell-now.md](./02-sell-now.md) | 即時売り（SellNow） | POST /api/actions/sell |
+| [03-buy-limit.md](./03-buy-limit.md) | 指値買い（BuyLimit） | POST /api/actions/buy |
+| [04-sell-limit.md](./04-sell-limit.md) | 指値売り（SellLimit） | POST /api/actions/sell |
 | [05-wait.md](./05-wait.md) | 見送り（Wait） | POST /api/actions/wait |
 | [06-turn-system.md](./06-turn-system.md) | ターン制システム | （内部処理） |
 | [07-portfolio.md](./07-portfolio.md) | ポートフォリオ参照 | GET /api/portfolios/{investorId} |
@@ -33,7 +33,7 @@
 ### ターン制の共通動作
 
 - 全アクション（BuyNow / SellNow / BuyLimit / SellLimit / Wait）はターンを1進める
-- ターン進行時に価格変動（全銘柄、97%〜103%）とシステム注文生成（ランダム3銘柄 × 各2注文）が発生する
+- ターン進行時に価格変動、システム注文生成、クロス注文解消がこの順で発生する
 - 400 / 404 / 409 エラーの場合はターンが進まない
 
 ### アクションレスポンス共通形式

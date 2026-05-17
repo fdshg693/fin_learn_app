@@ -7,11 +7,12 @@
 
 ## 対象コンポーネント
 
-- Store: `backend/FinLearnApp.Api/Data/InMemoryStore.cs`（`ExecuteBuyNow`, `ExecuteSellNow`, `ExecuteBuyLimit`, `ExecuteSellLimit`, `FindSellCandidates`, `FindBuyCandidates`）
-- Domain: `src/Domain/Entities/OrderBook.cs`（`FindByTickerAndSide`, `ReplaceWithRemaining`）
-- Domain: `src/Domain/Entities/Order.cs`
-- Domain: `src/Domain/Entities/Trade.cs`
-- Application: `src/Application/Actions/OrderMatchResult.cs`
+- Store: `backend/FinLearnApp.Api/Data/InMemoryStore.cs`（市場価格の取得と Domain への委譲）
+- Domain: `library/Domain/Entities/Exchange.cs`（`ExecuteBuyNow`, `ExecuteSellNow`, `ExecuteBuyLimit`, `ExecuteSellLimit`, `MatchCrossedOrders`）
+- Domain: `library/Domain/Entities/OrderBook.cs`（`FindByTickerAndSide`, `ReplaceWithRemaining`）
+- Domain: `library/Domain/Entities/Order.cs`
+- Domain: `library/Domain/Entities/Trade.cs`
+- Domain: `library/Domain/ValueObjects/OrderMatchResult.cs`
 
 ## マッチングルール
 
@@ -86,6 +87,7 @@
 - 約定しなかった分は消滅する（キューに残らない）
 - 現金チェックは BuyNow と BuyLimit のみ。SellNow と SellLimit は現金チェックなし
 - 手数料（500円）は Trade に記録されるが、ポートフォリオの現金から差し引かれない
+- クロス注文の自動解消はターン進行時に別処理として行われ、即時アクションの約定ロジックとは分離されている
 
 ## 未決事項
 

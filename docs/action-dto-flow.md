@@ -1,6 +1,6 @@
 # アクション機能の DTO 受け渡し図
 
-更新日: 2026-03-08
+更新日: 2026-05-10
 
 ## 目的
 - フロントから送ったデータが、どの型として扱われるかを追えるようにする
@@ -10,6 +10,7 @@
 - API層では `*RequestDto` / `ActionResultDto` を使う
 - Application層では DTO ではなく `*Command` / `ActionExecutionResult` を使う
 - `ActionsController` で DTO <-> Command/Result の変換をしている
+- 買い/売り API は `buy` / `sell` に統合されており、`limitPrice` の有無で成行/指値が分岐する
 
 ## 全体フロー（共通）
 
@@ -29,54 +30,52 @@
 
 ## 型対応表（アクション系）
 
-- BuyNow / SellNow
-  - Front request: `frontend/src/api/types.ts` の `ActionTradeRequestDto`
-  - API request: `backend/FinLearnApp.Api/Models/Api/ActionTradeRequestDto`
+- BuyNow / BuyLimit
+  - Front request: `frontend/src/api/types.ts` の `ActionBuyRequestDto`
+  - API request: `backend/FinLearnApp.Api/Models/Api/ActionBuyRequestDto`
   - Application command:
-    - `src/Application/Actions/BuyNowCommand.cs`
-    - `src/Application/Actions/SellNowCommand.cs`
+    - `library/Application/Actions/BuyNowCommand.cs`
+    - `library/Application/Actions/BuyLimitCommand.cs`
 
-- BuyLimit / SellLimit
-  - Front request: `frontend/src/api/types.ts` の `ActionLimitRequestDto`
-  - API request: `backend/FinLearnApp.Api/Models/Api/ActionLimitRequestDto`
+- SellNow / SellLimit
+  - Front request: `frontend/src/api/types.ts` の `ActionSellRequestDto`
+  - API request: `backend/FinLearnApp.Api/Models/Api/ActionSellRequestDto`
   - Application command:
-    - `src/Application/Actions/BuyLimitCommand.cs`
-    - `src/Application/Actions/SellLimitCommand.cs`
+    - `library/Application/Actions/SellNowCommand.cs`
+    - `library/Application/Actions/SellLimitCommand.cs`
 
 - Wait
   - Front request: `frontend/src/api/types.ts` の `ActionWaitRequestDto`
   - API request: `backend/FinLearnApp.Api/Models/Api/ActionWaitRequestDto`
-  - Application command: `src/Application/Actions/WaitCommand.cs`
+  - Application command: `library/Application/Actions/WaitCommand.cs`
 
 - 共通レスポンス
-  - Application result: `src/Application/Actions/ActionExecutionResult.cs`
+  - Application result: `library/Application/Actions/ActionExecutionResult.cs`
   - API response: `backend/FinLearnApp.Api/Models/Api/ActionResultDto`
   - Front response: `frontend/src/api/types.ts` の `ActionResultDto`
 
-## BuyNow の具体フロー
+## BuyNow / BuyLimit の具体フロー
 
 ```text
 Actions.tsx
-  payload: ActionTradeRequestDto
-  { investorId, tickerId, quantity, expectedTurn }
+  payload: ActionBuyRequestDto
+  { investorId, tickerId, quantity, limitPrice?, expectedTurn }
     |
     v
 frontend/src/api/actions.ts
-  POST /api/actions/buy-now
+  POST /api/actions/buy
     |
     v
-ActionsController.BuyNow(ActionTradeRequestDto request)
-  new BuyNowCommand(
-    request.InvestorId,
-    request.TickerId,
-    request.Quantity,
-    request.ExpectedTurn)
+ActionsController.Buy(ActionBuyRequestDto request)
+  request.LimitPrice == null
+    ? new BuyNowCommand(...)
+    : new BuyLimitCommand(...)
     |
     v
 _mediator.Send(command)
     |
     v
-BuyNowCommandHandler.Handle(BuyNowCommand)
+BuyNowCommandHandler / BuyLimitCommandHandler
   -> ActionExecutionResult
     |
     v
@@ -95,22 +94,24 @@ Actions.tsx
   result: ActionResultDto
 ```
 
-## BuyLimit / SellLimit の具体フロー
+## SellNow / SellLimit の具体フロー
 
 ```text
 Actions.tsx
-  payload: ActionLimitRequestDto
-  { investorId, tickerId, quantity, limitPriceAmount, expectedTurn }
+  payload: ActionSellRequestDto
+  { investorId, tickerId, quantity, limitPrice?, expectedTurn }
     |
     v
-POST /api/actions/buy-limit or /sell-limit
+POST /api/actions/sell
     |
     v
-ActionsController.BuyLimit / SellLimit(ActionLimitRequestDto)
-  -> BuyLimitCommand / SellLimitCommand
+ActionsController.Sell(ActionSellRequestDto request)
+  request.LimitPrice == null
+    ? new SellNowCommand(...)
+    : new SellLimitCommand(...)
     |
     v
-BuyLimitCommandHandler / SellLimitCommandHandler
+SellNowCommandHandler / SellLimitCommandHandler
   -> ActionExecutionResult
     |
     v
@@ -151,3 +152,4 @@ ActionsController.Wait(ActionWaitRequestDto)
 - Application層には API DTO を持ち込まない方針
 - そのため Application 側は `*Command` と `ActionExecutionResult` で統一されている
 - これにより API形式変更があっても、業務ロジックへの影響を小さくできる
+- `buy` / `sell` API の統合後も、Application 層では成行用と指値用の Command が分かれている

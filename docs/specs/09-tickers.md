@@ -7,8 +7,8 @@
 ## 対象コンポーネント
 
 - Controller: `backend/FinLearnApp.Api/Controllers/TickersController.cs`
-- Domain: `src/Domain/Entities/Ticker.cs`
-- Domain: `src/Domain/Entities/Company.cs`
+- Domain: `library/Domain/Entities/Ticker.cs`
+- Domain: `library/Domain/Entities/Company.cs`
 - Store: `backend/FinLearnApp.Api/Data/InMemoryStore.cs`
 
 ## エンドポイント

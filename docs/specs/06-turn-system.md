@@ -8,9 +8,10 @@ fin_learn_app のシミュレーションはターン制で動作する。
 
 ## 対象コンポーネント
 
-- Store: `backend/FinLearnApp.Api/Data/InMemoryStore.cs` (`AdvanceTurn`, `ApplyPriceFluctuation`, `GenerateSystemOrdersForTurn`)
-- Domain: `src/Domain/Entities/Ticker.cs` (`UpdatePrice`)
-- Domain: `src/Domain/Entities/OrderBook.cs` (`Add`)
+- Store: `backend/FinLearnApp.Api/Data/InMemoryStore.cs` (`AdvanceTurn`)
+- Domain Service: `library/Domain/Services/TurnDomainService.cs` (`AdvanceTurn`, `ApplyPriceFluctuation`, `GenerateSystemOrders`, `MatchCrossedOrdersForAllTickers`)
+- Domain: `library/Domain/Entities/Ticker.cs` (`UpdatePrice`)
+- Domain: `library/Domain/Entities/Exchange.cs` (`MatchCrossedOrders`)
 
 ## ターン管理
 
@@ -66,9 +67,10 @@ fin_learn_app のシミュレーションはターン制で動作する。
 
 ## ビジネスルール
 
-- ターン進行の順序: `AdvanceTurn` → `ApplyPriceFluctuation` → `GenerateSystemOrdersForTurn`
+- ターン進行の順序: `InMemoryStore.AdvanceTurn` → `TurnDomainService.AdvanceTurn` → `ApplyPriceFluctuation` → `GenerateSystemOrders` → `MatchCrossedOrdersForAllTickers`
 - 価格変動後の新価格を使ってコンピュータ注文の価格を計算する
 - コンピュータ注文生成時の銘柄選択はランダム（再現性を求める場合は `Random` に任意のシードを指定可能）
+- システム注文生成後にクロス注文が発生していれば、そのターン内で自動約定される
 - 投資家のアクション実行結果とターン番号はレスポンスに含まれる（`currentTurn`）
 
 ## 未決事項

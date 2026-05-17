@@ -1,6 +1,6 @@
 # フォルダ構成ガイド（クライアント起点のデータフロー付き）
 
-更新日: 2026-03-08
+更新日: 2026-05-10
 
 ## このドキュメントの目的
 - 「どのフォルダが何を担当するか」を1枚で把握する
@@ -17,16 +17,16 @@ backend/FinLearnApp.Api (Controller + DTO + InMemory Adapter)
   -> Interface (IActionExecutionStore)
 backend/FinLearnApp.Api/Services/InMemoryActionExecutionStore (interface実装)
   -> backend/FinLearnApp.Api/Data/InMemoryStore (実データ)
-src/Domain (Portfolio, Holding, Money などのルール)
+library/Domain (Portfolio, Holding, Money, Exchange, TurnDomainService などのルール)
 ```
 
 ## ルートフォルダごとの役割
 
 - `backend/FinLearnApp.Api`
   - Web API本体（エンドポイント、DTO、DI設定、InMemoryデータ接続）
-- `src/Application`
+- `library/Application`
   - ユースケース層（コマンド、ハンドラー、抽象インターフェース）
-- `src/Domain`
+- `library/Domain`
   - ドメインモデル層（エンティティ、値オブジェクト、ビジネスルール）
 - `frontend`
   - React UI層（画面、APIクライアント、型定義）
@@ -37,7 +37,7 @@ src/Domain (Portfolio, Holding, Money などのルール)
 
 ### 1. API入口（HTTP）
 - `backend/FinLearnApp.Api/Controllers/ActionsController.cs`
-  - `POST /api/actions/buy-now|sell-now|wait` を受ける
+  - `POST /api/actions/buy|sell|wait` を受ける
   - Request DTO -> Command 変換
   - Handler結果を HTTPレスポンスへ変換
   - ターン不一致は `409 Conflict` を返す
@@ -54,6 +54,7 @@ src/Domain (Portfolio, Holding, Money などのルール)
 ### 2. DTOとレスポンス整形
 - `backend/FinLearnApp.Api/Models/Api/ActionDtos.cs`
   - リクエスト: `expectedTurn` を受ける
+  - `buy` / `sell` は `limitPrice` の有無で成行/指値を切り替える
   - レスポンス: `currentTurn` を返す
 
 - `backend/FinLearnApp.Api/Models/Api/PortfolioDtos.cs`
@@ -71,10 +72,16 @@ src/Domain (Portfolio, Holding, Money などのルール)
   - Application層から見たときのデータ窓口
 
 - `backend/FinLearnApp.Api/Data/InMemoryStore.cs`
-  - 実データ本体（Companies/Tickers/Portfolios/Turn/OrderBook/Trades）
+  - 実データ本体（Companies/Tickers/Portfolios/Turn/Exchange）
   - `GetCurrentTurn` / `AdvanceTurn` を提供
-  - ターン進行時の株価変動とシステム注文生成
-  - BuyNow/SellNow の即時マッチング実行
+  - 市場価格の取得と Domain への委譲を担当する薄いストア
+
+- `library/Domain/Services/TurnDomainService.cs`
+  - ターン進行時の株価変動、システム注文生成、クロス注文解消
+
+- `library/Domain/Entities/Exchange.cs`
+  - BuyNow / SellNow / BuyLimit / SellLimit の即時マッチング
+  - 約定履歴 `Trades` を保持
 
 - `backend/FinLearnApp.Api/Data/SeedData.cs`
   - 起動時の初期データ作成
@@ -87,40 +94,50 @@ src/Domain (Portfolio, Holding, Money などのルール)
 
 ## Application層の責務分担
 
-- `src/Application/Actions/IActionExecutionStore.cs`
+- `library/Application/Actions/IActionExecutionStore.cs`
   - 抽象契約（ポートフォリオ取得、銘柄取得、ターン取得/進行）
 
-- `src/Application/Actions/BuyNowCommand.cs`
-- `src/Application/Actions/SellNowCommand.cs`
-- `src/Application/Actions/WaitCommand.cs`
+- `library/Application/Actions/BuyNowCommand.cs`
+- `library/Application/Actions/BuyLimitCommand.cs`
+- `library/Application/Actions/SellNowCommand.cs`
+- `library/Application/Actions/SellLimitCommand.cs`
+- `library/Application/Actions/WaitCommand.cs`
   - 入力コマンド（`ExpectedTurn` を含む）
 
-- `src/Application/Actions/BuyNowCommandHandler.cs`
-- `src/Application/Actions/SellNowCommandHandler.cs`
-- `src/Application/Actions/WaitCommandHandler.cs`
+- `library/Application/Actions/BuyNowCommandHandler.cs`
+- `library/Application/Actions/BuyLimitCommandHandler.cs`
+- `library/Application/Actions/SellNowCommandHandler.cs`
+- `library/Application/Actions/SellLimitCommandHandler.cs`
+- `library/Application/Actions/WaitCommandHandler.cs`
   - ユースケース本体
   - `ExpectedTurn` と現在ターンを比較
   - 一致なら処理し `AdvanceTurn`
   - 不一致なら `Conflict`
 
-- `src/Application/Actions/ActionExecutionResult.cs`
+- `library/Application/Actions/ActionExecutionResult.cs`
   - Handlerの戻り値
   - `Ok/BadRequest/NotFound/Conflict` と `CurrentTurn` を保持
 
 ## Domain層の責務分担
 
-- `src/Domain/Entities/Portfolio.cs`
+- `library/Domain/Entities/Portfolio.cs`
   - 保有/現金の増減
   - 評価額、損益計算
 
-- `src/Domain/Entities/Holding.cs`
+- `library/Domain/Entities/Holding.cs`
   - 銘柄ごとの数量管理
 
-- `src/Domain/ValueObjects/Money.cs`
+- `library/Domain/ValueObjects/Money.cs`
   - 通貨付き金額計算
 
-- `src/Domain/ValueObjects/Ids.cs`
+- `library/Domain/ValueObjects/Ids.cs`
   - 型安全なID
+
+- `library/Domain/Entities/Exchange.cs`
+  - 注文板を持ち、即時注文の価格優先・時間優先マッチングを実行する
+
+- `library/Domain/Services/TurnDomainService.cs`
+  - ターン進行の手順をまとめ、価格変動、システム注文生成、クロス注文解消を順に適用する
 
 ## フロントエンドの責務分担
 
@@ -128,10 +145,11 @@ src/Domain (Portfolio, Holding, Money などのルール)
   - 画面状態（選択銘柄、数量、現在ターン）
   - 初期ロードで `tickers` と `portfolio` を取得
   - 送信時に `expectedTurn` をリクエストに設定
+  - `buy` / `sell` の共通送信関数で `limitPrice` の有無を切り替える
   - 成功時に `result.currentTurn` で画面ターン更新
 
 - `frontend/src/api/actions.ts`
-  - `/api/actions/*` 呼び出し関数
+  - `/api/actions/buy` `/api/actions/sell` `/api/actions/wait` 呼び出し関数
 
 - `frontend/src/api/client.ts`
   - `fetchJson` 共通処理
@@ -163,7 +181,7 @@ src/Domain (Portfolio, Holding, Money などのルール)
 - `portfolio` を表示
 - `setCurrentTurn(portfolioResult.currentTurn)`
 
-## B. BuyNow/SellNow/Wait 実行
+## B. Buy/Sell/Wait 実行
 
 1. フロントで payload作成
 - `expectedTurn = currentTurn`
@@ -182,6 +200,7 @@ src/Domain (Portfolio, Holding, Money などのルール)
 5. 一致時の処理
 - Buy/Sell/Waitロジックを実行
 - `AdvanceTurn` でターン +1
+- `AdvanceTurn` 内で価格変動、システム注文生成、クロス注文解消が走る
 - `ActionExecutionResult.Ok(..., currentTurn)` を返す
 
 6. ControllerがHTTPへ変換
@@ -194,7 +213,7 @@ src/Domain (Portfolio, Holding, Money などのルール)
 
 ## B-2. 約定ルール（価格優先/時間優先）
 
-現在の `BuyNow` / `SellNow` は、注文票にあるコンピューター注文と即時マッチングします。
+現在の `BuyNow` / `SellNow` / `BuyLimit` / `SellLimit` は、注文票にある既存注文と即時マッチングします。
 
 - BuyNow
   - 対象: 同一銘柄の `SellOrders`
@@ -211,18 +230,21 @@ src/Domain (Portfolio, Holding, Money などのルール)
   - 約定した分だけ `OrderBook` から減算
   - 残量があれば注文票に残る
   - 約定履歴は `Trades` に記録される
+  - 指値注文は `limitPrice` 条件で候補を絞るが、約定価格は相手注文の価格を使う
 
 ファイル参照:
 - `backend/FinLearnApp.Api/Data/InMemoryStore.cs`
-- `src/Domain/Entities/OrderBook.cs`
-- `src/Application/Actions/BuyNowCommandHandler.cs`
-- `src/Application/Actions/SellNowCommandHandler.cs`
+- `library/Domain/Entities/Exchange.cs`
+- `library/Application/Actions/BuyNowCommandHandler.cs`
+- `library/Application/Actions/BuyLimitCommandHandler.cs`
+- `library/Application/Actions/SellNowCommandHandler.cs`
+- `library/Application/Actions/SellLimitCommandHandler.cs`
 
 ## B-3. 約定処理フロー（図）
 
 ```text
 Actions.tsx
-  -> POST /api/actions/buy-now (expectedTurn付き)
+  -> POST /api/actions/buy (expectedTurn付き)
 ActionsController
   -> IMediator.Send(BuyNowCommand)
 BuyNowCommandHandler
@@ -230,6 +252,8 @@ BuyNowCommandHandler
 InMemoryActionExecutionStore
   -> InMemoryStore.ExecuteBuyNow(...)
 InMemoryStore
+  -> Exchange.ExecuteBuyNow(...) へ委譲
+Exchange
   -> OrderBook(Sell) から候補抽出
   -> 価格/時間優先で約定計算
   -> Trade記録
@@ -237,7 +261,7 @@ InMemoryStore
   -> OrderMatchResult返却
 BuyNowCommandHandler
   -> Portfolio(現金/保有)更新
-  -> AdvanceTurn(株価変動 + システム注文生成)
+  -> AdvanceTurn(株価変動 + システム注文生成 + クロス注文解消)
 ActionsController
   -> ActionResultDto(currentTurn付き)
 Actions.tsx
@@ -268,11 +292,11 @@ Actions.tsx
 1. `frontend/src/pages/Actions.tsx`
 2. `frontend/src/api/actions.ts`
 3. `backend/FinLearnApp.Api/Controllers/ActionsController.cs`
-4. `src/Application/Actions/*CommandHandler.cs`
-5. `src/Application/Actions/IActionExecutionStore.cs`
+4. `library/Application/Actions/*CommandHandler.cs`
+5. `library/Application/Actions/IActionExecutionStore.cs`
 6. `backend/FinLearnApp.Api/Services/InMemoryActionExecutionStore.cs`
 7. `backend/FinLearnApp.Api/Data/InMemoryStore.cs`
-8. `src/Domain/Entities/Portfolio.cs`
+8. `library/Domain/Entities/Portfolio.cs`
 
 ## いま未実装のポイント（次フェーズの目印）
 

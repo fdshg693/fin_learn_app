@@ -8,32 +8,34 @@ BuyNow と異なり、現在の市場価格ではなく投資家が指定した�
 ## 対象コンポーネント
 
 - Controller: `backend/FinLearnApp.Api/Controllers/ActionsController.cs`
-- Command: `src/Application/Actions/BuyLimitCommand.cs`
-- Handler: `src/Application/Actions/BuyLimitCommandHandler.cs`
+- Command: `library/Application/Actions/BuyLimitCommand.cs`
+- Handler: `library/Application/Actions/BuyLimitCommandHandler.cs`
 - Store: `backend/FinLearnApp.Api/Data/InMemoryStore.cs` (`ExecuteBuyLimit`)
-- Domain: `src/Domain/Entities/Portfolio.cs`, `src/Domain/Entities/OrderBook.cs`
+- Domain: `library/Domain/Entities/Portfolio.cs`, `library/Domain/Entities/Exchange.cs`
 
 ## エンドポイント
 
 ```
-POST /api/actions/buy-limit
+POST /api/actions/buy
 Content-Type: application/json
 
 {
   "investorId": "<GUID>",
   "tickerId": "<GUID>",
   "quantity": <int>,
-  "limitPriceAmount": <decimal>,
+  "limitPrice": <decimal>,
   "expectedTurn": <int>
 }
 ```
+
+- `limitPrice` を指定すると指値買いとして扱う
 
 ## 正常系シナリオ
 
 ### シナリオ1: 全数量約定
 
-- **前提条件**: オーダーブックに `指値以下` の売り注文が要求数量以上存在し、投資家の現金が `指値 × quantity` 以上ある
-- **入力**: 有効な `investorId`, `tickerId`, `quantity > 0`, `limitPriceAmount > 0`, 正しい `expectedTurn`
+- **前提条件**: オーダーブックに `指値以下` の売り注文が要求数量以上存在し、投資家の現金が `limitPrice × quantity` 以上ある
+- **入力**: 有効な `investorId`, `tickerId`, `quantity > 0`, `limitPrice > 0`, 正しい `expectedTurn`
 - **期待結果**:
   - `success: true`, `message: "BuyLimit を実行しました。"`
   - ポートフォリオの現金が約定総額分減少する
@@ -60,7 +62,7 @@ Content-Type: application/json
 
 ### シナリオ4: 現金不足（指値 × 数量 > 保有現金）
 
-- **前提条件**: 投資家の現金が `limitPriceAmount × quantity` より少ない
+- **前提条件**: 投資家の現金が `limitPrice × quantity` より少ない
 - **入力**: 有効なパラメータ
 - **期待結果**:
   - `success: false`, `message: "指値注文に必要な現金が不足しています。"`
@@ -78,7 +80,7 @@ Content-Type: application/json
 ### エラー2: 指値が0以下
 
 - **前提条件**: なし
-- **入力**: `limitPriceAmount <= 0`
+- **入力**: `limitPrice <= 0`
 - **期待結果**: HTTP 400 Bad Request、`"Limit price must be greater than 0."`
 
 ### エラー3: 投資家が見つからない
@@ -101,14 +103,16 @@ Content-Type: application/json
 
 ## ビジネスルール
 
-- マッチング対象は「価格が `limitPriceAmount` 以下の売り注文」のみ（市場価格を参照しない）
+- マッチング対象は「価格が `limitPrice` 以下の売り注文」のみ（市場価格を参照しない）
 - 売り注文の優先順位: 価格昇順（低い価格から）、同価格は作成時刻昇順（FIFO）
 - 約定価格は売り注文の価格（指値ではなく相手の注文価格）
-- 現金の事前チェック: `limitPriceAmount × quantity > portfolio.Cash` の場合は即エラーを返す
+- 指値買いは `POST /api/actions/buy` に `limitPrice` を含めた場合の分岐として実行される
+- 現金の事前チェック: `limitPrice × quantity > portfolio.Cash` の場合は即エラーを返す
 - 現金の逐次チェック: マッチング中に現金が枯渇した時点で打ち切る
 - 約定した注文は残数量が0になればオーダーブックから削除、残りがあれば残数量で置き換える
 - 約定ごとに Trade レコードが生成される（`Exchange.Fee` = 500円固定）
 - ターン進行は成否に関わらず常に発生する（異常系エラー除く）
+- ターン進行時に全銘柄の価格変動、システム注文生成、クロス注文解消が発生する
 
 ## 未決事項
 

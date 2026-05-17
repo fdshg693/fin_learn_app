@@ -8,15 +8,15 @@
 ## 対象コンポーネント
 
 - Controller: `backend/FinLearnApp.Api/Controllers/ActionsController.cs`
-- Command: `src/Application/Actions/SellNowCommand.cs`
-- Handler: `src/Application/Actions/SellNowCommandHandler.cs`
+- Command: `library/Application/Actions/SellNowCommand.cs`
+- Handler: `library/Application/Actions/SellNowCommandHandler.cs`
 - Store: `backend/FinLearnApp.Api/Data/InMemoryStore.cs` (`ExecuteSellNow`)
-- Domain: `src/Domain/Entities/Portfolio.cs`, `src/Domain/Entities/OrderBook.cs`
+- Domain: `library/Domain/Entities/Portfolio.cs`, `library/Domain/Entities/Exchange.cs`
 
 ## エンドポイント
 
 ```
-POST /api/actions/sell-now
+POST /api/actions/sell
 Content-Type: application/json
 
 {
@@ -26,6 +26,8 @@ Content-Type: application/json
   "expectedTurn": <int>
 }
 ```
+
+- `limitPrice` を省略、または `null` にすると即時売りとして扱う
 
 ## 正常系シナリオ
 
@@ -106,11 +108,12 @@ Content-Type: application/json
 - マッチング対象は「価格が現在の市場価格以上の買い注文」のみ
 - 買い注文の優先順位: 価格降順（高い価格から）、同価格は作成時刻昇順（FIFO）
 - 約定価格は買い注文の価格（投資家の売り希望価格ではなく相手の注文価格）
+- 即時売りは `POST /api/actions/sell` に `limitPrice` を含めない場合の分岐として実行される
 - 保有チェックはマッチングの前に行う。保有なし・数量不足の場合はマッチングを試みない
 - 約定した注文は残数量が0になればオーダーブックから削除、残りがあれば残数量で置き換える
 - 約定ごとに Trade レコードが生成される（`Exchange.Fee` = 500円固定）
 - ターン進行は成否に関わらず常に発生する（異常系エラー除く）
-- ターン進行時に全銘柄の価格変動とシステム注文生成が発生する
+- ターン進行時に全銘柄の価格変動、システム注文生成、クロス注文解消が発生する
 
 ## 未決事項
 

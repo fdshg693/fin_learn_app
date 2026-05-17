@@ -7,9 +7,9 @@
 ## 対象コンポーネント
 
 - Controller: `backend/FinLearnApp.Api/Controllers/MarketController.cs`
-- Domain: `src/Domain/Entities/OrderBook.cs`
-- Domain: `src/Domain/Entities/Order.cs`
-- Domain: `src/Domain/Entities/Trade.cs`
+- Domain: `library/Domain/Entities/OrderBook.cs`
+- Domain: `library/Domain/Entities/Order.cs`
+- Domain: `library/Domain/Entities/Trade.cs`
 - Store: `backend/FinLearnApp.Api/Data/InMemoryStore.cs`
 
 ## エンドポイント

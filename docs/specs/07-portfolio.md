@@ -9,8 +9,8 @@ GET エンドポイントで現在の状態を返す。また、全アクショ�
 
 - Controller: `backend/FinLearnApp.Api/Controllers/PortfoliosController.cs`
 - Mapper: `backend/FinLearnApp.Api/Mappers/PortfolioMapper.cs`
-- Domain: `src/Domain/Entities/Portfolio.cs`
-- Domain: `src/Domain/Entities/Holding.cs`
+- Domain: `library/Domain/Entities/Portfolio.cs`
+- Domain: `library/Domain/Entities/Holding.cs`
 - Store: `backend/FinLearnApp.Api/Data/InMemoryStore.cs`
 
 ## エンドポイント

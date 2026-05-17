@@ -8,15 +8,15 @@
 ## 対象コンポーネント
 
 - Controller: `backend/FinLearnApp.Api/Controllers/ActionsController.cs`
-- Command: `src/Application/Actions/BuyNowCommand.cs`
-- Handler: `src/Application/Actions/BuyNowCommandHandler.cs`
+- Command: `library/Application/Actions/BuyNowCommand.cs`
+- Handler: `library/Application/Actions/BuyNowCommandHandler.cs`
 - Store: `backend/FinLearnApp.Api/Data/InMemoryStore.cs` (`ExecuteBuyNow`)
-- Domain: `src/Domain/Entities/Portfolio.cs`, `src/Domain/Entities/OrderBook.cs`
+- Domain: `library/Domain/Entities/Portfolio.cs`, `library/Domain/Entities/Exchange.cs`
 
 ## エンドポイント
 
 ```
-POST /api/actions/buy-now
+POST /api/actions/buy
 Content-Type: application/json
 
 {
@@ -27,11 +27,13 @@ Content-Type: application/json
 }
 ```
 
+- `limitPrice` を省略、または `null` にすると即時買いとして扱う
+
 ## 正常系シナリオ
 
 ### シナリオ1: 全数量約定
 
-- **前提条件**: オーダーブックに `現在価格 <= 売り注文価格` を満たす売り注文が要求数量以上存在し、投資家の現金が購入代金を賄える
+- **前提条件**: オーダーブックに `売り注文価格 <= 現在価格` を満たす売り注文が要求数量以上存在し、投資家の現金が購入代金を賄える
 - **入力**: 有効な `investorId`, `tickerId`, `quantity > 0`, 正しい `expectedTurn`
 - **期待結果**:
   - `success: true`, `message: "BuyNow を実行しました。"`
@@ -89,11 +91,12 @@ Content-Type: application/json
 - マッチング対象は「価格が現在の市場価格以下の売り注文」のみ
 - 売り注文の優先順位: 価格昇順（低い価格から）、同価格は作成時刻昇順（FIFO）
 - 約定価格は売り注文の価格（投資家の指値ではなく相手の注文価格）
+- 即時買いは `POST /api/actions/buy` に `limitPrice` を含めない場合の分岐として実行される
 - 現金チェックは各注文の約定コストを累積しながら行う。超過する注文は途中でスキップして終了
 - 約定した注文は残数量が0になればオーダーブックから削除、残りがあれば残数量で置き換える
 - 約定ごとに Trade レコードが生成される（`Exchange.Fee` = 500円固定）
 - ターン進行は成否に関わらず常に発生する（異常系エラー除く）
-- ターン進行時に全銘柄の価格変動とシステム注文生成が発生する
+- ターン進行時に全銘柄の価格変動、システム注文生成、クロス注文解消が発生する
 
 ## 未決事項
 
