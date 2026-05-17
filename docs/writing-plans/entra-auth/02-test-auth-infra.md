@@ -20,7 +20,7 @@
 
 ---
 
-- [ ] **Step 1: `TestAuthHandler` を作成**
+- [x] **Step 1: `TestAuthHandler` を作成**
 
 `tests/FinLearn.Api.Tests/TestAuthHandler.cs`:
 
@@ -28,6 +28,7 @@
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.Logging; // ILoggerFactory（テストプロジェクトは ImplicitUsings 非対応のため明示）
 using Microsoft.Extensions.Options;
 
 namespace FinLearn.Api.Tests;
@@ -71,7 +72,7 @@ public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions
 }
 ```
 
-- [ ] **Step 2: カスタムファクトリを作成**
+- [x] **Step 2: カスタムファクトリを作成**
 
 `tests/FinLearn.Api.Tests/AuthTestWebApplicationFactory.cs`:
 
@@ -111,12 +112,12 @@ public class AuthTestWebApplicationFactory : WebApplicationFactory<Program>
 }
 ```
 
-- [ ] **Step 3: ビルドが通ることを確認**
+- [x] **Step 3: ビルドが通ることを確認**
 
 Run: `dotnet build tests/FinLearn.Api.Tests`
 Expected: ビルド成功（`Microsoft.AspNetCore.Mvc.Testing` / `Microsoft.AspNetCore.TestHost` は既存参照、`AuthenticationHandler` は ASP.NET Core 共有フレームワークに含まれる）。
 
-- [ ] **Step 4: `GameApiTests` のフィクスチャをカスタムファクトリへ差し替え**
+- [x] **Step 4: `GameApiTests` のフィクスチャをカスタムファクトリへ差し替え**
 
 `tests/FinLearn.Api.Tests/GameApiTests.cs` の冒頭クラス宣言とコンストラクタ（現状 9-16 行）だけを変更する。**テストメソッド本体は一切変更しない**。
 
@@ -148,7 +149,7 @@ public class GameApiTests : IClassFixture<AuthTestWebApplicationFactory>
 
 `GameApiTests.cs` 冒頭の `using Microsoft.AspNetCore.Mvc.Testing;` は `WebApplicationFactory<Program>` を直接参照しなくなるため未使用になる。情報レベルの「未使用 using」（CS8019/IDE0005、ビルド・テストは失敗しない）が出るだけなのでそのまま残してよい。気になる場合はこの1行を削除する（`AuthTestWebApplicationFactory` は同一名前空間 `FinLearn.Api.Tests` なので using 追加は不要）。
 
-- [ ] **Step 5: `HtmxPagesTests` のフィクスチャも同様に差し替え**
+- [x] **Step 5: `HtmxPagesTests` のフィクスチャも同様に差し替え**
 
 `tests/FinLearn.Api.Tests/HtmxPagesTests.cs` の冒頭クラス宣言・フィールド・コンストラクタ（現状 7-16 行）だけを変更する。**テストメソッド本体・`CreateGameViaApi`・`ExtractAntiforgeryToken` は一切変更しない**。
 
@@ -184,12 +185,12 @@ public class HtmxPagesTests : IClassFixture<AuthTestWebApplicationFactory>
 
 > `factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false })`（既存 58 行）はカスタムファクトリでもそのまま動く。`using Microsoft.AspNetCore.Mvc.Testing;` は `WebApplicationFactoryClientOptions` で引き続き使われるため未使用にならない。
 
-- [ ] **Step 6: 既存テストが依然グリーンであることを確認**
+- [x] **Step 6: 既存テストが依然グリーンであることを確認**
 
 Run: `dotnet test`
 Expected: PASS（全件）。認証ミドルウェアは未配線で、`GameApiTests`・`HtmxPagesTests` の既定クライアントは `X-Test-Auth` ヘッダを送らないが、そもそも保護が無いので挙動不変。
 
-- [ ] **Step 7: コミット**
+- [x] **Step 7: コミット**
 
 ```powershell
 git add tests/FinLearn.Api.Tests/TestAuthHandler.cs `

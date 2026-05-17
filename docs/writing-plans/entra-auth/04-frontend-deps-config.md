@@ -13,19 +13,19 @@ MSAL パッケージを追加し、`config.ts` に Entra 用の設定値（す�
 
 ---
 
-- [ ] **Step 1: フロントの現状テスト・型がグリーンであることを確認（ベースライン）**
+- [x] **Step 1: フロントの現状テスト・型がグリーンであることを確認（ベースライン）**
 
 Run: `cd frontend; npm test; npm run typecheck`
 Expected: 両方 PASS。以降の変更で既存テストが壊れないことの基準。
 
-- [ ] **Step 2: MSAL パッケージを追加**
+- [x] **Step 2: MSAL パッケージを追加**
 
 Run（`frontend/` で）: `npm install @azure/msal-browser@^4 @azure/msal-react@^3`
 Expected: `package.json` の `dependencies` に `@azure/msal-browser`（4.x）と `@azure/msal-react`（3.x）が追加され、`package-lock.json` が更新される。
 
 > `@azure/msal-react` 3.x は `@azure/msal-browser` 4.x を peer dependency とする組み合わせ。インストール時に peer 警告が出ないことを確認する。出る場合は表示された互換バージョンに合わせる。
 
-- [ ] **Step 3: `config.ts` に Entra 設定を追加**
+- [x] **Step 3: `config.ts` に Entra 設定を追加**
 
 `frontend/app/config.ts` を以下に書き換える（既存3行はそのまま、Entra 用を追記）:
 
@@ -42,7 +42,7 @@ export const ENTRA_REDIRECT_URI =
 export const ENTRA_AUTHORITY = `https://login.microsoftonline.com/${ENTRA_TENANT_ID}`;
 ```
 
-- [ ] **Step 4: `.env.example` を作成**
+- [x] **Step 4: `.env.example` を作成**
 
 `frontend/.env.example`:
 
@@ -55,12 +55,12 @@ VITE_ENTRA_API_SCOPE=api://<api-client-id>/access_as_user
 VITE_ENTRA_REDIRECT_URI=http://localhost:5173
 ```
 
-- [ ] **Step 5: 型チェックとテストが依然グリーンであることを確認**
+- [x] **Step 5: 型チェックとテストが依然グリーンであることを確認**
 
 Run: `cd frontend; npm run typecheck; npm test`
 Expected: 両方 PASS。`config.ts` の追加 export はフォールバック付きで型エラーにならず、既存テストにも影響しない。
 
-- [ ] **Step 6: コミット**
+- [x] **Step 6: コミット**
 
 ```powershell
 git add frontend/package.json frontend/package-lock.json `
