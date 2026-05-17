@@ -36,6 +36,7 @@ npm run test:watch # vitest（ウォッチモード）
 - ゲーム状態はサーバー駆動（`GameResponse` をそのまま描画、クライアント側の派生状態なし）
 - 環境変数 `VITE_API_URL` で API ベース URL を設定可能（デフォルト: `http://localhost:5088`）
 - Tailwind CSS v4 は `@tailwindcss/vite` プラグイン経由（PostCSS 不要）
+- 認証 (Entra ID): 全ルートを `app/auth/AuthGate.tsx` がラップし、未認証時はサインイン画面を表示（ゲーム画面は非描画）。API 呼び出しは `gameApi` が `Authorization: Bearer <token>` を透過付与し、401/403 を処理。認証構成の詳細は [docs/AUTH.md](../../../docs/AUTH.md)
 
 ### Conventions
 
