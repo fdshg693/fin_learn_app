@@ -2,7 +2,9 @@ using System.Text.Json.Serialization;
 using FinLearn.Api.Endpoints;
 using FinLearn.Api.Services;
 using FinLearn.Core;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
+using Microsoft.Identity.Web;
 using Serilog;
 using Serilog.Filters;
 using Serilog.Formatting.Compact;
@@ -73,15 +75,29 @@ try
         });
     });
 
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
+
+    builder.Services.AddAuthorization(options =>
+    {
+        options.AddPolicy("ApiScope", policy =>
+        {
+            policy.RequireAuthenticatedUser();
+            policy.RequireScope("access_as_user");
+        });
+    });
+
     builder.Services.AddRazorPages();
 
     var app = builder.Build();
 
     app.UseCors();
     app.UseStaticFiles();
+    app.UseAuthentication();
+    app.UseAuthorization();
     app.MapRazorPages();
-    app.MapGameEndpoints();
-    app.MapAdminEndpoints();
+    app.MapGameEndpoints().RequireAuthorization("ApiScope");
+    app.MapAdminEndpoints().RequireAuthorization("ApiScope");
 
     app.MapGet("/", () => Results.Content("""
         <!DOCTYPE html>
