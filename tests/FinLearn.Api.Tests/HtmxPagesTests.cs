@@ -4,12 +4,12 @@ using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace FinLearn.Api.Tests;
 
-public class HtmxPagesTests : IClassFixture<WebApplicationFactory<Program>>
+public class HtmxPagesTests : IClassFixture<AuthTestWebApplicationFactory>
 {
-    private readonly WebApplicationFactory<Program> factory;
+    private readonly AuthTestWebApplicationFactory factory;
     private readonly HttpClient _client;
 
-    public HtmxPagesTests(WebApplicationFactory<Program> factory)
+    public HtmxPagesTests(AuthTestWebApplicationFactory factory)
     {
         this.factory = factory;
         _client = factory.CreateClient();

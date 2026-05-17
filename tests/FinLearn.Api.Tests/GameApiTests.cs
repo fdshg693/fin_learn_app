@@ -6,11 +6,11 @@ using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace FinLearn.Api.Tests;
 
-public class GameApiTests : IClassFixture<WebApplicationFactory<Program>>
+public class GameApiTests : IClassFixture<AuthTestWebApplicationFactory>
 {
     private readonly HttpClient _client;
 
-    public GameApiTests(WebApplicationFactory<Program> factory)
+    public GameApiTests(AuthTestWebApplicationFactory factory)
     {
         _client = factory.CreateClient();
     }
