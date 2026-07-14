@@ -1,9 +1,0 @@
-{
-  "mcpServers": {
-    "task-server": {
-      "type": "stdio",
-      "command": "node",
-      "args": ["mcps/passthrough.mjs", "task-server"]
-    }
-  }
-}

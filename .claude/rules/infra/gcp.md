@@ -1,11 +1,11 @@
 ---
 paths:
-  - "gcp_terraform/**"
+  - "infra/gcp/**"
 ---
 
 ## GCP Terraform Infrastructure
 
-GCP Cloud Run を使った FinLearn アプリのデプロイ構成。`azure_infra/` の GCP 版。
+GCP Cloud Run を使った FinLearn アプリのデプロイ構成。`infra/azure/` の GCP 版。
 
 ### リソース構成
 

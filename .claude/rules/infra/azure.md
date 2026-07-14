@@ -1,11 +1,11 @@
 ---
 paths:
-  - "azure_infra/**"
+  - "infra/azure/**"
 ---
 
 ## Azure Infrastructure (Terraform)
 
-Azure App Service を使った FinLearn アプリのデプロイ構成。`gcp_terraform/` の Azure 版。
+Azure App Service を使った FinLearn アプリのデプロイ構成。`infra/gcp/` の Azure 版。
 
 ### リソース構成
 

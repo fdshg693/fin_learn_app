@@ -1,9 +1,0 @@
-# `notion-duplicate-page`
-
-Duplicate a Notion page. The page must be within the current workspace, and you must have permission to access it. The duplication completes asynchronously, so do not rely on the new page identified by the returned ID or URL to be populated immediately. Let the user know that the duplication is in progress and that they can check back later using the 'fetch' tool or by clicking the returned URL and viewing it in the Notion app.
-
-## パラメータ
-
-| パラメータ | 型 | 必須 | 説明 |
-|------------|------|:----:|------|
-| `page_id` | string | ✓ | The ID of the page to duplicate. This is a v4 UUID, with or without dashes, and can be parsed from a Notion page URL. |
